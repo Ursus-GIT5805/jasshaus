@@ -119,7 +119,7 @@ class Round {
 
         if(5 < this.playtype){
             document.getElementById("roundRT").style.visibility = "visible";
-            document.getElementById("roundRT").src = "img/" + src[this.ruletype] + ".png";
+            document.getElementById("roundRT").src = document.getElementById("PT" + this.ruletype).src;
         } else document.getElementById("roundRT").style.visibility = "hidden";
     }
 

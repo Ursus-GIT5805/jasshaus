@@ -155,7 +155,8 @@ function f13(dat){
         round.updatePoints(i);
     }
 
-    if(dat[12] % 16 != 15) f2( [ dat[12] ] );
+    let pt = dat[12] % 16;
+    if(pt != 15) f2( [ dat[12] ] );
     round.passed = dat[12] >>> 7;
 
     f12( dat.slice(13, 18) );
@@ -164,6 +165,10 @@ function f13(dat){
     round.turn = dat[18] >>> 4;
     round.curplr = dat[18] % 4;
     round.beginplayer = (4-numC + round.curplr) % 4;
+
+    if( pt == 6 || pt == 7 ) round.ruletype = (round.turn-1 +(pt == 7)) % 2;
+    if( pt == 8 || pt == 9 ) round.ruletype = ((pt == 9)+(round.turn > 4)) % 2;
+    round.updateRoundDetails();
     
     for(let i = 0 ; i < numC ; ++i) f0( [ dat[19 + i] ] );
 

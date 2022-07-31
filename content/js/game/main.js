@@ -42,7 +42,7 @@ window.onload = function(e){
         }
     }
 
-    loadTrumpfsymbols();
+    loadCards();
 }
 
 function loadCards(){
