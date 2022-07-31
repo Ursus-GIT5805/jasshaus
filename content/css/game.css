@@ -1,0 +1,279 @@
+:root {
+    font-size: 100%;
+    font-family: Roboto, sans-serif;
+}
+
+body {
+    position: absolute;
+
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+
+    margin: 0%;
+
+    background-color: #000000;
+}
+
+#background {
+    position: absolute;
+
+    width: 100%;
+    height: 100%;
+}
+
+#cards {
+    position: absolute;
+}
+
+#carpet {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+    width: 50%;
+    height: 50%;
+
+    transform: translateX(-50%) translateY(-50%);
+
+    background-color: #00BB00;
+
+    border-radius: 1rem;
+    border-style: solid;
+    border-color: #008100;
+}
+
+.Playedcard {
+    position: absolute;
+
+    display: none;
+
+    border-style: none;
+    border-radius: 0.75rem;
+    border-width: 0.25rem;
+    border-color: #FFFF00;
+}
+
+#roundDetails {
+    position: absolute;
+
+    top: 0%;
+    left: 0%;
+    width: 13rem;
+    height: 5rem;
+    
+    color: #FFFFFF;
+    background-color: #000000;
+    padding: 0.8rem;
+
+    border-style: solid;
+    border-bottom-right-radius: 0.5rem;
+    border-width: 0 0.5rem 0.5rem 0;
+    border-color: #DEA487;
+}
+
+.Playtype {
+    position: relative;
+
+    visibility: hidden;
+    float: left;
+
+    width: 5rem;
+    height: 5rem;
+
+    background-color: #000000;
+}
+
+#gameDetails {
+    position: absolute;
+
+    top: 0%;
+    right: 0%;
+    width: 15rem;
+    height: 5rem;
+    
+    color: #FFFFFF;
+    background-color: #000000;
+    padding: 0.8rem;
+
+    font-size: 1.35rem;
+
+    border-style: solid;
+    border-bottom-left-radius: 0.5rem;
+    border-width: 0 0 0.5rem 0.5rem;
+    border-color: #DEA487;
+}
+
+.Player {
+    position: absolute;
+
+    background-color: #000000;
+    color: #FFFFFF;
+
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 400;
+    text-overflow: ellipsis;
+
+    width: 11rem;
+    max-width: 20%;
+    height: 2.5rem;
+
+    border-radius: 0.2rem;
+
+    cursor: pointer;
+}
+
+.PlrDropdown {
+    position: absolute;
+    display: none;
+
+    top: 100%;
+    width: 100%;
+
+    background-color: #000000;
+}
+
+.PlrDropdown div {
+    position: relative;
+    font-size: 1.5rem;
+    padding: 0.25rem;
+}
+
+.Player:hover .PlrDropdown {
+    display: block;
+}
+
+.PlayerMSG {
+    position: absolute;
+    display: none;
+
+    width: 30%;
+    height: 2rem;
+
+    padding: 0.3rem;
+    border-radius: 0.3rem;
+
+    text-align: left;
+    font-size: 2rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    background-color: #CCCCCC;
+}
+
+.PlayerMSG:hover {
+    height: max-content;
+    white-space: inherit;
+}
+
+.Playersymbol {
+    position: relative;
+
+    float: left;
+
+    top: 100%;
+    width: 0.9rem;
+    height: 0.9rem;
+
+    padding: 0.05rem;
+    margin: 0.05rem;
+    border-radius: 0.1rem;
+
+    background-color: white;
+}
+
+.Playerstar {
+    position: absolute;
+    visibility: hidden;
+    height: calc(100% - 0.5rem);
+}
+
+#micImg {
+    position: absolute;
+
+    left: 50%;
+    top: 50%;
+    height: 80%;
+
+    filter: grayscale(100%) invert(30%);
+
+    animation-duration: 3s;
+    animation-iteration-count: infinite;
+
+    transform: translateX(-50%) translateY(-50%);
+}
+
+.ActionButton {
+    position: absolute;
+
+    width: 1.2cm;
+    height: 1.2cm;
+
+    border-radius: 0.5rem;
+    border-width: 0.1rem;
+    border-color: #FFFFFF;
+    margin: 0.1rem;
+
+    background-color: #000000;
+    cursor: pointer;
+}
+
+.ActionButton:hover {
+    background-color: #363636;
+}
+
+.ButtonIcon {
+    position: relative;
+
+    left: 50%;
+    top: 50%;
+    width: 60%;
+    height: 60%;
+    transform: translateX(-50%) translateY(-50%);
+}
+
+@keyframes Fading {
+    0% {
+        opacity: 100%;
+    }
+    50% {
+        opacity: 20%;
+    }
+    100% {
+        opacity: 100%;
+    }
+}
+
+@media (orientation: portrait) {
+    #roundDetails {
+        width: 30rem;
+        height: 10rem;
+        font-size: 2.7rem;
+    }
+
+    .Playtype {
+        width: 10rem;
+        height: 10rem;
+    }
+
+    #gameDetails {
+        width: 30rem;
+        height: 10rem;
+        font-size: 2.7rem;
+    }
+
+    .Player {
+        font-size: 3.5rem;
+
+        width: 15rem;
+        height: 4rem;
+    }
+     
+    .PlrDropdown div {
+        font-size: 2.5rem;
+    }    
+}

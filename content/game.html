@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Jasshaus | Partie</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"> 
+    </head>
+
+    <body>
+        <a style="display: none;" id="player0"></a>
+        <a style="display: none;" id="star0"></a>
+        <div style="display: none;" id="symbols0"></div>
+        <audio id="audio0" style="display: none;" autoplay></audio>
+        <audio id="audio1" style="display: none;" autoplay></audio>
+        <audio id="audio2" style="display: none;" autoplay></audio>
+        <audio id="audio3" style="display: none;" autoplay></audio>
+
+        <img src="img/background.png" id="background">
+        <div id="carpet">
+            <img class="Playedcard" style="left: 50%; bottom: 0; transform: translateX(-50%);" id="card0">
+            <img class="Playedcard" style="right: 0; top: 50%; transform: translateY(-50%);" id="card1">
+            <img class="Playedcard" style="left: 50%; top: 0; transform: translateX(-50%);" id="card2">
+            <img class="Playedcard" style="left: 0; top: 50%; transform: translateY(-50%);" id="card3">
+        </div>
+
+        <canvas id="cards"></canvas>
+        
+        <div id="roundDetails">
+            <div id="roundSymbols">
+                <img src="img/misere.png" id="roundMisere" class="Playtype">
+                <img src="img/updown.png" id="roundPT" class="Playtype">
+                <img src="img/downup.png" id="roundRT" class="Playtype" style="width: 2.5rem; height: 2.5rem;">
+                <img src="img/pass.png" id="roundPass" class="Playtype" style="width: 2.5rem; height: 2.5rem;">    
+            </div>
+        </div>
+        <div id="gameDetails">
+            <a><u>Schieber 1000</u></a><br>
+            <a id="tName0">???</a> + <a id="tName2">???</a>: 
+            <a id="points0">0</a> + <a id="gp0">0</a><br>
+            <a id="tName1">???</a> + <a id="tName3">???</a>: 
+            <a id="points1">0</a> + <a id="gp1">0</a><br>
+        </div>
+
+        <div class="Player" style="right: 2px; top: 50%; transform: translateY(-50%)">
+            <a id="player1" style="overflow: hidden;"></a>
+            <img id="star1" class="Playerstar" style="right: 100%;" src="img/star.svg">
+            <div id="symbols1"></div>
+            <div class="PlrDropdown">
+                <div><input type="checkbox" id="mute1" style="position: relative; height: 1.5rem;"> Stumm</div>
+                <div id="volumectrl1">
+                    <img src="img/volume.svg" style="width: 1rem;">
+                    <input type="range" id="volume1" min="0" max="64" value="32" style="width: calc(100% - 3rem);">
+                </div>
+            </div>
+        </div>
+        <div class="Player" style="left: 50%; top: 2px; transform: translateX(-50%)">
+            <a id="player2" style="overflow: hidden;"></a>
+            <img id="star2" class="Playerstar" style="right: 100%;" src="img/star.svg">
+            <div id="symbols2"></div>
+            <div class="PlrDropdown">
+                <div><input type="checkbox" id="mute2" style="position: relative; height: 1.5rem;"> Stumm</div>
+                <div id="volumectrl2">
+                    <img src="img/volume.svg" style="width: 1rem;">
+                    <input type="range" id="volume2" min="0" max="64" value="32" style="width: calc(100% - 3rem);">
+                </div>
+            </div>
+        </div>
+        <div class="Player" style="left: 2px; top: 50%; transform: translateY(-50%)">
+            <a id="player3" style="overflow: hidden;"></a>
+            <img id="star3" class="Playerstar" style="left: 100%;" src="img/star.svg">
+            <div id="symbols3"></div>
+            <div class="PlrDropdown">
+                <div><input type="checkbox" id="mute3" style="position: relative; height: 1.5rem;"> Stumm</div>
+                <div id="volumectrl3">
+                    <img src="img/volume.svg" style="width: 1rem;">
+                    <input type="range" id="volume3" min="0" max="64" value="32" style="width: calc(100% - 3rem);">
+                </div>
+            </div>
+        </div>
+
+        <div class="PlayerMSG" id="msg0" style="bottom: 25%; left: 50%; transform: translateX(-50%);"></div>
+        <div class="PlayerMSG" id="msg1" style="right: 1%; top: 40%; transform: translateY(-50%);"></div>
+        <div class="PlayerMSG" id="msg2" style="top: 10%; left: 50%; transform: translateX(-50%);"></div>
+        <div class="PlayerMSG" id="msg3" style="left: 1%; top: 40%; transform: translateY(-50%);"></div>
+
+        <!-- Popup windows -->
+        <div id="announceWindow">
+            <div style="font-size: 3rem; font-weight: bold;">Sage an!</div>
+            <div id="playtypeBoard">
+                <div class="PTRow">
+                    <div class="AnnounceButton" onclick="announce(6)"><img id="PT6" src="img/slalomup.png" class="announcePT"><p>Slalom Obenabe</p></div>
+                    <div class="AnnounceButton" onclick="announce(0)"><img id="PT0" src="img/updown.png" class="announcePT"><p>Obenabe</p></div>
+                    <div class="AnnounceButton" onclick="announce(1)"><img id="PT1" src="img/downup.png" class="announcePT"><p>Undeufe</p></div>
+                    <div class="AnnounceButton" onclick="announce(7)"><img id="PT7" src="img/slalomdown.png" class="announcePT"><p>Slalom Undeufe</p></div>
+                </div>
+                <div class="PTRow">
+                    <div class="AnnounceButton" onclick="announce(2)"><img id="PT2" class="announcePT"><p id="PTT2">Schilten</p></div>
+                    <div class="AnnounceButton" onclick="announce(3)"><img id="PT3" class="announcePT"><p id="PTT3">Eicheln</p></div>
+                    <div class="AnnounceButton" onclick="announce(4)"><img id="PT4" class="announcePT"><p id="PTT4">Rosen</p></div>
+                    <div class="AnnounceButton" onclick="announce(5)"><img id="PT5" class="announcePT"><p id="PTT5">Schellen</p></div>
+                </div>
+                <div class="PTRow">
+                    <div class="AnnounceButton" onclick="toggleMisere()"><img src="img/misere.png" class="announcePT"><p>Misère</p></div>
+                    <div class="AnnounceButton" onclick="announce(8)"><img id="PT8" src="img/guschti.png" class="announcePT"><p>Guschti</p></div>
+                    <div class="AnnounceButton" onclick="announce(9)"><img id="PT9" src="img/mary.png" class="announcePT"><p>Mary</p></div>
+                    <div class="AnnounceButton" onclick="announce(10)" id="passButton"><img src="img/pass.png" class="announcePT"><p>Schieben</p></div>
+                </div>
+            </div>
+        </div>
+        <div id="endWindow">
+            <div style="position: relative;">
+                <div id="endResult"></div>
+                <div style="position: relative; text-align: center; font-size: 2rem;">
+                    <a id="endName0"></a> + <a id="endName2"></a>
+                    <a id="gameWin0">0</a> - <a id="gameWin1">0</a>
+                    <a id="endName1"></a> + <a id="endName3"></a>
+                </div>
+            </div>
+            <div class="endButton" onclick="revanche()" style="left: 0;">Revanche (<a id="plrRev"></a>/<a id="plrNum"></a>)</div>
+            <div class="endButton" onclick="goTo('index.html')" style="right: 0;">Spiel verlassen</div>
+        </div>
+        <div id="roundSummary">
+            <div class="SummaryTeam">
+                <div class="Half">
+                    <div style="font-size: 2.2rem;">
+                        <span class="Summaryname">
+                            <a id="sumName0"></a>
+                            <div class="Playercards" id="hand0"></div>
+                        </span> & 
+                        <span class="Summaryname">
+                            <a id="sumName2"></a>
+                            <div class="Playercards" id="hand2"></div>
+                        </span>
+                    </div>
+                    <div class="Half">
+                        Beginn<br>Weis<br>Stich<br>--------<br>
+                        <a style="font-size: 1.5rem;">Endstand</a>
+                    </div>
+                    <div class="Half" style="text-align: right;">
+                        <a id="prePoints0"></a><br>+ 
+                        <a id="shwPoints0"></a><br>+ 
+                        <a id="gotPoints0"></a><br>--------<br>
+                        <a id="finPoints0" style="font-size: 1.5rem;"></a>
+                    </div>
+                </div>
+                <div style="position: relative; float: left; width: 50%; height: 100%;">
+                    <canvas id="cardst0" class="SummaryCards" style="top: 0;" width="1449" height="988"></canvas>
+                </div>
+            </div>
+            <div class="SummaryTeam">
+                <div class="Half">
+                    <div style="font-size: 2.2rem;">
+                        <span class="Summaryname">
+                            <a id="sumName1"></a>
+                            <div class="Playercards" id="hand1"></div>
+                        </span> & 
+                        <span class="Summaryname">
+                            <a id="sumName3">DAS</a>
+                            <div class="Playercards" id="hand3"></div>
+                        </span>
+                    </div>
+                    <div class="Half">
+                        Beginn<br>Weis<br>Stich<br>--------<br>
+                        <a style="font-size: 1.5rem;">Endstand</a>
+                    </div>
+                    <div class="Half" style="text-align: right;">
+                        <a id="prePoints1"></a><br>+ 
+                        <a id="shwPoints1"></a><br>+ 
+                        <a id="gotPoints1"></a><br>--------<br>
+                        <a id="finPoints1" style="font-size: 1.5rem;"></a>
+                    </div>
+                </div>
+                <div style="position: relative; float: left; width: 50%; height: 100%;">
+                    <canvas id="cardst1" class="SummaryCards" style="top: 0;" width="1449" height="988"></canvas>
+                </div>
+            </div>
+            <div id="closeSummary" onclick="closeSummary()">Weiter</div>
+        </div>
+        <div id="showWindow">
+            <a id="showTitle">Weisen?</a>
+            <div id="showCards"></div>
+            <div id="showConfirm" class="ShowButton" onclick="showConfirm()">Weisen</div>
+            <div id="showCancel" class="ShowButton" onclick="showCancel()">Schinden</div>
+        </div>
+        <div id="teamWindow">
+            <a style="font-size: 1.5rem; font-weight: 700;">Wähle Sie ihren Wunschpartner</a>
+            <div style="position: relative; width: calc(100% - 4rem); height: calc(100% - 6rem); margin: 2rem;">
+                <div id="choose0" onclick="chooseT(0)" class="TeamplayerButton" style="left: 50%; bottom: 0; transform: translateX(-50%);">Zufällig</div>
+                <div id="choose1" onclick="chooseT(1)" class="TeamplayerButton" style="right: 0; top: 50%; transform: translateY(-50%);"></div>
+                <div id="choose2" onclick="chooseT(2)" class="TeamplayerButton" style="left: 50%; top: 0; transform: translateX(-50%);"></div>
+                <div id="choose3" onclick="chooseT(3)" class="TeamplayerButton" style="left: 0; top: 50%; transform: translateY(-50%);"></div>    
+            </div>
+        </div>
+        <div id="startWindow">
+            Bitte warten Sie auf weitere Spieler...
+        </div>
+        <div id="infoWindow">
+            <h2><u id="infoTitle">Info</u></h2>
+            <a id="infoText"></a>
+            <div id="infoButton">Okay</div>
+        </div>
+
+        <div class="ActionButton" style="bottom: 0; right: 0;" onclick="toggleChat()">
+            <img src="img/chat.svg" class="ButtonIcon">
+        </div>
+        <div class="ActionButton" onclick="toggleSettings()" style="bottom: 0; left: 0;">
+            <img src="img/settings.svg" class="ButtonIcon">
+        </div>
+
+        <div id="chatWindow">
+            <div id="chatHistory"></div>
+            <div class="chatButton" onclick="toggleChat()">
+                <img src="img/close.svg" class="ButtonIcon">
+            </div>
+            <div class="chatButton" onclick="setupMic()">
+                <img src="img/mic.svg" id="micImg">
+            </div>
+            <input type="text" placeholder="Eingabe" id="chatInput"></input>
+        </div>
+        <div id="settingWindow">
+            <div style="font-size: 3rem; font-weight: 600;"><u>Einstellungen</u></div>
+            <div>
+                <div>
+                    <img src="img/de.svg" style="width: 1rem;">
+                    Deutsche Jasskarten <input id="boolGE" type="checkbox" onchange="cardLang(false)" checked><br>
+                    <img src="img/fr.svg" style="width: 1rem;">
+                    Französische Jasskarten <input id="bool2" type="checkbox" onchange="cardLang(true)">
+                </div>
+                <div>
+                    Karten klicken zum Spielen 
+                    <input type="checkbox" id="bool1" onchange="onCheckbox()">
+                </div>
+                <div>
+                    Kartendunkelheit<br>
+                    <input type="range" id="range0" min="0" max="255" onchange="onRange()" style="width: 100%;">    
+                </div>
+            </div>
+            <div class="Settingbutton" onclick="toggleSettings()">Fenster schliessen</div>
+            <div class="Settingbutton" onclick="goTo('index.html')">Partie verlassen</div>
+        </div>
+    </body>
+
+    <script src="js/utils.js" type="text/javascript"/></script>$
+    <script src="js/storage.js" type="text/javascript"/></script>
+    <script src="js/game/player.js" type="text/javascript"/></script>
+    <script src="js/game/hand.js" type="text/javascript"/></script>
+    <script src="js/game/round.js" type="text/javascript"/></script>
+    <script src="js/game/main.js" type="text/javascript"/></script>
+    <script src="js/game/window.js" type="text/javascript"/></script>
+    <script src="js/game/ws.js" type="text/javascript"/></script>
+    <script src="js/game/audio.js" type="text/javascript"/></script>
+    <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/window.css">
+</html>
