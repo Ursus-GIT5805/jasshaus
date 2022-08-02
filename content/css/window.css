@@ -1,3 +1,8 @@
+:root {
+    --col_1: #000000;
+    --col_2: #FFFFFF;
+}
+
 #announceWindow {
     position: absolute;
     display: none;
@@ -18,8 +23,8 @@
 
     transition: 500ms;
 
-    color: #000000;
-    background-color: #FFFFFF;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 #playtypeBoard {
@@ -89,8 +94,9 @@
     transition: 100ms;
 
     opacity: 30%;
-    background-color: #FFFFFF;
-    box-shadow: 2px 2px 10px #000000;
+    box-shadow: 2px 2px 10px #FFFFFF;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 #showWindow:hover {
@@ -249,8 +255,8 @@
     border-width: 0.1rem;
     border-style: solid;
 
-    color: #FFFFFF;
-    background-color: #000000;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 .Summaryname:hover .Playercards {
@@ -327,7 +333,8 @@
     border-radius: 0.5rem;
 
     box-shadow: 4px 4px 20px #000000;
-    background-color: #FFFFFF;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 #infoButton {
@@ -483,7 +490,8 @@
     padding: 1rem;
     border-radius: 0.75rem;
 
-    background-color: #FFFFFF;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 .TeamplayerButton {
@@ -526,7 +534,8 @@
     padding: 1rem;
     border-radius: 0.5rem;
 
-    background-color: #FFFFFF;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 @media screen and (orientation:portrait) {
@@ -569,5 +578,12 @@
         height: 1cm;
         font-size: 1cm;
         padding: 0.75cm;
+    }
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --col_1: #EEEEEE;
+        --col_2: #121212;
     }
 }

@@ -63,7 +63,7 @@ body {
     width: 13rem;
     height: 5rem;
     
-    color: #FFFFFF;
+    color: #EEEEEE;
     background-color: #000000;
     padding: 0.8rem;
 
@@ -91,7 +91,7 @@ body {
     width: 15rem;
     height: 5rem;
     
-    color: #FFFFFF;
+    color: #EEEEEE;
     background-color: #000000;
     padding: 0.8rem;
 
@@ -160,6 +160,7 @@ body {
 
     overflow: hidden;
 
+    color: var(--col_1);
     background-color: #CCCCCC;
 }
 
@@ -181,7 +182,7 @@ body {
     margin: 0.05rem;
     border-radius: 0.1rem;
 
-    background-color: white;
+    background-color: #FFFFFF;
 }
 
 .Playerstar {
@@ -274,4 +275,19 @@ body {
     .PlrDropdown div {
         font-size: 2.5rem;
     }    
+}
+
+@media (prefers-color-scheme: dark) {
+    #background {
+        filter: brightness(40%);
+    }
+
+    #carpet {
+        background-color: #006600;
+        border-color: #003300;
+    }
+
+    .PlayerMSG {
+        background-color: #3E3E3E;
+    }
 }

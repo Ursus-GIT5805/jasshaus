@@ -88,3 +88,23 @@ body {
         width: 95%;
     }
 }
+
+@media (prefers-color-scheme: dark) {
+    #backimg {
+        filter: blur(6px) brightness(40%);
+    }
+
+    #mainWindow {
+        color: #EEEEEE;
+        background-color: #121212;
+    }
+
+    #title {
+        color: #EEEEEE;
+        background-color: #004400;
+    }
+
+    .Button {
+        background-color: #444444;
+    }
+}
