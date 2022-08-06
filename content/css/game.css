@@ -97,6 +97,9 @@ body {
 
     font-size: 1.35rem;
 
+    overflow-x: scroll;
+    white-space: nowrap;
+
     border-style: solid;
     border-bottom-left-radius: 0.5rem;
     border-width: 0 0 0.5rem 0.5rem;
