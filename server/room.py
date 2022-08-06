@@ -465,25 +465,30 @@ class Room:
             order = []
             for i in range(4):
                 m = self.mate[i]
+                if i == m: continue # This player chose random
+
                 if self.mate[m] == i or self.mate[ m ] == m:
-                    order = [0,1,2,3]
-                    order[i], order[0] = order[0], order[i]
-                    order[m], order[2] = order[2], order[m]
+                    # Construct order
+                    order = [i, m]
+                    order.append( (i + m + (min(i, m) == 0) + (min(i, m) == 0 and max(i, m) == 3)) % 4 )
+                    order.append( 6 - i - m - order[2] )
+
+                    order[1], order[2] = order[2], order[1]
                     break
 
-            if order.__len__() == 0: order = random.shuffle( [0, 1, 2, 3] )
+            if order.__len__() == 0:
+                order = [0, 1, 2, 3]
+                random.shuffle( order )
 
-            print( order )
             rOrd = [0, 0, 0, 0]
             for i in range(4): rOrd[ order[i] ] = i
+            print( rOrd )
 
-            print( self.players )
             self.players = [ self.players[ rOrd[0] ], self.players[ rOrd[1] ], self.players[ rOrd[2] ], self.players[ rOrd[3] ] ]
-            print( self.players )
 
-            self.order = order
+            self.order = rOrd
             compr = 0
-            for i in range(4): compr += ( order[i] << (2*i) )
+            for i in range(4): compr += ( self.order[i] << (2*i) )
             await self.send( '\x08', toBytes( compr, 1 ) )
 
             await self.startGame()
