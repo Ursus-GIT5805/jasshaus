@@ -1,6 +1,5 @@
 var id = 0; // Your ID in the game
 var mouseDown = false;
-var touchX = 0, touchY = 0;
 var players = new Playerhandler();
 var cardIMG = []; // Images of all cards
 var hand = new Hand();
@@ -96,13 +95,11 @@ canvas.ontouchstart = function(e){
 
 canvas.ontouchmove = function(e){
     if(e.touches.length > 1) return;
-    touchX = e.touches[0].clientX;
-    touchY = e.touches[0].clientY;
     hand.onMousemove( e.touches[0].clientX, e.touches[0].clientY, true );
 }
 
 canvas.ontouchend = function(e){
-    hand.onMouseup(touchX, touchY);
+    hand.onMouseup();
 }
 
 window.onresize = function(e){

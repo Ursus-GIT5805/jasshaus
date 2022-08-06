@@ -55,6 +55,8 @@ class Hand {
 
         this.selected = -1; // The index of the currently selected cards
 
+        this.mx = 0;
+        this.my = 0;
         this.cardW = 0;
         this.cardH = 0;
 
@@ -180,12 +182,17 @@ class Hand {
             if(this.selected == i) continue;
             this.drawCard(i, startX+disX*i, h-this.cardH );
         }
+
+        if(this.selected != -1) this.drawCard(this.selected, this.mx-this.cardW/2, this.my-this.cardH/2);
     }
 
     // ---
 
     // Update function, when the left mousebutton got pressed
     onMousedown(mouseX, mouseY){
+        this.mx = mouseX;
+        this.my = mouseY;
+
         const w = document.body.clientWidth;
         const h = document.body.clientHeight;
 
@@ -204,26 +211,26 @@ class Hand {
             this.playCard( this.selected );
             this.selected = -1;
             this.drawAll();
-        } else {
-            this.drawAll();    
-            if(this.selected != -1) this.drawCard(this.selected, mouseX-this.cardW/2, mouseY-this.cardH/2);    
         }
+
+        this.drawAll();
     }
 
     // Update function, when the mouse moves
     // mouseDown (bool) - is the mouse pressed
     onMousemove(mouseX, mouseY, mouseDown){
+        this.mx = mouseX;
+        this.my = mouseY;
+
         if( !mouseDown ) return;
         this.drawAll();
-        if(this.selected != -1) this.drawCard(this.selected, mouseX-this.cardW/2, mouseY-this.cardH/2);
     }
 
     // Update function, when the left mousebutton is not pressed anymore
-    onMouseup(mouseX, mouseY){
+    onMouseup(){
         if( this.selected == -1 ) return;
 
-        if( mouseY + this.cardH/2 < document.body.clientHeight - this.cardH ) this.playCard(this.selected);
-
+        if( this.my + this.cardH/2 < document.body.clientHeight - this.cardH ) this.playCard(this.selected);
         this.selected = -1;
         this.drawAll();
     }
