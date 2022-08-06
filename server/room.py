@@ -80,6 +80,8 @@ class Room:
                 else: # The has already been started, send him the current state instead
                     await self.sendState( id )
 
+        print(id)
+
         for i in range(4):
             if self.order[i] == id: return i
 
@@ -484,7 +486,7 @@ class Room:
             for i in range(4): rOrd[ order[i] ] = i
             print( rOrd )
 
-            self.players = [ self.players[ rOrd[0] ], self.players[ rOrd[1] ], self.players[ rOrd[2] ], self.players[ rOrd[3] ] ]
+            self.players = [ self.players[ order[0] ], self.players[ order[1] ], self.players[ order[2] ], self.players[ order[3] ] ]
 
             self.order = rOrd
             compr = 0
