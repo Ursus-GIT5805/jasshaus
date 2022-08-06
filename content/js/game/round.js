@@ -121,6 +121,14 @@ class Round {
             document.getElementById("roundRT").style.visibility = "visible";
             document.getElementById("roundRT").src = document.getElementById("PT" + this.ruletype).src;
         } else document.getElementById("roundRT").style.visibility = "hidden";
+
+        if(this.playtype == -1){
+            document.getElementById("namePT").innerHTML = "";
+            return;
+        }
+
+        let name = ["", "Misère: "][+this.misere] + getPlaytypeName( this.playtype, getStorageBool(2) );
+        document.getElementById("namePT").innerHTML = name;
     }
 
     onResize(){

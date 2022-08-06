@@ -61,8 +61,11 @@ body {
     top: 0%;
     left: 0%;
     width: 13rem;
-    height: 5rem;
+    height: 6rem;
     
+    text-align: center;
+    font-size: 1rem;
+
     color: #EEEEEE;
     background-color: #000000;
     padding: 0.8rem;
@@ -71,6 +74,11 @@ body {
     border-bottom-right-radius: 0.5rem;
     border-width: 0 0.5rem 0.5rem 0;
     border-color: #DEA487;
+}
+
+#namePT {    
+    min-width: 1rem;
+    min-height: 1rem;
 }
 
 .Playtype {
@@ -252,9 +260,9 @@ body {
 
 @media (orientation: portrait) {
     #roundDetails {
-        width: 30rem;
-        height: 10rem;
-        font-size: 2.7rem;
+        width: 26rem;
+        height: 12rem;
+        font-size: 2rem;
     }
 
     .Playtype {
