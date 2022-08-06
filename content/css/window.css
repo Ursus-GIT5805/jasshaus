@@ -93,7 +93,7 @@
     border-radius: 1rem;
     transition: 100ms;
 
-    opacity: 30%;
+    opacity: 50%;
     box-shadow: 2px 2px 10px #FFFFFF;
     color: var(--col_1);
     background-color: var(--col_2);

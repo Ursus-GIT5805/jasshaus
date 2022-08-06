@@ -141,6 +141,7 @@ class Hand {
 
     // Removes the card from the hand and sends it to the server
     playCard(index){
+        if( document.getElementById("showWindow").style.display == "block" ) return; // Cancel when showWindow is active
         if( !this.isLegal(index) ) return;
 
         send(0, [(this.cards[index].col << 4) + this.cards[index].num] );
