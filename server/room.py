@@ -455,6 +455,8 @@ class Room:
 
             if self.playtype == -1:
                 await self.players[plr].send( '\x0A', toBytes( self.annplr, 1 ) )
+            else:
+                await self.players[plr].send( '\x09', toBytes( self.curplr, 1) ) # When announced, send the currentplayer
         elif head == 9:
             if self.gamestate != 0: return
             if self.mate[plr] != -1: return
