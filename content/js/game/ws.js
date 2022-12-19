@@ -242,7 +242,7 @@ function f16(dat){
 
 // Websocket handling
 function startWS(){
-    socket = new WebSocket( [WSS_URL, DEV_WS_URL][+DEV_MODE] );
+    socket = new WebSocket( WSS_URL );
 
     socket.onopen = async function(e){
         log("Websocket connected!"); 

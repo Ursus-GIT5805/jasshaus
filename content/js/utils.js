@@ -1,13 +1,3 @@
-// Public ---
-const DOMAIN = "yourdomain.ch"; // change this !!!
-
-const BASE_URL = "https://" + DOMAIN + "/";
-const WSS_URL = "wss://" + DOMAIN;
-
-// Dev ---
-const DEV_BASE_URL = "file:///path/to/content/"; // change this !!!
-const DEV_WS_URL = "ws://127.0.0.1:7999";
-
 // Removes all bad characters from a string
 function filterString( str, bad, len=Infinity ){
     let out = "";
@@ -17,7 +7,8 @@ function filterString( str, bad, len=Infinity ){
 }
 
 function goTo( page ){
-    location.replace( [BASE_URL, DEV_BASE_URL][+DEV_MODE] + page );
+    window.history.pushState({}, '', window.location.href);
+    location.replace( WEB_URL + page );
 }
 
 // Parses a character to the char-code
@@ -51,4 +42,18 @@ function getPlaytypeName( pt, fr ){
     ][pt];
 }
 
-const DEV_MODE = true;
+// Dev-mode is actived, when the website got accessed via filesystem or http
+const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http";
+
+let WEB_URL = "https://" + window.location.hostname + "/";
+let WSS_URL = "wss://" + window.location.hostname;
+
+if(DEV_MODE){    
+    if(window.location.protocol == "http:"){
+        WEB_URL = "http://" + window.location.hostname + "/";
+        WSS_URL = "ws://" + window.location.hostname;
+    } else {
+        WEB_URL = "file://" + window.location.pathname.substr( 0, window.location.pathname.lastIndexOf("/jasshaus/content/")+17 ) + "/";
+        WSS_URL = "ws://127.0.0.1:7999";
+    }
+}

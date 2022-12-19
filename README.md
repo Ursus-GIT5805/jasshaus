@@ -21,10 +21,8 @@ sudo pip3 install -r requirements.txt
 
 ## Running it on your computer
 
-You want to change the 8th line of `content/js/utils.js` to the path to `jasshaus/content`, if you want to move between different sites.
-
 Simply run in the main folder:
 ```
 python3 server/server.py -dev
 ```
-After that open `content/game.html` in a browser and have some fun.
+After that open `content/index.html` in a browser and have some fun.
