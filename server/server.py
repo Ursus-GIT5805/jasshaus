@@ -22,14 +22,16 @@ async def connection(websocket, path):
 
     try:
         async for data in websocket:
-            print("Input from Player[{}]".format( rooms.order[id] ))
-            print( [ ord(c) for c in data ] )
+            if c.DEV_MODE:
+                print("Input from Player[{}]".format( rooms.order[id] ))
+                print( [ ord(c) for c in data ] )
             await rooms.input( ord(data[0]) , data[1:], id)
     finally:
         await rooms.unregister(id)
 
         if rooms.numPlayers == 0: # Room is empty: Clean it
             rooms = room.Room()
+            print("Reload room")
 
         print( "Socket closed!" )
 

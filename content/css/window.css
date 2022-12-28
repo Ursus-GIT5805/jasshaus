@@ -21,7 +21,7 @@
 
     box-shadow: 4px 4px 20px #000000;
 
-    transition: 500ms;
+    transition: 250ms;
 
     color: var(--col_1);
     background-color: var(--col_2);
@@ -35,7 +35,7 @@
     height: calc(100% - 6rem);
     transform: translateX(-50%);
 
-    margin-top: 1rem;
+    margin-top: 1rem;    
 }
 
 .PTRow {
@@ -43,7 +43,6 @@
 
     margin: 0;
     height: 33.33%;
-
 }
 
 .AnnounceButton {    
@@ -61,7 +60,7 @@
     line-height: 0.5rem;
 
     cursor: pointer;
-
+    
     user-select: none;
 }
 
@@ -91,17 +90,12 @@
 
     padding: 1rem;
     border-radius: 1rem;
-    transition: 100ms;
+    transition: 50ms;
 
-    opacity: 50%;
-    box-shadow: 2px 2px 10px #FFFFFF;
-    color: var(--col_1);
-    background-color: var(--col_2);
-}
-
-#showWindow:hover {
     opacity: 100%;
     box-shadow: 4px 4px 20px #000000;
+    color: var(--col_1);
+    background-color: var(--col_2);
 }
 
 #showTitle {

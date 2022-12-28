@@ -63,8 +63,19 @@ function openShow(show, plr, isShowing){
         document.getElementById("showTitle").innerHTML = document.getElementById("player" + i).innerHTML;
         document.getElementById("showTitle").innerHTML += " (" + ["Sie", "Rechts", "Partner", "Links"][i] + ")";
     }
-
+    
+    document.getElementById("showWindow").onmouseenter();
     document.getElementById("showWindow").style.display = "block";
+}
+
+document.getElementById("showWindow").onmouseenter = function(e){
+    this.style.opacity = "100%";
+    this.style.boxShadow = "4px 4px 20px #000000";
+}
+
+document.getElementById("showWindow").onmouseleave = function(e){
+    this.style.opacity = "50%";
+    this.style.boxShadow = "2px 2px 10px #FFFFFF";
 }
 
 // Opens a show-window when there is a show available

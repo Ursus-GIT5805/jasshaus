@@ -106,6 +106,7 @@ class Round {
     updateRoundDetails(){
         if(this.playtype == -1){
             for(let i = 0 ; i < 4 ; ++i) document.getElementById("round" + [ "Misere", "PT", "RT", "Pass" ][i]).style.visibility = "hidden";
+            document.getElementById("namePT").innerHTML = "";
             return;
         }
 
