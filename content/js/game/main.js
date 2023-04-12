@@ -132,6 +132,19 @@ window.onkeydown = function(e){
     }
 }
 
+function updateCurrentplayer(){
+    players.setStar( round.curplr );
+
+    if( round.curplr == id ){
+        if(round.turn == 1) checkShow();
+        hand.updateLegal( round.ruletype, round.bestcarddata, round.turncolor );
+        hand.onTurn = true;
+    } else {
+        hand.onTurn = false;
+    }
+    hand.drawAll();
+}
+
 // Loads and sends the username and important settings to the server
 function loadSettings(){
     var name = getStorage("JasshausDataName", ""); //remove all whitespaces

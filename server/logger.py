@@ -1,10 +1,12 @@
 # Logger class for saving round-logs
 
 import time
+import os
 
 class Logger:
     def __init__(self):
         self.filename = "" # name/path to the log-file
+        self.doLog = os.path.exists("../log")
 
     # Creates a new file to save the logs into
     def newLog(self):
@@ -12,6 +14,7 @@ class Logger:
 
     # Appends data to the current log
     def log(self, data):
+        if not self.doLog: return
         file = open("../log/{0}".format(self.filename), "a")
         file.write(data)
         file.close()

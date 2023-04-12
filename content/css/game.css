@@ -13,6 +13,8 @@ body {
 
     margin: 0%;
 
+    overflow: hidden;
+
     background-color: #000000;
 }
 
@@ -53,6 +55,25 @@ body {
     border-radius: 0.75rem;
     border-width: 0.25rem;
     border-color: #FFFF00;
+}
+
+@keyframes CardPlay0 {
+    from{} to{}
+}
+
+@keyframes CardPlay1 {
+    from { transform: translateX(300%) translateY(-50%); }
+    to { transform: translateX(0%) translateY(-50%); }
+}
+
+@keyframes CardPlay2 {
+    from { transform: translateX(-50%) translateY(-300%); }
+    to { transform: translateX(-50%) translateY(0%); }
+}
+
+@keyframes CardPlay3 {
+    from { transform: translateX(-300%) translateY(-50%); }
+    to { transform: translateX(0%) translateY(-50%); }
 }
 
 #roundDetails {
@@ -105,7 +126,7 @@ body {
 
     font-size: 1.35rem;
 
-    overflow-x: scroll;
+    overflow: hidden;
     white-space: nowrap;
 
     border-style: solid;

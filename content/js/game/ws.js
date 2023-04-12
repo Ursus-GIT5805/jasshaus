@@ -9,7 +9,7 @@ var socket = null;
 
 function f0(dat){
     var card = parseCard( dat[0] );
-    round.playCard( card, Boolean(dat[0] >>> 6) );
+    round.playCard( card, (dat[0] >>> 6) > 0 );
 }
 
 function f1(dat){
@@ -33,6 +33,9 @@ function f2(dat){
     // Set the player, who will start play
     round.beginplayer = ((dat[0] >>> 4) % 4);
     if(round.passed && 1 < round.playtype && round.playtype < 6) round.beginplayer = (round.beginplayer+2) % 4;
+
+    round.curplr = round.beginplayer;
+    updateCurrentplayer();
 
     // Display an announce message
     let ann = ["", "Misère: "][+round.misere] + getPlaytypeName( dat[0] % 16, getStorageBool(2) ) + "!";
@@ -108,16 +111,8 @@ function f8(dat){
 }
 
 function f9(dat){
-    if(round.cardplayed == 4) round.beginplayer = dat[0];
     round.curplr = dat[0];
-    players.setStar( round.curplr );
-
-    if( dat[0] == id ){
-        if(round.turn == 1) checkShow();
-        hand.updateLegal( round.ruletype, round.bestcarddata, round.turncolor );
-        hand.onTurn = true;
-        hand.drawAll();
-    } 
+    updateCurrentplayer();
 }
 
 function f10(dat){
@@ -171,13 +166,14 @@ function f13(dat){
     round.turn = dat[18] >>> 4;
     round.curplr = dat[18] % 4;
     round.beginplayer = (4-numC + round.curplr) % 4;
+    round.curplr = round.beginplayer;
+    updateCurrentplayer();
 
     if( pt == 6 || pt == 7 ) round.ruletype = (round.turn-1 +(pt == 7)) % 2;
     if( pt == 8 || pt == 9 ) round.ruletype = ((pt == 9)+(round.turn > 4)) % 2;
     round.updateRoundDetails();
     
     for(let i = 0 ; i < numC ; ++i) f0( [ dat[19 + i] ] );
-
     if(round.turn != 1) toShow.length = 0;
     if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
     if(round.playtype != -1) f9( [ round.curplr ] );
@@ -288,7 +284,11 @@ function startWS(){
             log( dat[i-1] );
         }
 
-        await window["f" + head]( dat ); // Run the function related to the header
+        if(head == 17){
+            await window["f" + head]( dat );
+            return;
+        }
+        window["f" + head]( dat ); // Run the function related to the header
     }
 
     socket.onclose = function(e){

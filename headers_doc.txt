@@ -25,7 +25,7 @@
 6: RTC-Information exchange
 7: Player uses microphone
 8: The new order of the client-ID's
-9: The ID of the player, who must play the next card
+9: The ID of the player, who must play the next card (not used anymore)
 10: The ID of the player, who must announce next
 11: The new ID for th e newly joined player
 12: A list of new cards for a player

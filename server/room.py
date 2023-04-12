@@ -255,8 +255,6 @@ class Room:
 
             # Handle Marriage at the beginning of a new turn
             if await self.handleMarriage(): return
-
-            await self.sendCurrentplayer()
         else: # The round has ended!
             await self.handleEndround()
 
@@ -266,10 +264,6 @@ class Room:
     async def send(self, head, data):
         for i in range(4):
             await self.players[i].send( head, data )
-
-    # Send to the players
-    async def sendCurrentplayer(self):
-        await self.send( "\x09", toBytes( self.curplr, 1) )
 
     # Sends the points and adjusts them to a team
     async def sendPoints(self, value, team):
@@ -323,10 +317,10 @@ class Room:
         if self.passed and 1 < self.playtype and self.playtype < 6:
             self.curplr = self.annplr
 
-        await self.sendCurrentplayer()
-
     async def playCard(self, crd, plr):
         # Give the player trust issues, because they might be cheating
+        if plr != self.curplr:
+            return
         if not self.players[plr].legalCard( crd, self.playtype, self.turncolor, self.bestcard ):
             print("Player[{}] wants to play a card he mustn't play!".format(plr))
             print( self.players[plr].cards.list )
@@ -365,8 +359,6 @@ class Room:
 
         if self.playedcards.__len__() == 4: # The turn has come to an end
             await self.handleEndturn()
-        else: # The turn goes on
-            await self.sendCurrentplayer()
 
     async def input(self, head, data, plr):
         # Check that the header comes with the right number of bytes

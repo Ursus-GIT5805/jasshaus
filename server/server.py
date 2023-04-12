@@ -47,7 +47,7 @@ if __name__ == "__main__":
     PATH = "../jasshaus_ICEcredentials.txt"
     if os.path.exists(PATH):
         with open(PATH, 'r') as file:
-            ICEcredentials = file.readline()
+            ICEcredentials = file.readline().strip()
 
     # Start websocketserver
     server = websockets.serve(connection, "0.0.0.0", 7999) # On the server, the reverse proxy handles the SSL-verification

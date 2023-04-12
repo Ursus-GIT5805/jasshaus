@@ -13,15 +13,27 @@ class Round {
         this.passed = false;
         this.misere = false;
 
-        // Turn data    
+        // Turn data
         this.curplr = 0; // the player whose turn it is
         this.cardplayed = 0;
-        this.bestcard = 0; // position of the bestcard
-        this.bestcarddata = new Card(0,0); // The actual bestcard
+        this.bestplayer = 0; // id of player with the bestcard
+        this.bestcarddata = new Card(0,0); // Data of the bestcard
         this.beginplayer = 0; // the player, who began this turn
         this.turncolor = -1; // The color that must be played this turn
-    
+
         this.turn = 1; // number of current turn (a round consists of 9 turns)
+
+        // Data aside from gameplay
+        this.cardQueue = []; // All the cards, which must be played
+    }
+
+    clearBoard(){
+        for(let i = 0 ; i < 4 ; ++i){
+            document.getElementById("card" + i).style.display = "none";
+            document.getElementById("card" + i).style.borderStyle = "none";
+            document.getElementById("card" + i).style.filter = "";
+        }
+        this.cardplayed = 0;
     }
 
     // Reset all the variables of the current round
@@ -37,46 +49,71 @@ class Round {
 
         this.turn = 1;
 
-        // Clear the board
-        for(let i = 0 ; i < 4 ; ++i){
-            document.getElementById("card" + i).style.display = "none";
-            document.getElementById("card" + i).style.borderStyle = "none";
-        }        
+        this.cardQueue = [];
+
+        this.clearBoard();
     }
+
 
     // Displays and handles everything on cardplay
     playCard(card, newbest){
-        if( this.cardplayed == 4 ){ // If the board is full of cards, clear it!
-            for(let i = 0 ; i < 4 ; ++i){
-                document.getElementById("card" + i).style.display = "none";
-                document.getElementById("card" + i).style.borderStyle = "none";
-            }        
-            this.cardplayed = 0;
+        if( this.cardQueue.length > 0 && card != this.cardQueue[0][0] ){
+            this.cardQueue.push( [card, newbest] );
+            return;
         }
-        if(this.cardplayed == 0) this.turncolor = card.col;
+        if( this.cardQueue.length == 0 ) this.cardQueue.push( [card, newbest] );
+
+        if( this.cardplayed == 4 ) this.clearBoard();
+        if( this.cardplayed == 0 ) this.turncolor = card.col;
+
+        const POS = ((4-id+this.beginplayer) + this.cardplayed) % 4;
 
         // Draw the new card
         let lang = ["de", "fr"][+getStorageBool(2)];
-        let crd = document.getElementById("card" + ((4-id) + this.beginplayer + this.cardplayed) % 4 );
+        let crd = document.getElementById("card" +  POS);
         crd.src = "img/" + lang + "/" + card.col + card.num + ".png";
 
         if(newbest){
-            document.getElementById("card" + (4-id + this.bestcard) % 4).style.borderStyle = "none";
+            document.getElementById("card" + (4-id + this.bestplayer) % 4).style.borderStyle = "none";
             crd.style.borderStyle = "solid";
-            this.bestcard = (this.beginplayer+this.cardplayed);
+            this.bestplayer = (this.beginplayer+this.cardplayed) % 4;
             this.bestcarddata = card;
         }
         crd.style.display = "block";
 
+        crd.style.animationName = "CardPlay" + POS;
+        if(POS == 0) crd.style.animationDuration = "0s";
+        else crd.style.animationDuration = "500ms";
+
         // Update gameplay stats
         this.cardplayed += 1;
 
-        if(this.cardplayed < 4) return;
+        crd.onanimationend = function(e){
+            this.style.animationName = "";
+            round.afterCardPlayed();
+        }
+    }
+
+    afterCardPlayed(){
+        this.cardQueue.shift(); // remove first card from queue
+
+        if(this.cardplayed < 4){
+            this.curplr = (this.curplr+1) % 4;
+            updateCurrentplayer();
+            if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
+            return;
+        }
 
         // The end of a round
         this.turn += 1;
         this.turncolor = -1;
-        
+        this.curplr = this.beginplayer = this.bestplayer;
+
+        for(let i = 0 ; i < 4 ; ++i){
+            let val = [70, 100][ +(i == (4-id+this.bestplayer) % 4) ];
+            document.getElementById("card" + i).style.filter = "brightness(" + val + "%)";
+        }
+
         if(this.playtype < 6) return;
 
         // Update Slalom/Guschti/Mary direction
@@ -84,6 +121,8 @@ class Round {
         else if(this.turn == 5) this.ruletype = (this.ruletype+1) % 2;
         document.getElementById("roundRT").src = "img/" + ["updown", "downup"][this.ruletype] + ".png";
 
+        updateCurrentplayer();
+        if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
     }
 
     // Updates the points of a team in the gameDetails
@@ -99,7 +138,7 @@ class Round {
 
         for(let i = 0 ; i < 4 ; ++i){
             document.getElementById("card" + i).src = document.getElementById("card" + i).src.replace(repl[0], repl[1]);
-        } 
+        }
     }
 
     // Updates the symbols in the top left corner
@@ -135,7 +174,7 @@ class Round {
     onResize(){
         let cardH = document.body.clientHeight * 0.20;
         let cardW = CARD_PROP * cardH;
- 
+
         for(let i = 0 ; i < 4 ; ++i){
             document.getElementById("card" + i).width = cardW;
             document.getElementById("card" + i).height = cardH;
