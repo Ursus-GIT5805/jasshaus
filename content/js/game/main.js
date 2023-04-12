@@ -135,12 +135,12 @@ window.onkeydown = function(e){
 function updateCurrentplayer(){
     players.setStar( round.curplr );
 
-    if( round.curplr == id ){
+    console.log( "CURPLR: " + round.curplr )
+    hand.onTurn = round.curplr == id;
+
+    if( hand.onTurn ){
         if(round.turn == 1) checkShow();
         hand.updateLegal( round.ruletype, round.bestcarddata, round.turncolor );
-        hand.onTurn = true;
-    } else {
-        hand.onTurn = false;
     }
     hand.drawAll();
 }

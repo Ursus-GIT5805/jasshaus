@@ -7,12 +7,12 @@ var socket = null;
  * see headers_doc.txt for the purpose of a header
 */
 
-function f0(dat){
+async function f0(dat){
     var card = parseCard( dat[0] );
     round.playCard( card, (dat[0] >>> 6) > 0 );
 }
 
-function f1(dat){
+async function f1(dat){
     let shw = new Show(dat[0] >> 4, dat[0] % 16, dat[1] % 16);
     let plr = (dat[1] >>> 4) % 4;
     toShow.push( [shw, plr, true] );
@@ -21,7 +21,7 @@ function f1(dat){
     round.updatePoints( plr % 2 ); // Update points
 }
 
-function f2(dat){
+async function f2(dat){
     if( dat[0] % 16 == 10 ) return;
 
     hand.allUsable = false;
@@ -46,13 +46,14 @@ function f2(dat){
     hand.drawAll();
 }
 
-function f3(dat){
+async function f3(dat){
     if(dat[0] >>> 2 == 0 && players.muted[ dat[0] % 4 ]) return;
     let col = ["#FFFFFF", "#FFFF00", "#DDDDDD", "#FF0000"][ (dat[0] >>> 2) % 4 ];
-    players.onMSG( dat.slice(1), dat[0] % 4, col ); 
+
+    players.onMSG( numArrayToString(dat.slice(1)), dat[0] % 4, col );
 }
 
-function f4(dat){
+async function f4(dat){
     var name = "";
     for(let i = 1 ; i < dat.length ; ++i) name += String.fromCharCode(dat[i]);
     players.setName( name, dat[0] % 4 );
@@ -64,31 +65,31 @@ function f4(dat){
     }
 }
 
-function f5(dat){
+async function f5(dat){
     let ele = document.getElementById("plrRev");
     if( dat[0] == 0 ) ele.innerHTML = ( parseInt(ele.innerHTML)+1 );
     else ele.innerHTML = ( parseInt(ele.innerHTML)-1 );
 }
 
 async function f6(dat){
-    let h = dat[1].charCodeAt();
+    let h = dat[0];
     let plr = h >>> 2;
     h = h % 4;  
 
-    let json = JSON.parse(dat.substr(2));
+    let json = JSON.parse( numArrayToString( dat ).substr(1) );
     if(h == 0) await onOffer( json, plr );
     if(h == 1) await onAnswer( json, plr );
     if(h == 2) await onIceCanditate( json, plr );    
 }
 
 async function f7(dat){
-    let plr = dat[1].charCodeAt();
+    let plr = dat[0];
     players.addSymbol( "img/mic.svg", plr ); // Add a symbol so the user knows he is using the mic
     document.getElementById("volumectrl" + ((4 - id + plr) % 4)).style.display = "block";
     if( useMic ) await sendOffer(plr);
 }
 
-function f8(dat){
+async function f8(dat){
     let order = [];
     let symbols = [];
     let names = [];
@@ -110,12 +111,12 @@ function f8(dat){
     }
 }
 
-function f9(dat){
+async function f9(dat){
     round.curplr = dat[0];
     updateCurrentplayer();
 }
 
-function f10(dat){
+async function f10(dat){
     round.passed = Boolean( dat[0] >> 2);
     players.setStar( dat[0] % 4 );
     hand.allUsable = dat[0] % 4 == id;
@@ -130,13 +131,13 @@ function f10(dat){
     }
 }
 
-function f11(dat){ 
+async function f11(dat){
     id = dat[0]; 
     loadSettings();
     initRTC();
 }
 
-function f12(dat){ 
+async function f12(dat){
     hand.cards = parseCards( dat );
     hand.drawAll();
 
@@ -145,7 +146,7 @@ function f12(dat){
 }
 
 
-function f13(dat){
+async function f13(dat){
     document.getElementById("startWindow").style.display = "none"; // The round has already started
 
     for(let i = 0 ; i < 2 ; ++i){
@@ -184,7 +185,7 @@ function f13(dat){
     }
 }
 
-function f14(dat){
+async function f14(dat){
     let ev = dat[0];
 
     if(ev == 0){ // Round has ended
@@ -227,12 +228,12 @@ function f14(dat){
     }
 }
 
-function f15(dat){
+async function f15(dat){
     round.gp[ dat[0] >> 1 ] += (dat[0]%2 << 8) + dat[1];
     round.updatePoints( (dat[0] >> 1) % 2 );
 }
 
-function f16(dat){
+async function f16(dat){
     let plr = dat[0];
     players.setName("", plr);
     players.onMSG( "Tschüss!", plr, "#FFFF00" );
@@ -272,23 +273,10 @@ function startWS(){
         var head = e.data[0].charCodeAt(); // The first byte contains the header
         log( "INPUT: HEAD " + head );
 
-        // For handling WebRTC function you have to await them
-        if( [6, 7].indexOf(head) != -1 ){
-            await window["f" + head]( e.data );
-            return;
-        }
+        for(let i = 1 ; i < e.data.length ; ++i) log( toNum(e.data[i]) );
+        var dat = stringToNumArray(e.data.substr(1));
 
-        var dat = [];
-        for(let i = 1 ; i < e.data.length ; ++i){
-            dat.push( toNum( e.data[i] ) );
-            log( dat[i-1] );
-        }
-
-        if(head == 17){
-            await window["f" + head]( dat );
-            return;
-        }
-        window["f" + head]( dat ); // Run the function related to the header
+        await window["f" + head]( dat ); // Run the function related to the header
     }
 
     socket.onclose = function(e){

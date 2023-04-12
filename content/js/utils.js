@@ -16,6 +16,18 @@ function toNum(char){
     return char.charCodeAt();
 }
 
+function stringToNumArray(str){
+    let arr = [];
+    for(let i = 0 ; i < str.length ; ++i) arr.push( str[i].charCodeAt() );
+    return arr;
+}
+
+function numArrayToString(arr){
+    var str = [];
+    for(let i = 0 ; i < arr.length ; ++i) str.push( String.fromCharCode(arr[i]) );
+    return str.join("");
+}
+
 // Replaces an index of an string with a given char/string
 function replaceAt(str, index, char){
     return str.slice(0, index) + char + str.slice( index + 1 );

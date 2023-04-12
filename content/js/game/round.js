@@ -114,15 +114,15 @@ class Round {
             document.getElementById("card" + i).style.filter = "brightness(" + val + "%)";
         }
 
+        updateCurrentplayer();
+        if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
+
         if(this.playtype < 6) return;
 
         // Update Slalom/Guschti/Mary direction
         if(this.playtype < 8)   this.ruletype = (this.ruletype+1) % 2;
         else if(this.turn == 5) this.ruletype = (this.ruletype+1) % 2;
         document.getElementById("roundRT").src = "img/" + ["updown", "downup"][this.ruletype] + ".png";
-
-        updateCurrentplayer();
-        if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
     }
 
     // Updates the points of a team in the gameDetails

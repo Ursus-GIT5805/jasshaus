@@ -44,14 +44,7 @@ class Playerhandler {
         document.getElementById("symbols" + ((4-id+plr) % 4 )).innerHTML = "";
     }
 
-    onMSG(data, plr, textCol="#FFFFFF"){
-        let msg = "";
-        if(typeof data != 'string'){
-            for(let i = 0 ; i < data.length ; ++i) msg += String.fromCharCode(data[i]);
-        } else {
-            msg = data;
-        }
-
+    onMSG(msg, plr, textCol="#FFFFFF"){
         if(msg != this.lastmsg[plr]) this.msgrepeats[plr] = 0;
         this.msgrepeats[plr] += 1;
         this.lastmsg[plr] = msg;
