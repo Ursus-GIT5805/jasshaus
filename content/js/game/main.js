@@ -124,7 +124,6 @@ window.onkeydown = function(e){
         let msg = document.getElementById("chatInput").value;
         document.getElementById("chatInput").value = ""; // Clear field
 
-        msg = filterString(msg, ['<', '>'], 128);
         if(msg == "") return;
 
         send( 3, msg );
@@ -137,13 +136,11 @@ window.onkeydown = function(e){
 function loadSettings(){
     var name = getStorage("JasshausDataName", ""); //remove all whitespaces
 
-    const bad = ['\t', ' ', '\n', '<', '>', '"', '\'', '(', ')'];
-    name = filterString(name, bad, 16);
+    if(name.length > 16) name = name.substr(0,16);
 
     while(name == ""){
         name = prompt("Gib einen Spitznamen ein! (Max. 16 Buchstaben)", "");
         if(name == null) name = "Unnamed"; // User must have disabled "prompt()"
-        name = filterString(name, bad, 16);
         localStorage.setItem( "JasshausDataName", name );
     }
 
