@@ -1,6 +1,12 @@
 var connected = false;
 var socket = null;
 
+/*
+ * All the functions as following
+ * f + (header_byte in decimal number)
+ * see headers_doc.txt for the purpose of a header
+*/
+
 function f0(dat){
     var card = parseCard( dat[0] );
     round.playCard( card, Boolean(dat[0] >>> 6) );
@@ -240,6 +246,23 @@ function f16(dat){
     renewPeer( plr );
 }
 
+async function f17(dat){
+    let tmp = [];
+
+    for(let i = 0 ; i < dat.length ; ++i){
+        if(dat[i] == 44){
+            ICEusername = tmp.join("");
+            tmp = [];
+            continue;
+        }
+
+        tmp.push( String.fromCharCode(dat[i]) );
+    }
+    ICEpassword = tmp.join("");
+
+    await setupMic();
+}
+
 // Websocket handling
 function startWS(){
     socket = new WebSocket( WSS_URL );
@@ -247,7 +270,6 @@ function startWS(){
     socket.onopen = async function(e){
         log("Websocket connected!"); 
         connected = true;
-        await setupMic();
     }
 
     socket.onmessage = async function(e){
@@ -255,7 +277,7 @@ function startWS(){
         log( "INPUT: HEAD " + head );
 
         // For handling WebRTC function you have to await them
-        if(head == 6 || head == 7){
+        if( [6, 7].indexOf(head) != -1 ){
             await window["f" + head]( e.data );
             return;
         }
@@ -266,7 +288,7 @@ function startWS(){
             log( dat[i-1] );
         }
 
-        window["f" + head]( dat ); // Run the function related to the header
+        await window["f" + head]( dat ); // Run the function related to the header
     }
 
     socket.onclose = function(e){

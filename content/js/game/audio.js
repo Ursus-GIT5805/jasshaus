@@ -3,6 +3,9 @@ let useMic = false;
 let micMuted = false;
 var localStream = null;
 
+let ICEusername = "";
+let ICEpassword = "";
+
 function initRTC(){
     for(let i = 0 ; i < 4 ; ++i){
         pc.push( new RTCPeerConnection() );
@@ -17,17 +20,22 @@ function renewPeer(index){
     const config = {
         iceServers: [
             {
-                urls: "stun:openrelay.metered.ca:80",
+                urls: "stun:a.relay.metered.ca:80",
             },
             {
-                urls: 'turn:openrelay.metered.ca:80',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: "turn:a.relay.metered.ca:80",
+                username: ICEusername,
+                credential: ICEpassword
             },
             {
-                urls: 'turn:openrelay.metered.ca:443',
-                username: 'openrelayproject',
-                credential: 'openrelayproject'
+                urls: "turn:a.relay.metered.ca:443",
+                username: ICEusername,
+                credential: ICEpassword
+            },
+            {
+                urls: "turn:a.relay.metered.ca:443?transport=tcp",
+                username: ICEusername,
+                credential: ICEpassword
             }
         ]
     };

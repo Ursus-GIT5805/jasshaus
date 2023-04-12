@@ -33,3 +33,4 @@
 14: An event (i.e the end of the round, new game, etc.)
 15: Points that a team got
 16: The ID of a player, who just disconnected
+17: The username and password for the iceServer (for WebRTC)
