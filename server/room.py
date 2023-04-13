@@ -27,6 +27,7 @@ class Room:
         self.annplr = 0 # The player who can announce first
 
         # Round data
+        # A game consists out of several rounds (i.e until a game ends). At the beginning of each round, player get new cards
         self.playtype = -1 # The ruleset of a round | -1: not announced yet
         self.ruletype = 0 # The ruleset of the current turn
         self.misere = False
@@ -37,7 +38,7 @@ class Room:
         self.shows = [[], []] # The shows a player announced (sorted by his team)
         self.shwown = [[], []] # The owner of each show in "shows"
         self.bestshow = (-1, -1) # The (team, index) of the current best show
-        self.turn = 1
+        self.turn = 1 # number of the turn (starting at 1)
         self.playercards = ""
 
         self.cardsT = [card.Cardlist(), card.Cardlist()] # Saving all the cards which the first team won on turns
@@ -45,6 +46,7 @@ class Room:
         self.log = logger.Logger() # For logging rounds
 
         # Turn data
+        # A round consists out of 9 turns, where each player plays one card per turn
         self.curplr = 0
         self.bestcard = card.Card(4, 2) # The best card currently
         self.playedcards = [] # All the cards currently being played
@@ -90,8 +92,10 @@ class Room:
     async def unregister(self, id):
         id = self.order[id]
 
+        # Update the revanche-agreements, if this one agreed to a revanche
         if self.gamestate == 2 and self.players[id].revanche:
-            await self.send( '\x05', '\x01' ) # If the player left with agreeing to a revanche
+            self.revanche -= 1
+            await self.send( '\x05', toBytes(self.revanche, 1) )
 
         await self.send( '\x10', toBytes(id, 1) )
         self.players[id].disconnect()
@@ -168,6 +172,9 @@ class Room:
         self.resetRound()
 
         self.gamestate = 2 # Set state to "game ended"
+        # Send event:
+        # 1: Team 0 won
+        # 2: Team 1 won
         await self.send( '\x0E', toBytes( 1+res, 1 ) )
 
         return True
@@ -369,7 +376,7 @@ class Room:
         plr = self.order[plr]
 
         if head == 0:
-            if self.gamestate == 1:
+            if self.gamestate == 1 and self.playtype != -1:
                 await self.playCard( card.parseCard( ord(data[0]) ), plr )
         elif head == 1: # A player has a show
             if self.playtype == -1 or self.turn != 1 or self.curplr != plr or self.gamestate != 1:
@@ -417,7 +424,7 @@ class Room:
             self.revanche += 1
             self.players[ plr ].revanche = True
 
-            await self.send( '\x05', '\00' )
+            await self.send( '\x05', toBytes(self.revanche, 1) )
 
             if self.revanche != self.numPlayers: return
             # All players agreed to a revanche
@@ -494,26 +501,40 @@ class Room:
         state = ""
 
         # Points, gotPoints, showPoints of the teams
+        # 2* 6 bytes => 12 bytes
         for t in range(2):
             state += toBytes( self.points[t], 2 ) + toBytes( self.gp[t], 2 ) + toBytes( self.sp[t], 2 )
 
         # Playtype, misere, passed, announceplayer
+        # see "def announce()"
         pt = self.playtype
         if pt == -1: pt = 15
         placeh = (self.passed << 7) + (self.misere << 6) + (self.annplr << 4) + pt
         state += toBytes( placeh, 1 )
 
         # That player's hand
+        # 40 bits => 5 bytes
         state += self.players[plr].cards.toBytes()
 
         # numTurn, numCards, current player
+        # 4 bits, 2 bits, 2 bits => 1 byte
         placeh = (self.turn << 4) + ( self.playedcards.__len__() << 2 ) + self.curplr
         state += toBytes( placeh, 1 )
 
+        # Gamestate
+        # 1 byte
+        state += toBytes(self.gamestate, 1)
+
         # All the cards currently played
+        # 1 byte per card
         for crd in self.playedcards:
             compr = ((crd == self.bestcard) << 6) + (crd.col << 4) + crd.num
             state += toBytes( compr, 1 )
 
         # Send it
         await self.players[ plr ].send( '\x0D', state )
+
+        # If the game has ended, send the number of player
+        if self.gamestate == 2:
+            await self.players[plr].send( '\x0E', toBytes( 1+(self.points[0]<self.points[1]), 1 ) )
+            await self.players[plr].send( '\x05', toBytes(self.revanche, 1) )

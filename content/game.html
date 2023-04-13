@@ -43,7 +43,7 @@
         </div>
 
         <div class="Player" style="right: 2px; top: 50%; transform: translateY(-50%)">
-            <a id="player1" style="overflow: hidden;"></a>
+            <a id="player1" class="PlayerName"></a>
             <img id="star1" class="Playerstar" style="right: 100%;" src="img/star.svg">
             <div id="symbols1"></div>
             <div class="PlrDropdown">
@@ -55,7 +55,7 @@
             </div>
         </div>
         <div class="Player" style="left: 50%; top: 2px; transform: translateX(-50%)">
-            <a id="player2" style="overflow: hidden;"></a>
+            <a id="player2" class="PlayerName"></a>
             <img id="star2" class="Playerstar" style="right: 100%;" src="img/star.svg">
             <div id="symbols2"></div>
             <div class="PlrDropdown">
@@ -67,7 +67,7 @@
             </div>
         </div>
         <div class="Player" style="left: 2px; top: 50%; transform: translateY(-50%)">
-            <a id="player3" style="overflow: hidden;"></a>
+            <a id="player3" class="PlayerName"></a>
             <img id="star3" class="Playerstar" style="left: 100%;" src="img/star.svg">
             <div id="symbols3"></div>
             <div class="PlrDropdown">
@@ -107,9 +107,7 @@
             <div style="position: relative;">
                 <div id="endResult"></div>
                 <div style="position: relative; text-align: center; font-size: 2rem;">
-                    <a id="endName0"></a> + <a id="endName2"></a>
-                    <a id="gameWin0">0</a> - <a id="gameWin1">0</a>
-                    <a id="endName1"></a> + <a id="endName3"></a>
+                    <a id="endName0"></a> + <a id="endName2"></a> | <a id="gameWin0">0</a> - <a id="gameWin1">0</a> | <a id="endName1"></a> + <a id="endName3"></a>
                 </div>
             </div>
             <div class="endButton" onclick="revanche()" style="left: 0;">Revanche (<a id="plrRev"></a>/<a id="plrNum"></a>)</div>
@@ -179,7 +177,7 @@
             <div id="showCancel" class="ShowButton" onclick="showCancel()">Schinden</div>
         </div>
         <div id="teamWindow">
-            <a style="font-size: 1.5rem; font-weight: 700;">Wähle Sie ihren Wunschpartner</a>
+            <a style="font-size: 1.5rem; font-weight: 700;">Wählen Sie ihren Wunschpartner</a>
             <div style="position: relative; width: calc(100% - 4rem); height: calc(100% - 6rem); margin: 2rem;">
                 <div id="choose0" onclick="chooseT(0)" class="TeamplayerButton" style="left: 50%; bottom: 0; transform: translateX(-50%);">Zufällig</div>
                 <div id="choose1" onclick="chooseT(1)" class="TeamplayerButton" style="right: 0; top: 50%; transform: translateY(-50%);"></div>

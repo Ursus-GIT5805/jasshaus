@@ -1,4 +1,5 @@
 var id = 0; // Your ID in the game
+var darkval = getStorageVal(0) / 255.0;
 var mouseDown = false;
 var players = new Playerhandler();
 var cardIMG = []; // Images of all cards
@@ -20,7 +21,6 @@ window.onload = function(e){
     document.getElementById("boolGE").checked = !getStorageBool(2);
     document.getElementById("bool2").checked = getStorageBool(2);
     document.getElementById("range0").value = getStorageVal(0);
-    hand.darkval = getStorageVal(0) / 255.0;
 
     if(getStorageBool(0)) players.muted = [true, true, true, true];
     players.muted[id] = false; // Don't mute yourself
@@ -134,12 +134,10 @@ window.onkeydown = function(e){
 
 function updateCurrentplayer(){
     players.setStar( round.curplr );
-
-    console.log( "CURPLR: " + round.curplr )
     hand.onTurn = round.curplr == id;
 
     if( hand.onTurn ){
-        if(round.turn == 1) checkShow();
+        if(round.turn < 2) checkShow();
         hand.updateLegal( round.ruletype, round.bestcarddata, round.turncolor );
     }
     hand.drawAll();

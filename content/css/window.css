@@ -493,6 +493,10 @@
     box-sizing: border-box;
 
     width: min-content;
+    max-width: 10rem;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     font-size: 1.5rem;
     font-weight: 600;

@@ -17,8 +17,8 @@ class Playerhandler {
     // Update all names in html
     setName(name, plr){
         let i = (4-id+plr) % 4;
-        let eleLong = ["sumName" + plr, "player" + i, "choose" + i];
-        let eleShort = ["tName" + plr, "endName" + plr];
+        let eleLong = ["player" + i, "choose" + i];
+        let eleShort = ["sumName" + plr, "tName" + plr, "endName" + plr];
 
         for(let i = 0 ; i < eleLong.length ; ++i){
             document.getElementById(eleLong[i]).innerHTML = "";
@@ -74,10 +74,11 @@ class Playerhandler {
         chat.scrollTop = chat.scrollHeight; // Scroll chat to bottom
     }
 
-    // Displays the star at the given player, so the user knows whose turn it is
+    // Displays the star at the given player, so the user knows whose turn it is (-1 for no one)
     setStar(plr){
         document.getElementById("star" + this.curplr).style.visibility = "hidden";
         this.curplr = (4-id+plr) % 4;
+        if(plr == -1) this.curplr = 0;
         document.getElementById("star" + this.curplr).style.visibility = "visible";
     }
 }

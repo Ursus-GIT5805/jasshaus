@@ -4,6 +4,9 @@
 var annMisere = false;
 
 function startAnnounce(){
+    hand.allUsable = true;
+    hand.drawAll();
+
     if( round.passed ) document.getElementById("passButton").style.visibility = "hidden";
     else document.getElementById("passButton").style.visibility = "visible";
     if(self.annMisere) toggleMisere();
@@ -23,11 +26,11 @@ function toggleMisere(){
 
 // Show window ---
 var showing = false;
-var windowShow = new Show(4,4,4); // Currently displayed show
+var windowShow = new Show(4,4,4); // Currently displayed show (if show is invalid, then the window is closed)
 var toShow = [];
 
 // Displays a show in the show-window
-// isShowing (bool) - when true it means, that a player shows this show to everyone
+// isShowing (bool) - when false it means, the player must decide to show. If true, the show is visible for everyone.
 function openShow(show, plr, isShowing){
     showing = isShowing;
     windowShow = show;
@@ -74,7 +77,7 @@ document.getElementById("showWindow").onmouseenter = function(e){
 }
 
 document.getElementById("showWindow").onmouseleave = function(e){
-    this.style.opacity = "50%";
+    this.style.opacity = "25%";
     this.style.boxShadow = "2px 2px 10px #FFFFFF";
 }
 
@@ -108,12 +111,19 @@ function hasCard( bytes, col, num ){
 }
 
 // Round summary ---
-function openSummary( cards, hands ){
+var endRound = false;
+
+function updateSummary( cards, hands ){
     for(let i = 0 ; i < 2 ; ++i){
         document.getElementById("prePoints" + i).innerHTML = (round.points[i] - round.gp[i] - round.sp[i]);
         document.getElementById("shwPoints" + i).innerHTML = round.sp[i];
-        document.getElementById("gotPoints" + i).innerHTML = round.gp[i];
+        document.getElementById("gotPoints" + i).innerHTML = ["", "(Match) "][+(round.gp[i] == 257)] + round.gp[i];
         document.getElementById("finPoints" + i).innerHTML = round.points[i];
+
+        let ele = document.getElementById("gotPoints" + i);
+        ele.innerHTML = round.gp[i];
+        ele.style.color = ["#FFFFFF", "#FFFF00"][+(round.gp[i] == 257)];
+        ele.style.fontWeight = ["normal", "bolder"][+(round.gp[i] == 257)];
     }
 
     // Draw all the cards the teams have won
@@ -145,31 +155,49 @@ function openSummary( cards, hands ){
             document.getElementById("hand" + i).appendChild( img );
         }
     }
-
-    document.getElementById("roundSummary").style.display = "block";
 }
 
 function closeSummary(){
     document.getElementById("roundSummary").style.display = "none";
-    send(8, '');
+
+    round.reset();
+    document.getElementById("roundSymbols").style.filter = "invert(0)";
+    round.updateRoundDetails();
+    round.updatePoints(0);
+    round.updatePoints(1);
+
+    endRound = false;
+    if(endGame) document.getElementById("endWindow").style.display = "block";
+    else send(8, ''); //Ask for the next player who must announce
 }
 
 // Endresult window ---
 
+var endGame = false;
 var sentRevanche = false;
 
-function openEndresult(victory){
+function updateEndresult(victory){
     sentRevanche = false;
     document.getElementById("plrRev").innerHTML = 0;
-    document.getElementById("plrNum").innerHTML = players.numconnected;
     document.getElementById("endResult").innerHTML = ["Niederlage", "Sieg"][+victory];
     document.getElementById("endWindow").style.backgroundColor = ["black", "white"][+victory];
     document.getElementById("endWindow").style.color = ["white", "black"][+victory];
 
-    let ele = document.getElementById("gameWin" + (id +!victory) % 2 );
-    ele.innerHTML = ( parseInt(ele.innerHTML) + 1 );
+    let ele = [], cur = [];
+    for(let i = 0 ; i < 2 ; ++i){
+        ele.push( document.getElementById("gameWin" + i) );
+        cur.push( parseInt(ele[i].innerHTML) );
+    }
 
-    document.getElementById("endWindow").style.display = "block";
+    let winner = (id + !victory) % 2;
+    ele[ winner ].innerHTML = ++cur[ winner ];
+
+    for(let i = 0 ; i < 2 ; ++i){
+        let better = cur[i] > cur[(i+1) % 2];
+
+        ele[i].style.color = ["#BEC2CB", "#D4AF37"][+better];
+        ele[i].style.fontWeight = ["normal", "bolder"][+better];
+    }
 }
 
 function revanche(){
@@ -215,7 +243,7 @@ function onCheckbox(){
 }
 
 function onRange(){
-    hand.darkval = document.getElementById("range0").value / 255.0;
+    darkval = document.getElementById("range0").value / 255.0;
     saveValue( document.getElementById("range0").value, 0 );
     hand.drawAll();
 }

@@ -17,7 +17,6 @@ async function f1(dat){
     let plr = (dat[1] >>> 4) % 4;
     toShow.push( [shw, plr, true] );
     round.sp[ plr % 2 ] += shw.getPoints(); // Add points
-    checkShow();
     round.updatePoints( plr % 2 ); // Update points
 }
 
@@ -58,6 +57,7 @@ async function f4(dat){
     for(let i = 1 ; i < dat.length ; ++i) name += String.fromCharCode(dat[i]);
     players.setName( name, dat[0] % 4 );
     players.numconnected += 1;
+    document.getElementById("plrNum").innerHTML = players.numconnected;
 
     if( Boolean(1 & (dat[0] >>> 2)) ){ // This player is using the microphone
         players.addSymbol( "img/mic.svg", dat[0] % 4 );
@@ -67,8 +67,7 @@ async function f4(dat){
 
 async function f5(dat){
     let ele = document.getElementById("plrRev");
-    if( dat[0] == 0 ) ele.innerHTML = ( parseInt(ele.innerHTML)+1 );
-    else ele.innerHTML = ( parseInt(ele.innerHTML)-1 );
+    ele.innerHTML = dat[0];
 }
 
 async function f6(dat){
@@ -117,16 +116,14 @@ async function f9(dat){
 }
 
 async function f10(dat){
-    round.passed = Boolean( dat[0] >> 2);
-    players.setStar( dat[0] % 4 );
-    hand.allUsable = dat[0] % 4 == id;
-    hand.drawAll();
+    round.passed = Boolean( dat[0] >> 2 );
+    players.setStar( dat[0] % 4 )
 
     if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
 
-    if( dat[0] % 4 == id ){
-        hand.allUsable = true;
-        startAnnounce();
+    if( dat[0] % 4 == id ) startAnnounce();
+    else {
+        hand.allUsable = false;
         hand.drawAll();
     }
 }
@@ -141,8 +138,10 @@ async function f12(dat){
     hand.cards = parseCards( dat );
     hand.drawAll();
 
-    var shows = hand.getShows();
-    for(let i = 0 ; i < shows.length ; ++i) toShow.push( [shows[i], id, false] );
+    if(round.turn < 2 && hand.cards.length == 9){
+        var shows = hand.getShows();
+        for(let i = 0 ; i < shows.length ; ++i) toShow.push( [shows[i], id, false] );
+    }
 }
 
 
@@ -161,25 +160,26 @@ async function f13(dat){
     if(pt != 15) f2( [ dat[12] ] );
     round.passed = dat[12] >>> 7;
 
-    f12( dat.slice(13, 18) );
-
     let numC = (dat[18] >>> 2) % 4;
     round.turn = dat[18] >>> 4;
     round.curplr = dat[18] % 4;
     round.beginplayer = (4-numC + round.curplr) % 4;
     round.curplr = round.beginplayer;
-    updateCurrentplayer();
+
+    f12( dat.slice(13, 18) );
+    if( round.playtype != -1 ) updateCurrentplayer();
 
     if( pt == 6 || pt == 7 ) round.ruletype = (round.turn-1 +(pt == 7)) % 2;
     if( pt == 8 || pt == 9 ) round.ruletype = ((pt == 9)+(round.turn > 4)) % 2;
     round.updateRoundDetails();
     
-    for(let i = 0 ; i < numC ; ++i) f0( [ dat[19 + i] ] );
+    let gamestate = dat[19];
+
+    for(let i = 0 ; i < numC ; ++i) f0( [ dat[20 + i] ] );
     if(round.turn != 1) toShow.length = 0;
     if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
-    if(round.playtype != -1) f9( [ round.curplr ] );
 
-    if( round.playtype == -1 ){
+    if( round.playtype == -1 && gamestate == 1 ){
         let annplr = ((dat[12] >>> 4) + 2*+round.passed) % 4;
         if( annplr == id ) startAnnounce();
     }
@@ -189,30 +189,30 @@ async function f14(dat){
     let ev = dat[0];
 
     if(ev == 0){ // Round has ended
-        setTimeout(function(){ // Create a delay, so the user can see the played cards a last time
-            for(let i = 0 ; i < 2 ; ++i) round.points[i] += (round.gp[i] + round.sp[i]);
+        for(let i = 0 ; i < 2 ; ++i) round.points[i] += (round.gp[i] + round.sp[i]);
 
-            var hands = [];
-            for(let i = 0 ; i < 4 ; ++i) hands.push( parseCards( dat.slice(11+i*5, 16+i*5) ) );
+        var hands = [];
+        for(let i = 0 ; i < 4 ; ++i) hands.push( parseCards( dat.slice(11+i*5, 16+i*5) ) );
 
-            var cards = [dat.slice(1, 6), dat.slice(6, 11)]
-            openSummary( cards, hands );
-            round.reset();
-            document.getElementById("roundSymbols").style.filter = "invert(0)";
-            round.updateRoundDetails();
-            round.updatePoints(0);
-            round.updatePoints(1);
-        }, 2000);
+        var cards = [dat.slice(1, 6), dat.slice(6, 11)]
+        updateSummary( cards, hands );
+
+        hand.onTurn = false;
+        hand.drawAll();
+
+        endRound = true;
+        if(round.cardQueue.length == 0) round.continueCardQueue();
     } else if(ev == 1 || ev == 2){ // Game has ended
-        setTimeout(function(){
-            for(let i = 0 ; i < toShow.length ; ++i){ // You can't show anything when the game has ended
-                if(toShow[i][2]) continue;
-                toShow.splice(i, 1);
-                --i;
-            }
+        for(let i = 0 ; i < toShow.length ; ++i){ // You can't show anything when the game has ended
+            if(toShow[i][2]) continue;
+            toShow.splice(i, 1);
+            --i;
+        }
 
-            openEndresult( id % 2 == ev - 1 );
-        }, 2000);
+        updateEndresult( id % 2 == ev - 1 );
+        players.setStar(0);
+        endGame = true;
+        if(!endRound) document.getElementById("endWindow").style.display = "block";
     } else if(ev == 3){ // New game has started
         document.getElementById("endWindow").style.display = "none";
         round.reset();

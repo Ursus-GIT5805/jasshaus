@@ -61,7 +61,6 @@ class Hand {
         this.cardH = 0;
 
         this.clickonly = getStorageBool(2);
-        this.darkval = getStorageVal(0) / 255.0;
         this.allUsable = false; // If true, all cards are drawn without a dark layer
     }
 
@@ -162,7 +161,7 @@ class Hand {
 
         ctx.drawImage(cardIMG[this.cards[index].col][this.cards[index].num], 0, 0, 161, 247, x, y, this.cardW, this.cardH);
         if( !this.isLegal(index) && !this.allUsable ){
-            ctx.fillStyle = "rgba(0,0,0," + this.darkval + ")";
+            ctx.fillStyle = "rgba(0,0,0," + darkval + ")";
             ctx.fillRect(x, y, this.cardW, this.cardH);
         }
     }

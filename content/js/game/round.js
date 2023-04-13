@@ -88,9 +88,10 @@ class Round {
         // Update gameplay stats
         this.cardplayed += 1;
 
+        var R = this;
         crd.onanimationend = function(e){
             this.style.animationName = "";
-            round.afterCardPlayed();
+            R.afterCardPlayed();
         }
     }
 
@@ -99,8 +100,7 @@ class Round {
 
         if(this.cardplayed < 4){
             this.curplr = (this.curplr+1) % 4;
-            updateCurrentplayer();
-            if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
+            this.continueCardQueue();
             return;
         }
 
@@ -108,14 +108,15 @@ class Round {
         this.turn += 1;
         this.turncolor = -1;
         this.curplr = this.beginplayer = this.bestplayer;
+        if(this.turn == 2) checkShow();
 
         for(let i = 0 ; i < 4 ; ++i){
-            let val = [70, 100][ +(i == (4-id+this.bestplayer) % 4) ];
+            let val = [(1-darkval)*100, 100][ +(i == (4-id+this.bestplayer) % 4) ];
+            console.log(val);
             document.getElementById("card" + i).style.filter = "brightness(" + val + "%)";
         }
 
-        updateCurrentplayer();
-        if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
+        this.continueCardQueue();
 
         if(this.playtype < 6) return;
 
@@ -123,6 +124,18 @@ class Round {
         if(this.playtype < 8)   this.ruletype = (this.ruletype+1) % 2;
         else if(this.turn == 5) this.ruletype = (this.ruletype+1) % 2;
         document.getElementById("roundRT").src = "img/" + ["updown", "downup"][this.ruletype] + ".png";
+    }
+
+    // Continues with playing cards from the queue or ends the round
+    continueCardQueue(){
+        if(!endRound) updateCurrentplayer();
+        if(this.cardQueue.length > 0) this.playCard( this.cardQueue[0][0], this.cardQueue[0][1] );
+        else if(endRound){
+            // Wait for 2 second so the players can see the board
+            setTimeout(function(){
+                document.getElementById("roundSummary").style.display = "block";
+            }, 2000);
+        }
     }
 
     // Updates the points of a team in the gameDetails
@@ -155,7 +168,7 @@ class Round {
         document.getElementById("roundPass").style.visibility = state[ +this.passed ];
 
         document.getElementById("roundPT").style.visibility = "visible";
-        document.getElementById("roundPT").src = document.getElementById("PT" + round.playtype).src;
+        document.getElementById("roundPT").src = document.getElementById("PT" + this.playtype).src;
 
         if(5 < this.playtype){
             document.getElementById("roundRT").style.visibility = "visible";

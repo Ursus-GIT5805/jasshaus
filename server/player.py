@@ -78,6 +78,7 @@ class Player:
     # Resets all variables not regarding his game-variables
     def disconnect(self):
         self.connected = False
+        self.revanche = False
         self.name = ""
         self.socket = None
         self.useMic = False
