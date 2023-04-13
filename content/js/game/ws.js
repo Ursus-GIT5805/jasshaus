@@ -22,6 +22,7 @@ async function f1(dat){
 
 async function f2(dat){
     if( dat[0] % 16 == 10 ) return;
+    if(document.getElementById("roundSummary").style.display == "block") closeSummary(); // close the summaryWindow if not done already
 
     hand.allUsable = false;
     round.playtype = dat[0] % 16;
