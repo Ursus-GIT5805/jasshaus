@@ -35,6 +35,9 @@ class Cardlist:
     def clear(self):
         self.list = 0
 
+    def size(self):
+        return self.list.bit_count()
+
     def toBytes(self):
         return toBytes( self.list, 5 )
 

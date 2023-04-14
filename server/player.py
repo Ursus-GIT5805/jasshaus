@@ -39,8 +39,9 @@ class Player:
 
     # Returns whether the player has the show
     def hasShow(self, show):
-        if show.row < 0 or 9 < show.row: return False # Illegal shows aren't accepted
-        if show.row == 2: return False # The marriage is handled seperately
+        if (show.row < 1 or 9 < show.row) or show.row == 2: return False # Illegal shows aren't accepted
+        # If the last card does not exist, it's obv. illegal (e.g starting any King you have a row of 4)
+        if show.row != 1 and show.num + show.row > 8: return
 
         cards = self.cards.list
 

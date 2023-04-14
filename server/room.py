@@ -32,14 +32,13 @@ class Room:
         self.ruletype = 0 # The ruleset of the current turn
         self.misere = False
         self.passed = False
-        self.turnWins = [0, 0] # Number of turns a team has won (i.e the team had the "bestcard")
         self.gp = [0, 0] # The number of points currently won by a team (only used for "sendState")
         self.sp = [0, 0] # The number of points gotten by shows this round
         self.shows = [[], []] # The shows a player announced (sorted by his team)
         self.shwown = [[], []] # The owner of each show in "shows"
         self.bestshow = (-1, -1) # The (team, index) of the current best show
         self.turn = 1 # number of the turn (starting at 1)
-        self.playercards = ""
+        self.playercards = "" # At the end of a round send this so the players can see which cards each other player had
 
         self.cardsT = [card.Cardlist(), card.Cardlist()] # Saving all the cards which the first team won on turns
 
@@ -52,9 +51,8 @@ class Room:
         self.playedcards = [] # All the cards currently being played
         self.bestplr = 0 # The player who owns "bestcard"
         self.turncolor = -1 # The color which must be played
-        self.playedvalue = 0 # The value of all the played cards this turn
 
-    # Websocket handling
+    # When a new player enters the room
     async def register(self, socket, ICEcredentials):
         id = -1
 
@@ -83,13 +81,12 @@ class Room:
                 else: # The has already been started, send him the current state instead
                     await self.sendState( id )
 
-        print(id)
-
         for i in range(4):
             if self.order[i] == id: return i
 
         return -1
 
+    # When a player leaves the room
     async def unregister(self, id):
         id = self.order[id]
 
@@ -133,7 +130,6 @@ class Room:
         self.ruletype = -1
         self.misere = False
         self.passed = False
-        self.turnWins = [0, 0]
         self.gp = [0, 0]
         self.sp = [0, 0]
         self.shows = [[], []]
@@ -147,7 +143,6 @@ class Room:
         self.bestplr = 0
         self.turncolor = -1
         self.playedcards = []
-        self.playedvalue = 0
 
         for i in range(4):
             self.players[i].marriage = 2
@@ -181,6 +176,7 @@ class Room:
         return True
 
     # The rule: "marriage, show, win" -> the functions for the marriage
+    # If you possess the marriage and if showing it wins the game, it will be shown automatically
     async def handleMarriage(self):
         if self.playtype < 2 and 5 < self.playtype: return False # only in trumpf, of course
 
@@ -207,9 +203,9 @@ class Room:
         if t != -1:
             for s in self.shows[t]: self.log.show(s)
 
-        # If a team won all 9 turns: 100 points extra!
+        # If a team won all 9 turns (i.e the team has all 36 cards): 100 points extra!
         for i in range(2):
-            if self.turnWins[i] == 9:
+            if self.cardsT[i].size() == 36:
                 await self.sendPoints( 100, (i+int(self.misere)) % 2 )
 
             self.points[i] += self.gp[i] + self.sp[i]
@@ -237,21 +233,20 @@ class Room:
         self.curplr = self.bestplr
         self.turn += 1
         self.turncolor = -1
-        self.turnWins[ self.bestplr % 2 ] += 1
 
         # Save all cards which the teams won. (for the roundSummary)
+        playedvalue = 0
         for c in self.playedcards:
             self.cardsT[self.bestplr % 2].addCard( c )
+            playedvalue += card.getPoints( c, self.playtype )
         self.playedcards = []
 
         if self.turn == 2:
             await self.handleShows()
+            if await self.handleMarriage(): return # When you win with show and marriage combined
+            if await self.checkEndgame(): return # If you win by the showpoints alone
 
-        # Rule: Showpoints before winpoints
-        if await self.checkEndgame(): return
-
-        await self.sendPoints( self.playedvalue, (self.bestplr+int(self.misere)) % 2 )
-        self.playedvalue = 0
+        await self.sendPoints( playedvalue, (self.bestplr+int(self.misere)) % 2 )
 
         if await self.checkEndgame(): return
 
@@ -334,9 +329,6 @@ class Room:
             print( self.players[plr].cards.list )
             return
 
-        # The player played fairly
-        self.players[plr].cards.removeCard( crd )
-
         if self.playedcards.__len__() == 0:
             self.bestcard = crd
             self.bestplr = plr
@@ -345,18 +337,14 @@ class Room:
             self.bestcard = crd
             self.bestplr = plr
 
-        # Add the new card to the list
-        self.playedcards.append( crd )
-
         # Log the card which got played
         self.log.card( crd )
 
         # Send the card to all players
         await self.send('\x00', toBytes( ((self.bestplr == plr) << 6) + (crd.col << 4) + crd.num, 1 ))
 
-        self.playedvalue += card.getPoints( crd, self.playtype )
-
-        # Determine the player which will play the next card
+        self.players[plr].cards.removeCard( crd )
+        self.playedcards.append( crd )
         self.curplr = (self.curplr + 1) % 4
 
         # Handle trumpf marriage
@@ -413,12 +401,10 @@ class Room:
         elif head == 3:
             await self.send( '\x03', toBytes(plr, 1) + data )
         elif head == 4:
-            name = filterString( data, [' ', '\n', '\ŧ', '<', '>', '"', '\'', '(', ')'], 16 )
+            name = data
             if name == "": name = "Unnamed"
-            name += str(plr);
-            opt = plr
             self.players[plr].name = name
-            await self.send( '\x04', toBytes(opt, 1) + name )
+            await self.send( '\x04', toBytes(plr, 1) + name )
         elif head == 5:
             if self.gamestate != 2: return
             if self.players[ plr ].revanche: return # The player already agreed!
@@ -429,8 +415,8 @@ class Room:
             await self.send( '\x05', toBytes(self.revanche, 1) )
 
             if self.revanche != self.numPlayers: return
-            # All players agreed to a revanche
 
+            # All players agreed to a revanche
             self.resetRound()
             await self.send( '\x0E', '\x03' )
             await self.generateCards()
@@ -472,20 +458,19 @@ class Room:
                 m = self.mate[i]
                 if i == m: continue # This player chose random
 
+                # if m agrees to be the mate of i
                 if self.mate[m] == i or self.mate[ m ] == m:
-                    # Construct order
-                    order = [i, m]
-                    order.append( (i + m + (min(i, m) == 0) + (min(i, m) == 0 and max(i, m) == 3)) % 4 )
-                    order.append( 6 - i - m - order[2] )
-
-                    order[1], order[2] = order[2], order[1]
+                    # Construct order (with no if statements)
+                    order = [i, 0, m, 0]
+                    order[1] = ( i+1 + int(((i+1) % 4) == m)) % 4 # any id which isn't i or m
+                    order[3] = (6 - i - m - order[1]) # the remaining id which is not ordered yet
                     break
 
             if order.__len__() == 0:
                 order = [0, 1, 2, 3]
                 random.shuffle( order )
 
-            # id i will be rOrd[i]
+            # id i will become id rOrd[i]
             # id i will be replaced with id order[i]
 
             rOrd = [0, 0, 0, 0]
