@@ -55,7 +55,7 @@ class Room:
         self.playedvalue = 0 # The value of all the played cards this turn
 
     # Websocket handling
-    async def register(self, socket):
+    async def register(self, socket, ICEcredentials):
         id = -1
 
         # Find a place for the new player
@@ -67,6 +67,7 @@ class Room:
 
         if id != -1: # There is a place free!
             await self.players[id].send( '\x0B', toBytes(id, 1) )
+            await self.players[id].send( '\x11', ICEcredentials )
             await self.sendMsg( "Guten Tag!", 1, id )
             self.numPlayers += 1
 
@@ -414,6 +415,7 @@ class Room:
         elif head == 4:
             name = filterString( data, [' ', '\n', '\ŧ', '<', '>', '"', '\'', '(', ')'], 16 )
             if name == "": name = "Unnamed"
+            name += str(plr);
             opt = plr
             self.players[plr].name = name
             await self.send( '\x04', toBytes(opt, 1) + name )
@@ -483,15 +485,17 @@ class Room:
                 order = [0, 1, 2, 3]
                 random.shuffle( order )
 
+            # id i will be rOrd[i]
+            # id i will be replaced with id order[i]
+
             rOrd = [0, 0, 0, 0]
             for i in range(4): rOrd[ order[i] ] = i
-            print( rOrd )
 
             self.players = [ self.players[ order[0] ], self.players[ order[1] ], self.players[ order[2] ], self.players[ order[3] ] ]
 
             self.order = rOrd
             compr = 0
-            for i in range(4): compr += ( self.order[i] << (2*i) )
+            for i in range(4): compr += ( rOrd[i] << (2*i) )
             await self.send( '\x08', toBytes( compr, 1 ) )
 
             await self.startGame()

@@ -81,7 +81,7 @@ document.getElementById("showWindow").onmouseleave = function(e){
     this.style.boxShadow = "2px 2px 10px #FFFFFF";
 }
 
-// Opens a show-window when there is a show available
+// Opens a show-window when there is a show available (and if the showWindow is closed)
 function checkShow(){
     if(toShow.length == 0 || windowShow.col != 4) return;
     let data = toShow.pop();

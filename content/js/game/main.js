@@ -25,12 +25,25 @@ window.onload = function(e){
     if(getStorageBool(0)) players.muted = [true, true, true, true];
     players.muted[id] = false; // Don't mute yourself
 
+    for(let i = 0 ; i < 4 ; ++i){
+        let ele = document.getElementById("card" + i);
+        ele.onanimationend = function(e){
+            ele.style.animationName = "none";
+            setTimeout(function(){
+                ele.style.animationName = "";
+                round.afterCardPlayed();
+            }, 0);
+        }
+        ele.onanimationcancel = ele.onanimationend;
+    }
+
     for(let i = 1 ; i < 4 ; ++i){
         const ind = i;
         document.getElementById("mute" + ind).checked = false;
         document.getElementById("volume" + ind).value = 64.0;
         document.getElementById("volumectrl" + ind).style.display = "none";
-        
+        document.getElementById("symbols" + i).style = "position: absolute; width: 100%; height: 0; bottom: 0;";
+
         document.getElementById("mute" + ind).onchange = function(e){
             let i = (id + ind) % 4;
             players.muted[i] = document.getElementById("mute" + ind).checked;

@@ -55,15 +55,15 @@ function getPlaytypeName( pt, fr ){
 }
 
 // Dev-mode is actived, when the website got accessed via filesystem or http
-const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http";
+const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
 
-let WEB_URL = "https://" + window.location.hostname + "/";
+let WEB_URL = "https://" + window.location.host + "/";
 let WSS_URL = "wss://" + window.location.hostname;
 
 if(DEV_MODE){    
     if(window.location.protocol == "http:"){
-        WEB_URL = "http://" + window.location.hostname + "/";
-        WSS_URL = "ws://" + window.location.hostname;
+        WEB_URL = "http://" + window.location.host + "/";
+        WSS_URL = "ws://" + window.location.hostname + ":7999";
     } else {
         WEB_URL = "file://" + window.location.pathname.substr( 0, window.location.pathname.lastIndexOf("/jasshaus/content/")+17 ) + "/";
         WSS_URL = "ws://127.0.0.1:7999";

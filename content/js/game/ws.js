@@ -18,6 +18,8 @@ async function f1(dat){
     toShow.push( [shw, plr, true] );
     round.sp[ plr % 2 ] += shw.getPoints(); // Add points
     round.updatePoints( plr % 2 ); // Update points
+    if( shw.row == 2 ) checkShow();
+    else if( round.cardQueue.length == 0 ) checkShow();
 }
 
 async function f2(dat){
@@ -90,24 +92,27 @@ async function f7(dat){
 }
 
 async function f8(dat){
-    let order = [];
+    let order = [0,1,2,3], rOrd = [];
     let symbols = [];
     let names = [];
     for(let i = 0 ; i < 4 ; ++i){
         let ind = (4 - id + i) % 4;
-        order.push( (dat[0] >> (i*2)) % 4 );
+        rOrd.push( (dat[0] >> (i*2)) % 4 );
+        order[ rOrd[i] ] = i
         names.push( document.getElementById("player" + ind).innerHTML );
         symbols.push( document.getElementById("symbols" + ind).innerHTML );
     }
 
-    id = order[id];
+    // id i will be rOrd[i]
+    // id i will be replaced with id order[i]
+
+    id = rOrd[id];
     pc = [ pc[ order[0] ], pc[ order[1] ], pc[ order[2] ], pc[ order[3] ] ];
     players.muted = [ players.muted[ order[0] ], players.muted[ order[1] ], players.muted[ order[2] ], players.muted[ order[3] ]]
 
     for(let i = 0 ; i < 4 ; ++i){
-        let ind = (4 - id + i) % 4;
-        players.setName( names[ind], order[ind] );
-        document.getElementById("symbols" + order[ind]).innerHTML = symbols[ind];
+        players.setName( names[i], rOrd[i] );
+        document.getElementById("symbols" + ((4-id) + rOrd[i]) % 4).innerHTML = symbols[i];
     }
 }
 
@@ -132,7 +137,6 @@ async function f10(dat){
 async function f11(dat){
     id = dat[0]; 
     loadSettings();
-    initRTC();
 }
 
 async function f12(dat){
@@ -258,6 +262,7 @@ async function f17(dat){
     }
     ICEpassword = tmp.join("");
 
+    initRTC();
     await setupMic();
 }
 
@@ -277,7 +282,7 @@ function startWS(){
         for(let i = 1 ; i < e.data.length ; ++i) log( toNum(e.data[i]) );
         var dat = stringToNumArray(e.data.substr(1));
 
-        await window["f" + head]( dat ); // Run the function related to the header
+        await window["f" + String(head)]( dat ); // Run the function related to the header
     }
 
     socket.onclose = function(e){

@@ -16,13 +16,11 @@ async def connection(websocket, path):
     print("New Socket")
 
     # Get player ID of the table
-    id = await rooms.register( websocket )
+    id = await rooms.register( websocket, ICEcredentials )
 
     if id == -1:
         print("No place for this socket!")
         return
-
-    await rooms.players[id].send('\x11', ICEcredentials)
 
     try:
         async for data in websocket:

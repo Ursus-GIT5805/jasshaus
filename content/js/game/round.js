@@ -79,23 +79,16 @@ class Round {
             this.bestplayer = (this.beginplayer+this.cardplayed) % 4;
             this.bestcarddata = card;
         }
+
         crd.style.display = "block";
-
-        crd.style.animationName = "CardPlay" + POS;
-        if(POS == 0) crd.style.animationDuration = "0s";
-        else crd.style.animationDuration = "500ms";
-
-        // Update gameplay stats
-        this.cardplayed += 1;
-
-        var R = this;
-        crd.onanimationend = function(e){
-            this.style.animationName = "";
-            R.afterCardPlayed();
-        }
+        if( POS == 0 ) this.afterCardPlayed();
+        else crd.style.animationName = "CardPlay" + POS;
     }
 
     afterCardPlayed(){
+        if(this.cardQueue.length == 0) return;
+
+        this.cardplayed += 1;
         this.cardQueue.shift(); // remove first card from queue
 
         if(this.cardplayed < 4){
@@ -108,17 +101,16 @@ class Round {
         this.turn += 1;
         this.turncolor = -1;
         this.curplr = this.beginplayer = this.bestplayer;
-        if(this.turn == 2) checkShow();
+        checkShow();
 
         for(let i = 0 ; i < 4 ; ++i){
             let val = [(1-darkval)*100, 100][ +(i == (4-id+this.bestplayer) % 4) ];
-            console.log(val);
             document.getElementById("card" + i).style.filter = "brightness(" + val + "%)";
         }
 
         this.continueCardQueue();
 
-        if(this.playtype < 6) return;
+        if(this.playtype < 6) return; // Changing ruletype because of Slalom/Guschti/Mary ---
 
         // Update Slalom/Guschti/Mary direction
         if(this.playtype < 8)   this.ruletype = (this.ruletype+1) % 2;

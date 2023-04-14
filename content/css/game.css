@@ -55,10 +55,8 @@ body {
     border-radius: 0.75rem;
     border-width: 0.25rem;
     border-color: #FFFF00;
-}
 
-@keyframes CardPlay0 {
-    from{} to{}
+    animation-duration: 500ms;
 }
 
 @keyframes CardPlay1 {
@@ -218,8 +216,8 @@ body {
     float: left;
 
     top: 100%;
-    width: 0.9rem;
-    height: 0.9rem;
+    width: 1rem;
+    height: 1rem;
 
     padding: 0.05rem;
     margin: 0.05rem;
