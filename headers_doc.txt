@@ -27,10 +27,10 @@
 8: The new order of the client-ID's
 9: The ID of the player, who must play the next card
 10: The ID of the player, who must announce next
-11: The new ID for th e newly joined player
+11: The client's player ID
 12: A list of new cards for a player
 13: Entire state of the game
-14: An event (i.e the end of the round, new game, etc.)
+14: An event (e.g the end of the round, new game, etc.)
 15: Points that a team got
 16: The ID of a player, who just disconnected
 17: The username and password for the ICEserver (for WebRTC)

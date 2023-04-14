@@ -14,6 +14,7 @@ window.onload = function(e){
     window.onresize();
     hand.onResize();
     round.onResize();
+    round.cardAnimation = !getStorageBool(3);
 
     startWS();
 

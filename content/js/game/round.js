@@ -25,6 +25,7 @@ class Round {
 
         // Data aside from gameplay
         this.cardQueue = []; // All the cards, which must be played
+        this.cardAnimation = false;
     }
 
     clearBoard(){
@@ -81,6 +82,12 @@ class Round {
         }
 
         crd.style.display = "block";
+
+        if(!this.cardAnimation){
+            this.afterCardPlayed();
+            return;
+        }
+
         if( POS == 0 ) this.afterCardPlayed();
         else crd.style.animationName = "CardPlay" + POS;
     }

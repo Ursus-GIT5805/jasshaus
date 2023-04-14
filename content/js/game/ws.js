@@ -3,26 +3,28 @@ var socket = null;
 
 /*
  * All the functions as following
- * f + (header_byte in decimal number)
+ * FUNC + (header_byte in decimal number)
  * see headers_doc.txt for the purpose of a header
 */
 
-async function f0(dat){
+async function FUNC0(dat){
     var card = parseCard( dat[0] );
     round.playCard( card, (dat[0] >>> 6) > 0 );
 }
 
-async function f1(dat){
+async function FUNC1(dat){
     let shw = new Show(dat[0] >> 4, dat[0] % 16, dat[1] % 16);
     let plr = (dat[1] >>> 4) % 4;
+
     toShow.push( [shw, plr, true] );
     round.sp[ plr % 2 ] += shw.getPoints(); // Add points
     round.updatePoints( plr % 2 ); // Update points
+
     if( shw.row == 2 ) checkShow();
     else if( round.cardQueue.length == 0 ) checkShow();
 }
 
-async function f2(dat){
+async function FUNC2(dat){
     if( dat[0] % 16 == 10 ) return;
     if(document.getElementById("roundSummary").style.display == "block") closeSummary(); // close the summaryWindow if not done already
 
@@ -48,19 +50,18 @@ async function f2(dat){
     hand.drawAll();
 }
 
-async function f3(dat){
-    if(dat[0] >>> 2 == 0 && players.muted[ dat[0] % 4 ]) return;
+async function FUNC3(dat){
+    if(dat[0] >>> 2 == 0 && players.muted[ dat[0] % 4 ]) return; // don't display if the player is muted
     let col = ["#FFFFFF", "#FFFF00", "#DDDDDD", "#FF0000"][ (dat[0] >>> 2) % 4 ];
 
     players.onMSG( numArrayToString(dat.slice(1)), dat[0] % 4, col );
 }
 
-async function f4(dat){
+async function FUNC4(dat){
     var name = "";
     for(let i = 1 ; i < dat.length ; ++i) name += String.fromCharCode(dat[i]);
     players.setName( name, dat[0] % 4 );
-    players.numconnected += 1;
-    document.getElementById("plrNum").innerHTML = players.numconnected;
+    document.getElementById("plrNum").innerHTML = ++players.numconnected;
 
     if( Boolean(1 & (dat[0] >>> 2)) ){ // This player is using the microphone
         players.addSymbol( "img/mic.svg", dat[0] % 4 );
@@ -68,12 +69,11 @@ async function f4(dat){
     }
 }
 
-async function f5(dat){
-    let ele = document.getElementById("plrRev");
-    ele.innerHTML = dat[0];
+async function FUNC5(dat){
+    document.getElementById("plrRev").innerHTML = dat[0];
 }
 
-async function f6(dat){
+async function FUNC6(dat){
     let h = dat[0];
     let plr = h >>> 2;
     h = h % 4;  
@@ -84,14 +84,14 @@ async function f6(dat){
     if(h == 2) await onIceCanditate( json, plr );    
 }
 
-async function f7(dat){
+async function FUNC7(dat){
     let plr = dat[0];
     players.addSymbol( "img/mic.svg", plr ); // Add a symbol so the user knows he is using the mic
     document.getElementById("volumectrl" + ((4 - id + plr) % 4)).style.display = "block";
     if( useMic ) await sendOffer(plr);
 }
 
-async function f8(dat){
+async function FUNC8(dat){
     let order = [0,1,2,3], rOrd = [];
     let symbols = [];
     let names = [];
@@ -116,30 +116,31 @@ async function f8(dat){
     }
 }
 
-async function f9(dat){
+async function FUNC9(dat){
     round.curplr = dat[0];
     updateCurrentplayer();
 }
 
-async function f10(dat){
-    round.passed = Boolean( dat[0] >> 2 );
-    players.setStar( dat[0] % 4 )
+async function FUNC10(dat){
+    let plr = dat[0] % 4;
 
+    round.passed = Boolean( dat[0] >> 2 );
+    players.setStar( plr );
     if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
 
-    if( dat[0] % 4 == id ) startAnnounce();
+    if( plr == id ) startAnnounce();
     else {
         hand.allUsable = false;
         hand.drawAll();
     }
 }
 
-async function f11(dat){
+async function FUNC11(dat){
     id = dat[0]; 
     loadSettings();
 }
 
-async function f12(dat){
+async function FUNC12(dat){
     hand.cards = parseCards( dat );
     hand.drawAll();
 
@@ -150,7 +151,7 @@ async function f12(dat){
 }
 
 
-async function f13(dat){
+async function FUNC13(dat){
     document.getElementById("startWindow").style.display = "none"; // The round has already started
 
     for(let i = 0 ; i < 2 ; ++i){
@@ -162,7 +163,7 @@ async function f13(dat){
     }
 
     let pt = dat[12] % 16;
-    if(pt != 15) f2( [ dat[12] ] );
+    if(pt != 15) FUNC2( [ dat[12] ] );
     round.passed = dat[12] >>> 7;
 
     let numC = (dat[18] >>> 2) % 4;
@@ -171,7 +172,7 @@ async function f13(dat){
     round.beginplayer = (4-numC + round.curplr) % 4;
     round.curplr = round.beginplayer;
 
-    f12( dat.slice(13, 18) );
+    FUNC12( dat.slice(13, 18) );
     if( round.playtype != -1 ) updateCurrentplayer();
 
     if( pt == 6 || pt == 7 ) round.ruletype = (round.turn-1 +(pt == 7)) % 2;
@@ -180,7 +181,7 @@ async function f13(dat){
     
     let gamestate = dat[19];
 
-    for(let i = 0 ; i < numC ; ++i) f0( [ dat[20 + i] ] );
+    for(let i = 0 ; i < numC ; ++i) FUNC0( [ dat[20 + i] ] );
     if(round.turn != 1) toShow.length = 0;
     if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
 
@@ -190,7 +191,7 @@ async function f13(dat){
     }
 }
 
-async function f14(dat){
+async function FUNC14(dat){
     let ev = dat[0];
 
     if(ev == 0){ // Round has ended
@@ -233,12 +234,12 @@ async function f14(dat){
     }
 }
 
-async function f15(dat){
+async function FUNC15(dat){
     round.gp[ dat[0] >> 1 ] += (dat[0]%2 << 8) + dat[1];
     round.updatePoints( (dat[0] >> 1) % 2 );
 }
 
-async function f16(dat){
+async function FUNC16(dat){
     let plr = dat[0];
     players.setName("", plr);
     players.onMSG( "Tschüss!", plr, "#FFFF00" );
@@ -248,7 +249,7 @@ async function f16(dat){
     renewPeer( plr );
 }
 
-async function f17(dat){
+async function FUNC17(dat){
     let tmp = [];
 
     for(let i = 0 ; i < dat.length ; ++i){
@@ -282,7 +283,7 @@ function startWS(){
         for(let i = 1 ; i < e.data.length ; ++i) log( toNum(e.data[i]) );
         var dat = stringToNumArray(e.data.substr(1));
 
-        await window["f" + String(head)]( dat ); // Run the function related to the header
+        await window["FUNC" + String(head)]( dat ); // Run the function related to the header
     }
 
     socket.onclose = function(e){

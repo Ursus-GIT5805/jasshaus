@@ -90,10 +90,7 @@ function checkShow(){
 
 function showConfirm(){
     document.getElementById("showWindow").style.display = "none";
-
-    // A show could be compressed into one byte, but the decoding would be slow
     if(!showing) send( 1, [(windowShow.col << 4) + windowShow.num, windowShow.row] );
-
     windowShow.col = 4;
     checkShow();
 }
@@ -102,12 +99,6 @@ function showCancel(){
     windowShow.col = 4;
     document.getElementById("showWindow").style.display = "none";    
     checkShow();
-}
-
-// Helper function for openSummary (checks wheter there is a card in an uncompressed card list)
-function hasCard( bytes, col, num ){
-    let i = col*9 + num;
-    return Boolean( 1 & bytes[ 4 - Math.floor(i/8) ] >>> i%8 );
 }
 
 // Round summary ---
@@ -126,8 +117,12 @@ function updateSummary( cards, hands ){
         ele.style.fontWeight = ["normal", "bolder"][+(round.gp[i] == 257)];
     }
 
-    // Draw all the cards the teams have won
+    let hasCard = function( bytes, col, num ){
+        let i = col*9 + num;
+        return Boolean( 1 & bytes[ 4 - Math.floor(i/8) ] >>> i%8 );
+    };
 
+    // Draw all the cards the teams have won
     let lang = ["de", "fr"][+getStorageBool(2)];
     const ctx = [];
     for(let t = 0 ; t < 2 ; ++t) ctx.push( document.getElementById("cardst" + t).getContext('2d') )
@@ -237,9 +232,14 @@ function toggleSettings(){
     else ele.style.display = "block";
 }
 
-function onCheckbox(){
+function onCardClick(){
     hand.clickonly = document.getElementById("bool1").checked;
     saveBool( hand.clickonly, 1 );
+}
+
+function onCardAnimationdisable(){
+    round.cardAnimation = !document.getElementById("bool1").checked;
+    saveBool( !round.cardAnimation, 3 );
 }
 
 function onRange(){

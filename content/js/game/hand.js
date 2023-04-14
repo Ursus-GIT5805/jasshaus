@@ -104,14 +104,16 @@ class Hand {
     // Returns each show with the current hand
     getShows(){
         var shows = [];
-        var nums = [0,0,0,0,0,0,0,0,0]; // Counting of each card.num 
+        var nums = new Array(9).fill(0); // Counting of each card.num
         let row = 1;
         let start = 0;
+
         // Push a temporary (and cursed) card into the hand to prevent indexErrors
         this.cards.push( new Card(4, 13) )
         for(let i = 0 ; i < this.cards.length-1 ; ++i){
             nums[ this.cards[i].num ] += 1;
-            
+
+            //If the next card is consecutive to the current one, row++
             if( this.cards[i].num+1 == this.cards[i+1].num && this.cards[i].col == this.cards[i+1].col ){
                 row++;
                 continue;
@@ -122,6 +124,7 @@ class Hand {
                 shows.push(new Show(this.cards[start].col, this.cards[start].num, row));
             }
 
+            // Reset variables
             start = i + 1;
             row = 1;
         }
@@ -210,7 +213,6 @@ class Hand {
         if( this.clickonly ){ // Play the card immediately
             this.playCard( this.selected );
             this.selected = -1;
-            this.drawAll();
         }
 
         this.drawAll();
