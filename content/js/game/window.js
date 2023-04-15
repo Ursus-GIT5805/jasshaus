@@ -238,7 +238,7 @@ function onCardClick(){
 }
 
 function onCardAnimationdisable(){
-    round.cardAnimation = !document.getElementById("bool1").checked;
+    round.cardAnimation = !document.getElementById("bool3").checked;
     saveBool( !round.cardAnimation, 3 );
 }
 

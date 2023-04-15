@@ -41,7 +41,7 @@ class Player:
     def hasShow(self, show):
         if (show.row < 1 or 9 < show.row) or show.row == 2: return False # Illegal shows aren't accepted
         # If the last card does not exist, it's obv. illegal (e.g starting any King you have a row of 4)
-        if show.row != 1 and show.num + show.row > 8: return
+        if show.row != 1 and show.num + show.row > 9: return
 
         cards = self.cards.list
 

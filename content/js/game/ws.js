@@ -226,11 +226,13 @@ async function FUNC14(dat){
         round.updateRoundDetails();
         round.updatePoints(0);
         round.updatePoints(1);
+        endGame = false;
     } else if(ev == 4){ // Start team choosing
         document.getElementById("startWindow").style.display = "none";
         document.getElementById("teamWindow").style.display = "block";
     } else if(ev == 5){ // Game starts
         document.getElementById("teamWindow").style.display = "none";
+        endGame = false;
     }
 }
 

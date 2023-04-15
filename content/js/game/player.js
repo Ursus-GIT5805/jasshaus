@@ -58,9 +58,12 @@ class Playerhandler {
         ele.appendChild( document.createTextNode(finalmsg) );
         ele.style.display = "block";
 
+        var thisClass = this;
+
         // Let the message disappear after 5 seconds
         setTimeout(function(){
             if(ele.innerHTML != finalmsg) return;
+            thisClass.lastmsg[plr] = "";
             ele.style.display = "none";
         }, 5000);
 
