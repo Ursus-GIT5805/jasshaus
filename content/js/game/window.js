@@ -228,36 +228,11 @@ function toggleChat(){
 function toggleSettings(){
     let ele = document.getElementById("settingWindow");
 
-    if( ele.style.display == "block" ) ele.style.display = "none";
-    else ele.style.display = "block";
-}
-
-function onCardClick(){
-    hand.clickonly = document.getElementById("bool1").checked;
-    saveBool( hand.clickonly, 1 );
-}
-
-function onCardAnimationdisable(){
-    round.cardAnimation = !document.getElementById("bool3").checked;
-    saveBool( !round.cardAnimation, 3 );
-}
-
-function onRange(){
-    darkval = document.getElementById("range0").value / 255.0;
-    saveValue( document.getElementById("range0").value, 0 );
-    hand.drawAll();
-}
-
-function cardLang( fr ){
-    document.getElementById("boolGE").checked = !fr;
-    document.getElementById("bool2").checked = fr;
-    saveBool( fr, 2 );
-
-    loadCards();
-
-    round.updateCards( fr );
-    round.updateRoundDetails();
-    hand.drawAll();
+    if( ele.style.display == "block" ) {
+        ele.style.display = "none";
+        saveSettings();
+        applySettings();
+    } else ele.style.display = "block";
 }
 
 // Team window --- (for choosing teams)

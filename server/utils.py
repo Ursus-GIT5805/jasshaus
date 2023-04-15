@@ -25,10 +25,4 @@ def toBytes( number, len ):
     for b in bytes: out += chr(b)
     return out
 
-# Filters the a string from any bad characters
-def filterString( str, bad, len ):
-    if str.__len__() > len: str = str[0, len]
-    for chr in bad: str = str.replace(chr, '')
-    return str
-
 DEV_MODE = False

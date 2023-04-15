@@ -217,34 +217,16 @@
             <input type="text" placeholder="Eingabe" id="chatInput"></input>
         </div>
         <div id="settingWindow">
-            <div style="font-size: 3rem; font-weight: 600;"><u>Einstellungen</u></div>
-            <div>
-                <div>
-                    <img src="img/de.svg" style="width: 1rem;">
-                    Deutsche Jasskarten <input id="boolGE" type="checkbox" onchange="cardLang(false)" checked><br>
-                    <img src="img/fr.svg" style="width: 1rem;">
-                    Französische Jasskarten <input id="bool2" type="checkbox" onchange="cardLang(true)">
-                </div>
-                <div>
-                    Karten klicken zum Spielen 
-                    <input type="checkbox" id="bool1" onchange="onCardClick()">
-                </div>
-                <div>
-                    Karten-Animationen deaktivieren
-                    <input type="checkbox" id="bool3" onchange="onCardAnimationdisable()">
-                </div>
-                <div>
-                    Kartendunkelheit<br>
-                    <input type="range" id="range0" min="0" max="255" onchange="onRange()" style="width: 100%;">    
-                </div>
-            </div>
-            <div class="Settingbutton" onclick="toggleSettings()">Fenster schliessen</div>
+            <h1><u>Einstellungen</u></h1>
+            <div id="settingbox"></div>
+            <div class="Settingbutton" onclick="toggleSettings()">Einstellungen speichern</div>
             <div class="Settingbutton" onclick="goTo('index.html')">Partie verlassen</div>
         </div>
     </body>
 
-    <script src="js/utils.js" type="text/javascript"/></script>$
+    <script src="js/utils.js" type="text/javascript"/></script>
     <script src="js/storage.js" type="text/javascript"/></script>
+    <script src="js/settings.js" type="text/javascript"/></script>
     <script src="js/game/player.js" type="text/javascript"/></script>
     <script src="js/game/hand.js" type="text/javascript"/></script>
     <script src="js/game/round.js" type="text/javascript"/></script>
@@ -253,6 +235,7 @@
     <script src="js/game/ws.js" type="text/javascript"/></script>
     <script src="js/game/audio.js" type="text/javascript"/></script>
     <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/settings.css">
     <link rel="stylesheet" href="css/window.css">
     <link rel="stylesheet" href="css/window_portrait.css">
 </html>

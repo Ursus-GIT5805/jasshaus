@@ -432,18 +432,22 @@
     max-height: 90%;
     transform: translateX(-50%) translateY(-50%);
 
+    overflow-x: hidden;
     overflow-y: scroll;
 
     padding: 1rem;
 
     border-radius: 1rem;
+    box-sizing: border-box;
+
+    box-shadow: 1px 1px 20px #DDDDDD44;
 
     color: #FFFFFF;
-    background-color: #000000;
+    background-color: #121212;
 }
 
-#settingWindow div {
-    margin-top: 1rem;
+#settingbox {
+    padding: 0.5rem;
 }
 
 .Settingbutton {
@@ -462,11 +466,11 @@
     cursor: pointer;
 
     color: #FFFFFF;
-    background-color: #000000;
+    background-color: #121212;
 }
 
 .Settingbutton:hover {
-    background-color: #222222;
+    background-color: #333333;
 }
 
 

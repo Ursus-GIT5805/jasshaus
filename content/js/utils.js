@@ -1,11 +1,3 @@
-// Removes all bad characters from a string
-function filterString( str, bad, len=Infinity ){
-    let out = "";
-    let l = Math.min(len, str.length);
-    for(let i = 0 ; i < l ; ++i) if( !bad.includes(str[i]) ) out += str[i]
-    return out;
-}
-
 function goTo( page ){
     window.history.pushState({}, '', window.location.href);
     location.replace( WEB_URL + page );

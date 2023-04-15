@@ -137,7 +137,14 @@ async function FUNC10(dat){
 
 async function FUNC11(dat){
     id = dat[0]; 
-    loadSettings();
+    // Send the name
+    var name = getStorage("JasshausDataName", "").substr(0,16);
+    while(name == ""){
+        name = prompt("Gib einen Spitznamen ein! (Max. 16 Buchstaben)", "").substr(0,16);
+        if(name == null) name = "Unnamed"; // User must have disabled "prompt()"
+        localStorage.setItem( "JasshausDataName", name );
+    }
+    send( 4, name );
 }
 
 async function FUNC12(dat){

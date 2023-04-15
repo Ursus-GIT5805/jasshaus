@@ -1,5 +1,5 @@
 var id = 0; // Your ID in the game
-var darkval = getStorageVal(0) / 255.0;
+var darkval = 0.5;
 var mouseDown = false;
 var players = new Playerhandler();
 var cardIMG = []; // Images of all cards
@@ -9,19 +9,11 @@ const canvas = document.getElementById("cards");
 
 // Setup window event functions
 window.onload = function(e){
-    loadCards();
-
     window.onresize();
     hand.onResize();
     round.onResize();
-    round.cardAnimation = !getStorageBool(3);
 
     startWS();
-
-    hand.clickonly = document.getElementById("bool1").checked = getStorageBool(1);
-    document.getElementById("boolGE").checked = !getStorageBool(2);
-    document.getElementById("bool2").checked = getStorageBool(2);
-    document.getElementById("range0").value = getStorageVal(0);
 
     if(getStorageBool(0)) players.muted = [true, true, true, true];
     players.muted[id] = false; // Don't mute yourself
@@ -55,7 +47,22 @@ window.onload = function(e){
         }
     }
 
+    insertSettings("settingbox", true);
+    updateSettingsFromStorage();
+    document.getElementById("checkboxGE").checked = !document.getElementById("checkbox2").checked;
+    settingDrawDarkval();
+    applySettings();
+}
+
+function applySettings(){
+    darkval = getStorageVal(0) / 255.0;
+    hand.clickonly = getStorageBool(1);
+    round.cardAnimation = !getStorageBool(3);
+
     loadCards();
+    round.updateCards( getStorageBool(2) );
+    round.updateRoundDetails();
+    hand.drawAll();
 }
 
 function loadCards(){
@@ -76,12 +83,10 @@ function loadCards(){
         cardIMG.push(l);
     }
 
-    document.getElementById("PT2").src = "img/trumpf" + ["shield", "spade"][+fr] + ".png";
-    document.getElementById("PT3").src = "img/trumpf" + ["acorn", "clubs"][+fr] + ".png";
-    document.getElementById("PT4").src = "img/trumpf" + ["rose", "heart"][+fr] + ".png";
-    document.getElementById("PT5").src = "img/trumpf" + ["bell", "diamond"][+fr] + ".png";
-
+    // Update the images on the announceWindow
+    const url = [ ["shield", "spade"], ["acorn", "clubs"], ["rose", "heart"], ["bell", "diamond"] ];
     for(let i = 2 ; i < 6 ; ++i){
+        document.getElementById("PT" + i).src = "img/trumpf" + url[i-2][+fr] + ".png";
         document.getElementById("PTT" + i).innerHTML = getPlaytypeName( i, fr ).replace("Trumpf ", '');
     }
 }
@@ -131,16 +136,12 @@ window.onkeydown = function(e){
         if(e.which == 84) toggleChat(); // on 't', open chat
         return;
     }
-
+    // Chat is open
     if(!e.ctrlKey) document.getElementById("chatInput").focus();
-
     if(e.which == 13){ // Enter: Send message
         let msg = document.getElementById("chatInput").value;
         document.getElementById("chatInput").value = ""; // Clear field
-
-        if(msg == "") return;
-
-        send( 3, msg );
+        if(msg != "") send( 3, msg );
     } else if(e.which == 27){ // Escape: close chat
         toggleChat();
     }
@@ -155,19 +156,4 @@ function updateCurrentplayer(){
         hand.updateLegal( round.ruletype, round.bestcarddata, round.turncolor );
     }
     hand.drawAll();
-}
-
-// Loads and sends the username and important settings to the server
-function loadSettings(){
-    var name = getStorage("JasshausDataName", ""); //remove all whitespaces
-
-    if(name.length > 16) name = name.substr(0,16);
-
-    while(name == ""){
-        name = prompt("Gib einen Spitznamen ein! (Max. 16 Buchstaben)", "");
-        if(name == null) name = "Unnamed"; // User must have disabled "prompt()"
-        localStorage.setItem( "JasshausDataName", name );
-    }
-
-    send( 4, name );
 }
