@@ -4,14 +4,17 @@ import sys
 import os
 
 import room
+import bot
 import utils as c
 
 # Since this is a litte and not a serious server, one room is enough
-rooms = room.Room()
+bot = bot.Bot()
+rooms = room.Room(bot)
 ICEcredentials = ""
 
 async def connection(websocket, path):
     global rooms
+    global bot
 
     print("New Socket")
 
@@ -32,7 +35,7 @@ async def connection(websocket, path):
         await rooms.unregister(id)
 
         if rooms.numPlayers == 0: # Room is empty: Clean it
-            rooms = room.Room()
+            rooms = room.Room(bot)
             print("Reload room")
 
         print( "Socket closed!" )

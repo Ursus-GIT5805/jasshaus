@@ -58,11 +58,15 @@ async function FUNC3(dat){
 }
 
 async function FUNC4(dat){
-    var name = "";
-    for(let i = 1 ; i < dat.length ; ++i) name += String.fromCharCode(dat[i]);
+    var name = numArrayToString( dat.slice(1) );
     players.setName( name, dat[0] % 4 );
-    document.getElementById("plrNum").innerHTML = ++players.numconnected;
+    players.numconnected += 1;
 
+    let eles = document.querySelectorAll("[displayNum='totalPlayers']");
+    for(let i = 0 ; i < eles.length ; ++i) eles[i].innerHTML = players.numconnected;
+
+    // This player is a bot
+    if( Boolean(1 & (dat[0] >>> 3)) ) players.addSymbol( "img/bot.svg", dat[0] % 4 );
     if( Boolean(1 & (dat[0] >>> 2)) ){ // This player is using the microphone
         players.addSymbol( "img/mic.svg", dat[0] % 4 );
         document.getElementById("volumectrl" + ((4 - id + dat[0]) % 4)).style.display = "block";
@@ -70,7 +74,9 @@ async function FUNC4(dat){
 }
 
 async function FUNC5(dat){
-    document.getElementById("plrRev").innerHTML = dat[0];
+    let type = dat[0];
+    let ele_id = ["plrRev", "plrStart"][ type ];
+    document.getElementById( ele_id ).innerHTML = dat[1];
 }
 
 async function FUNC6(dat){
@@ -253,7 +259,8 @@ async function FUNC16(dat){
     players.setName("", plr);
     players.onMSG( "Tschüss!", plr, "#FFFF00" );
     players.removeSymbols( plr );
-    players.numconnected -= 1;
+    let eles = document.querySelectorAll("[displayNum='totalPlayers']");
+    for(let i = 0 ; i < eles.length ; ++i) eles[i].innerHTML = players.numconnected;
     document.getElementById("volumectrl" + ((4 - id + plr) % 4)).style.display = "none";
     renewPeer( plr );
 }

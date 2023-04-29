@@ -9,7 +9,7 @@
 2: Playtype-Announcement
 3: Chatmessage
 4: Name of the player
-5: Revanche agreement
+5: Player agrees to the agreement
 6: RTC-Information exchange
 7: Player uses microphone
 8: Request for ID of the next announcing player
@@ -21,7 +21,7 @@
 2: Playtype-Announcement
 3: Chatmessage
 4: Name of the player + Informations about the player
-5: Revanche agreement
+5: The number of people, who agreed to an agreement
 6: RTC-Information exchange
 7: Player uses microphone
 8: The new order of the client-ID's

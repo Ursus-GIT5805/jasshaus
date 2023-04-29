@@ -4,13 +4,19 @@ import card
 
 class Player:
     def __init__(self, socket=None, connected=False):
-        self.cards = card.Cardlist()
         self.socket = socket 
         self.connected = connected
-        self.marriage = 2 # If marriage = 0, then the player played both trumpf queen and king
-        self.revanche = False # If true, the player has agreed to a revanche
         self.name = ""
         self.useMic = False
+        self.isBot = False
+        self.agreed = False
+
+        self.cards = card.Cardlist() # The current hand
+        self.startcards = card.Cardlist()
+        self.marriage = 2 # How many cards from the marriage the player must play. If = 0, then the player must've played both marriage cards.'
+
+    def getData(self, id):
+        return chr( (self.isBot << 3) + (self.useMic << 2) + id ) + self.name
 
     # Checks with the current turn, if the given card is legal to play
     def legalCard(self, crd, ruletype, turncolor, bestcard):
@@ -75,6 +81,7 @@ class Player:
     def connect(self, socket):
         self.socket = socket
         self.connected = True
+        self.isBot = False
 
     # Resets all variables not regarding his game-variables
     def disconnect(self):

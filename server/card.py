@@ -14,8 +14,25 @@ class Card:
     def __eq__(self, object):
         return (self.col == object.col and self.num == object.num)
 
+    def __lt__(self, object):
+        return self.getID() < object.getID()
+
+    def __gt__(self, object):
+        return self.getID() > object.getID()
+
+    def __repr__(self):
+        return cardNameDE(self)
+
+    def __str__(self):
+        return self.__repr__()
+
 def parseCard(byte):
     return Card(byte >> 4, byte % 16)
+
+def cardNameDE(crd):
+    color = ["Schilte", "Eichle", "Rose", "Schelle"][ crd.col ]
+    number = ["6", "7", "8", "9", "10", "Under", "Ober", "King", "Ass"][ crd.num ]
+    return f"{color} {number}"
 
 # Structure that saves a list of cards within one number
 class Cardlist:

@@ -169,10 +169,10 @@ function closeSummary(){
 // Endresult window ---
 
 var endGame = false;
-var sentRevanche = false;
+var sentAgree = false;
 
 function updateEndresult(victory){
-    sentRevanche = false;
+    sentAgree = false;
     document.getElementById("plrRev").innerHTML = 0;
     document.getElementById("endResult").innerHTML = ["Niederlage", "Sieg"][+victory];
     document.getElementById("endWindow").style.backgroundColor = ["black", "white"][+victory];
@@ -195,9 +195,9 @@ function updateEndresult(victory){
     }
 }
 
-function revanche(){
-    if(!sentRevanche) send(5, "");
-    sentRevanche = true;
+function sendAgree(){
+    if(!sentAgree) send(5, "");
+    sentAgree = true;
 }
 
 // Info window ---

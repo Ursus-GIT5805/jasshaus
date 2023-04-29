@@ -110,7 +110,7 @@
                     <a id="endName0"></a> + <a id="endName2"></a> | <a id="gameWin0">0</a> - <a id="gameWin1">0</a> | <a id="endName1"></a> + <a id="endName3"></a>
                 </div>
             </div>
-            <div class="endButton" onclick="revanche()" style="left: 0;">Revanche (<a id="plrRev"></a>/<a id="plrNum"></a>)</div>
+            <div class="endButton" onclick="sendAgree()" style="left: 0;">Revanche (<a id="plrRev"></a>/<a displayNum="totalPlayers"></a>)</div>
             <div class="endButton" onclick="goTo('index.html')" style="right: 0;">Spiel verlassen</div>
         </div>
         <div id="roundSummary">
@@ -186,7 +186,8 @@
             </div>
         </div>
         <div id="startWindow">
-            Bitte warten Sie auf weitere Spieler...
+            <p>Bitte warten Sie auf weitere Spieler...</p>
+            <p><div id="startButton" onclick="sendAgree()">Spiel mit Bots starten (<a>0</a>/<a displayNum="totalPlayers">0</a>)</div></p>
         </div>
         <div id="infoWindow">
             <h2><u id="infoTitle">Info</u></h2>

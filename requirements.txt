@@ -1,2 +1,5 @@
 websockets
 asyncio
+tensorflow
+keras
+numpy

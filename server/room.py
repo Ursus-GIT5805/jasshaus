@@ -9,20 +9,24 @@ import logger
 from utils import *
 
 class Room:
-    def __init__(self):
+    def __init__(self, bot):
         # Socket and players
-        self.players = []
-        for i in range(4): self.players.append( player.Player() )
+        self.players = [ player.Player() for i in range(4) ]
 
-        self.revanche = 0 # The number of players who agreed to a revanche
         self.numPlayers = 0 # Number of connected players
-        self.gamestate = 0 # 0: before game, 1: in game, 2: game ended
-        self.mate = [-1, -1, -1, -1] # The favorite mate chosen by the players
-        self.order = [0, 1, 2, 3]
+        self.gamestate = GAME_ENTERING
+        self.mate = [-1]*4 # The favorite mate chosen by the players
+        self.order = [0,1,2,3]
+        self.agreementType = 0 # -1 when unset
+        self.agreed = 0
+
+        # Bot var
+        self.bot = bot
+        self.state = np.zeros(45, 13)
 
         # Gameplay variables
         self.goal = 1000 # The goal of the game is to reach 1000 points
-        self.points = [0, 0] # The points of the teams
+        self.points = [0]*2 # The points of the teams
 
         self.annplr = 0 # The player who can announce first
 
@@ -32,8 +36,8 @@ class Room:
         self.ruletype = 0 # The ruleset of the current turn
         self.misere = False
         self.passed = False
-        self.gp = [0, 0] # The number of points currently won by a team (only used for "sendState")
-        self.sp = [0, 0] # The number of points gotten by shows this round
+        self.gp = [0]*2 # The number of points currently won by a team (only used for "sendState")
+        self.sp = [0]*2 # The number of points gotten by shows this round
         self.shows = [[], []] # The shows a player announced (sorted by his team)
         self.shwown = [[], []] # The owner of each show in "shows"
         self.bestshow = (-1, -1) # The (team, index) of the current best show
@@ -73,11 +77,11 @@ class Room:
                 if i == id: continue
                 if self.players[i].connected: # Send all the names of the player to the new player
                     useMic = self.players[i].useMic
-                    await self.players[id].send( '\x04', chr( (useMic << 2) + i ) + self.players[i].name )
+                    await self.players[id].send( '\x04', self.players[i].getData(i) )
 
             if self.numPlayers == 4:
-                if self.gamestate == 0: # Start the game if not started
-                    await self.send( '\x0E', '\x04' )
+                if self.gamestate == GAME_ENTERING: # Start the game if not started
+                    await self.startTeammateChoosing()
                 else: # The has already been started, send him the current state instead
                     await self.sendState( id )
 
@@ -91,9 +95,9 @@ class Room:
         id = self.order[id]
 
         # Update the revanche-agreements, if this one agreed to a revanche
-        if self.gamestate == 2 and self.players[id].revanche:
-            self.revanche -= 1
-            await self.send( '\x05', toBytes(self.revanche, 1) )
+        if self.gamestate == GAME_END and self.players[id].agreed:
+            self.agreed -= 1
+            await self.sendAgrees()
 
         await self.send( '\x10', toBytes(id, 1) )
         self.players[id].disconnect()
@@ -111,7 +115,7 @@ class Room:
             if send: await self.players[i].send( '\x0C', hands[i].toBytes() )
 
     async def startGame(self):
-        self.gamestate = 1
+        self.gamestate = GAME_PLAYING
 
         await self.send( '\x0E', '\x05' )
         await self.generateCards()
@@ -119,10 +123,25 @@ class Room:
         # The player with the shield-10 begins
         for i in range(4):
             if self.players[i].cards.hasCard( card.Card(0, 4) ):
-                self.annplr = i
+                self.annplr = self.curplr = i
                 break
 
         await self.send( '\x0A', toBytes( self.annplr, 1 ) )
+        await self.updateCurrentplayer()
+
+    async def startTeammateChoosing(self):
+        self.resetAgreement()
+        await self.send( '\x0E', '\x04' )
+        self.gamestate = GAME_TEAMMATE_CHOOSING
+        self.mate = [-1]*4
+
+        for i in range(4):
+            if self.players[i].connected: continue
+            self.players[i].name = "Jassbot" + str(i+1)
+            self.players[i].isBot = True
+            self.mate[i] = i
+            await self.send( '\x04', self.players[i].getData(i) )
+
 
     # Resets all variables so a new round can be started
     def resetRound(self):
@@ -149,7 +168,7 @@ class Room:
 
     # Checks whether a team has enough points to win the game and handles it if true
     async def checkEndgame(self):
-        if self.gamestate == 2: return True # If the game has ended, no need to check
+        if self.gamestate == GAME_END: return True # If the game has ended, no need to check
 
         res = -1
         for i in range(2):
@@ -160,14 +179,12 @@ class Room:
         # There is a winner of the game!
         self.annplr = random.randint(0,1)*2 + ((res+1) % 2)
 
-        self.revanche = 0
-        for i in range(4):
-            self.players[i].revanche = False
+        self.agreementType
 
         await self.send( '\x0E', '\x00' + self.cardsT[0].toBytes() + self.cardsT[1].toBytes() + self.playercards )
         self.resetRound()
 
-        self.gamestate = 2 # Set state to "game ended"
+        self.gamestate = GAME_END
         # Send event:
         # 1: Team 0 won
         # 2: Team 1 won
@@ -218,7 +235,7 @@ class Room:
         await self.send( '\x0E', '\x00' + self.cardsT[0].toBytes() + self.cardsT[1].toBytes() + self.playercards )
         self.resetRound()
 
-        self.annplr = (self.annplr + 1) % 4
+        self.annplr = self.curplr = (self.annplr + 1) % 4
         await self.generateCards( send=False )
 
     # Handle the and send all shows
@@ -258,8 +275,26 @@ class Room:
 
             # Handle Marriage at the beginning of a new turn
             if await self.handleMarriage(): return
+
+            await self.updateCurrentplayer()
         else: # The round has ended!
             await self.handleEndround()
+
+    async def updateCurrentplayer(self):
+        if not self.players[ self.curplr ].isBot: return
+
+        if self.playtype == -1:
+            await self.announce( self.curplr << 4 + random.randint(0, 9), self.curplr )
+            return
+
+        cards = self.players[ self.curplr ].cards.toList()
+
+        legals = []
+        for c in cards:
+            if self.players[self.curplr].legalCard(c, self.ruletype, self.turncolor, self.bestcard):
+                legals.append(c)
+
+        await self.playCard(random.choice(legals), self.curplr)
 
     # Input handling ---
 
@@ -281,6 +316,10 @@ class Room:
     async def sendMsg(self, msg, msgtype, plr):
         await self.send( '\x03', toBytes((msgtype << 2) + plr, 1) + msg )
 
+    async def sendAgrees(self):
+        if self.agreementType == -1: return
+        await self.send( '\x05', toBytes( (self.agreementType << 8) + self.agreed, 2 ) )
+
     # A playtype is decoded into 1 byte
     # 0     | 0      | 00          | 0000
     # passed | misere | annplr's ID | playtype number
@@ -300,6 +339,8 @@ class Room:
             await self.sendMsg( "Ich schiebe!", 1, plr )
             # Add 4, so the player knows it is a passed announcement-making
             await self.send( '\x0A', toBytes(4 + mate, 1) )
+            self.curplr = mate
+            await self.updateCurrentplayer()
             return
 
         self.misere = bool( 1 & byte >> 6 )
@@ -313,12 +354,13 @@ class Room:
 
         bsend = (self.passed << 7) + (self.misere << 6) + (plr << 4) + self.playtype
         await self.send( '\x02', toBytes(bsend, 1) )
-
+#
         if await self.handleMarriage(): return True
 
         self.curplr = plr
         if self.passed and 1 < self.playtype and self.playtype < 6:
             self.curplr = self.annplr
+        await self.updateCurrentplayer()
 
     async def playCard(self, crd, plr):
         # Give the player trust issues, because they might be cheating
@@ -348,13 +390,32 @@ class Room:
         self.curplr = (self.curplr + 1) % 4
 
         # Handle trumpf marriage
-        self.players[plr].marriage -= (crd.num == 6 or crd.num == 7) and crd.col == self.playtype-2
+        self.players[plr].marriage -= ((crd.num == 6 or crd.num == 7) and crd.col == self.playtype-2)
         if self.players[plr].marriage == 0:
             await self.sendShow(show.Show(self.playtype-2, 6, 2), plr)
             self.players[plr].marriage = 2
 
         if self.playedcards.__len__() == 4: # The turn has come to an end
             await self.handleEndturn()
+        else:
+            await self.updateCurrentplayer()
+
+    # Agreement ---
+
+    async def handleRevanche(self):
+        self.resetRound()
+        await self.send( '\x0E', '\x03' )
+        await self.generateCards()
+        self.points = [0, 0]
+        self.gamestate = GAME_PLAYING
+        await self.send( '\x0A', toBytes( self.annplr, 1 ) )
+
+    def resetAgreement(self):
+        self.agreementType = -1
+        self.agreed = 0
+        for i in range(4): self.players[i].agreed = False
+
+    # ---
 
     async def input(self, head, data, plr):
         # Check that the header comes with the right number of bytes
@@ -365,10 +426,10 @@ class Room:
         plr = self.order[plr]
 
         if head == 0:
-            if self.gamestate == 1 and self.playtype != -1:
+            if self.gamestate == GAME_PLAYING and self.playtype != -1:
                 await self.playCard( card.parseCard( ord(data[0]) ), plr )
         elif head == 1: # A player has a show
-            if self.playtype == -1 or self.turn != 1 or self.curplr != plr or self.gamestate != 1:
+            if self.playtype == -1 or self.turn != 1 or self.curplr != plr or self.gamestate != GAME_PLAYING:
                 print("Player wanted to show at a time he couldn't!")
                 return
 
@@ -396,7 +457,7 @@ class Room:
                 print("Player does not have show!")
 
         elif head == 2:
-            if self.gamestate == 1:
+            if self.gamestate == GAME_PLAYING:
                 await self.announce( ord(data[0]), plr )
         elif head == 3:
             await self.send( '\x03', toBytes(plr, 1) + data )
@@ -406,23 +467,20 @@ class Room:
             self.players[plr].name = name
             await self.send( '\x04', toBytes(plr, 1) + name )
         elif head == 5:
-            if self.gamestate != 2: return
-            if self.players[ plr ].revanche: return # The player already agreed!
+            if self.agreementType == -1: return
+            if self.players[ plr ].agreed: return # The player already agreed!
 
-            self.revanche += 1
-            self.players[ plr ].revanche = True
+            self.agreed += 1
+            self.players[ plr ].agreed = True
 
-            await self.send( '\x05', toBytes(self.revanche, 1) )
+            await self.sendAgrees()
 
-            if self.revanche != self.numPlayers: return
+            if self.agreed < self.numPlayers: return # If not all players agreed: terminate
 
-            # All players agreed to a revanche
-            self.resetRound()
-            await self.send( '\x0E', '\x03' )
-            await self.generateCards()
-            self.points = [0, 0]
-            self.gamestate = 1
-            await self.send( '\x0A', toBytes( self.annplr, 1 ) )
+            if self.agreementType == 0: await self.startTeammateChoosing()
+            elif self.agreementType == 1: await self.handleRevanche()
+
+            self.resetAgreement()
         elif head == 6:
             dat = ord( data[0] )
             p = (dat >> 2) % 4
@@ -436,16 +494,17 @@ class Room:
                 if i == plr: continue
                 await self.players[i].send('\x07', toBytes(plr, 1))
         elif head == 8:
-            if self.gamestate != 1: return
+            if self.gamestate != GAME_PLAYING: return
 
             await self.players[plr].send( '\x0C', self.players[plr].cards.toBytes() )
 
             if self.playtype == -1:
                 await self.players[plr].send( '\x0A', toBytes( self.annplr, 1 ) )
+                await self.updateCurrentplayer()
             else:
                 await self.players[plr].send( '\x09', toBytes( self.curplr, 1) ) # When announced, send the currentplayer
         elif head == 9:
-            if self.gamestate != 0: return
+            if self.gamestate != GAME_TEAMMATE_CHOOSING: return
             if self.mate[plr] != -1: return
 
             self.mate[plr] = ord( data[0] ) % 4
@@ -524,6 +583,7 @@ class Room:
         await self.players[ plr ].send( '\x0D', state )
 
         # If the game has ended, send the number of player
-        if self.gamestate == 2:
+        if self.gamestate == GAME_END:
+            self.agreementType = 1 # Now we're agreeing to a revanche
             await self.players[plr].send( '\x0E', toBytes( 1+(self.points[0]<self.points[1]), 1 ) )
-            await self.players[plr].send( '\x05', toBytes(self.revanche, 1) )
+            await self.sendAgrees()
