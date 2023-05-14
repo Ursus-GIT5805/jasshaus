@@ -71,7 +71,7 @@ def generateHands():
     # This syntax is cursed, but it makes the code shorter, so...
     cards = [ Card( i // 9, i % 9 ) for i in range(36) ] # Generate all cards
     random.shuffle( cards ) # Shuffle the cards
-    return [ Cardlist( cards[i:i+9] ) for i in range(0,36,9) ] # Return all Cardlist's
+    return [ Cardlist( cards[i:i+9] ) for i in range(0,36,9) ] # Return 4 cardlists with 9 cards each
 
 # Determines the number of points of the card
 def getPoints(card, playtype):

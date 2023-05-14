@@ -43,6 +43,10 @@ async def connection(websocket, path):
 if __name__ == "__main__":
     for arg in sys.argv[1:]:
         if arg == "-dev": c.DEV_MODE = True
+        if arg == "-train":
+            bot.train()
+            quit()
+
 
     # Read the ICEcredentials because they might change in future
     PATH = "../jasshaus_ICEcredentials.txt"

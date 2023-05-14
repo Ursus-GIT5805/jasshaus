@@ -11,6 +11,26 @@ INPUT_MAX=45
 
 OUTPUT_DIM=9
 
+"""
+The gamestate is as following
+Input shape is 13 * 45
+Each 13 (except the first) is as following
+
+4 "bits": The color of the card (i is 1 if col == i)
+9 "bits": The number of the card (4+i is 1 if num == i )
+
+The first 13 are bit different
+1 "bit": Misère
+1 "bit": Passed
+10 "bits": playtype (2+i is true if)
+1 "bit": unused
+
+First of the 45 is the announcement information
+Next nine are the cards in this players starting hand
+Next 35 are the cards played in order
+
+"""
+
 class Bot:
     def __init__(self, doTrain=False):
         self.model = self.loadModel()
@@ -24,16 +44,13 @@ class Bot:
 
         model = keras.Sequential()
 
-        # Input layer. Set one axis to None for dynamic input
-        #model.add( keras.layers.Input( shape=(INPUT_MAX, INPUT_DIM) ) )
+        model.add( keras.layers.Dense( INPUT_DIM*INPUT_MAX, input_shape=(INPUT_MAX,INPUT_DIM,), activation='relu' ) )
 
-        # RNN part of the model with 32 neurons
-        #model.add( keras.layers.SimpleRNN( units=32 ) )
-
-        model.add( keras.layers.Dense( INPUT_DIM*INPUT_MAX, input_shape=(INPUT_MAX*INPUT_DIM,), activation='relu' ) )
-
+        model.add( keras.layers.Dense(384) )
+        model.add( keras.layers.Dense(384) )
         model.add( keras.layers.Dense(128) )
         model.add( keras.layers.Dense(128) )
+        model.add( keras.layers.Dense(64) )
 
         # Output layer
         model.add( keras.layers.Dense(units=OUTPUT_DIM, activation='softmax') )
@@ -45,9 +62,59 @@ class Bot:
     def evaluateCard(self, cards, state):
         pass
 
-    def evaluateAnnounce(self, cards):
+    def getMaximumWins(self, cards, updown):
+        n = len(cards)
+        start = 0 + (n-1)*(updown)
+        end = 0 + n*(not updown)
+        step = 1 - 2*updown
+
+        cnt = 0
+        col = -1
+        row = False
+        for i in range(start, end, step):
+            card = cards[i]
+            if card.col == col and not row: continue
+            if card.col != col:
+                col = card.col
+                if card.num == 0 + 8*(updown):
+                    row = True
+                    cnt += 1
+            else:
+                if cards[i-step].num + step == cards[i].num: cnt += 1
+                else: row = False
+
+        return cnt
+
+
+    # Returns the playtype in a tuple (playtype, misere)
+    def evaluateAnnounce(self, cards, passPossible):
         # Evaluating the playtype is not being evaluated by a neural network, but by a simple algorithm
-        return random.rand
+        n = len(cards)
+
+        definiteUpdown = self.getMaximumWins(cards, True) # Number of turns you definitely win, when you announce Updown
+        definiteDownup = self.getMaximumWins(cards, False) # same but for downup
+
+        ptProp = 10 * [0]
+
+        ptProp[ c.UPDOWN ] = definiteUpdown
+        ptProp[ c.DOWNUP ] = definiteDownup
+        trumpfWeight = [ 0.5, 0.5, 0.5,  2, 0.5, 2.5,  0.5, 0.5, 1.5 ]
+        for i in range(n): ptProp[ 2 + cards[i].col ] += trumpfWeight[ cards[i].num ]
+        ptProp[ c.SLALOM_UPDOWN ] = min( definiteUpdown, definiteDownup + (definiteUpdown > definiteDownup) )
+        ptProp[ c.SLALOM_DOWNUP ] = min( definiteUpdown + (definiteUpdown < definiteDownup), definiteDownup )
+        ptProp[ c.GUSCHTI ] = min( definiteUpdown, 4 ) + definiteDownup*(definiteUpdown >= 4)
+        ptProp[ c.MARY ] = min( definiteDownup, 4 ) + definiteUpdown*(definiteDownup >= 4)
+
+        best = 0
+        worst = 0
+        for i in range(10):
+            if ptProp[i] > ptProp[best]: best = i
+            if ptProp[i] < ptProp[worst]: worst = i
+
+        if ptProp[best] < 3:
+            if passPossible: return c.PASS, False
+            return worst, True
+        return best, False
 
     def loadData(self, path):
         out = []
@@ -82,7 +149,7 @@ class Bot:
 
             owner[ crd.getID() ] = curplr
             hand[ curplr ].append( crd )
-            curplr = (curplr + 1) % 4
+            curplr = (curplr + 1) % 2
 
             if i % 4 == 3:
                 curplr = bestplr
@@ -104,7 +171,8 @@ class Bot:
 
         state = np.zeros( (INPUT_MAX,INPUT_DIM) ).astype('float32')
         if misere: state[0,0] = 1
-        state[0,1+pt] = 1
+        if passed: state[0,1] = 1
+        state[0,2+pt] = 1
 
         for i in range(36):
             crd = card.Card( data[1+i] >> 4, data[1+i] % 16 )
@@ -120,6 +188,7 @@ class Bot:
         return out
 
     def train(self):
+        # TODO Maybe make Deep-Q learning
         pwd = "/home/ursus/Documents/blub/log"
 
         trainData = []
@@ -132,7 +201,6 @@ class Bot:
             for data, label in data:
                 trainData.append(data)
                 trainLabel.append(label)
-
 
         l = len(trainLabel)
         trainDat = np.zeros( (l, INPUT_MAX*INPUT_DIM) )

@@ -23,6 +23,12 @@ GAME_TEAMMATE_CHOOSING = 1 # Players are choosing their teammate
 GAME_PLAYING = 2 # The fun is happening
 GAME_END = 3 # The game is finished
 
+# Agreement types ---
+
+AGREEMENT_NONE = -1
+AGREEMENT_START_GAME = 0
+AGREEMENT_REVANCHE = 1
+
 # ---
 
 # Convert an integer to decoded bytestring
@@ -35,5 +41,8 @@ def toBytes( number, len ):
 def playtypeName(pt, misere=False, passed=False):
     name = ["Obenabe", "Undeufe", "Schilte", "Eichle", "Rose", "Schelle", "Slalom Obenabe", "Slalom Undeufe", "Guschti", "Mary"][pt]
     return ["", "Misere: "][misere] + name + ["", " Geschoben"][passed]
+
+def isTrumpf(pt):
+    return (2 <= pt and pt <= 5)
 
 DEV_MODE = False
