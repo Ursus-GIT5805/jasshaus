@@ -2,6 +2,7 @@
 
 import random
 import numpy as np
+import copy
 
 import player
 import card
@@ -108,7 +109,7 @@ class Room:
     async def generateCards(self, send=True):
         hands = card.generateHands()
 
-        for i in range(4): self.players[i].startcards = hands[i]
+        for i in range(4): self.players[i].startcards = copy.copy( hands[i] )
 
         for i in range(4):
             self.players[i].cards = hands[i]
@@ -155,7 +156,7 @@ class Room:
         self.shwown = [[], []]
         self.bestshow = (-1, -1)
         self.turn = 1
-        self.state = np.zeros(45, 13)
+        self.state = np.zeros( shape=(45,13) )
 
         for l in self.cardsT: l.clear()
 
@@ -279,13 +280,21 @@ class Room:
     async def updateCurrentplayer(self):
         if not self.players[ self.curplr ].isBot: return # We're only handling the bot
 
-        if self.playtype == -1:
+        if self.playtype == -1: # If the current player has to announce
             pt, mis = self.bot.evaluateAnnounce( self.players[ self.curplr ].cards.toList(), not self.passed )
             tmp = (self.passed << 7) + (mis << 6) + (self.curplr << 4) + pt
             await self.announce( tmp, self.curplr )
             return
 
         cards = self.players[ self.curplr ].cards.toList()
+
+        evalState = copy.copy( self.state )
+
+        index = 1
+        for crd in self.players[self.curplr].startcards.toList():
+            evalState[ index, crd.col ] = 1
+            evalState[ index, crd.num+4 ] = 1
+            index += 1
 
         legals = []
         for c in cards:
@@ -388,9 +397,10 @@ class Room:
         # Send the card to all players
         await self.send('\x00', toBytes( ((self.bestplr == plr) << 6) + (crd.col << 4) + crd.num, 1 ))
 
-        index = 10 + self.turn*4 + self.playedcards.__len__()
-        self.state[index,crd.col] = 1
-        self.state[index,4+crd.num] = 1
+        index = 10 + self.turn*4 + self.playedcards.__len__() - 4
+        if index < 45:
+            self.state[index,crd.col] = 1
+            self.state[index,4+crd.num] = 1
 
         self.players[plr].cards.removeCard( crd )
         self.playedcards.append( crd )

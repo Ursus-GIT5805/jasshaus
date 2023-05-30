@@ -143,7 +143,7 @@ function updateSummary( cards, hands ){
     for(let i = 0 ; i < 4 ; ++i){
         document.getElementById("hand" + i).innerHTML = "";
 
-        for(let j = 0 ; j < 9 ; ++j){
+        for(let j = 0 ; j < hands[i].length ; ++j){
             let img = document.createElement('img');
             img.src = "img/" + lang + "/" + hands[i][j].col + hands[i][j].num + ".png";
             img.style.height = "100%";

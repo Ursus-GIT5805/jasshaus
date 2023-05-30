@@ -91,8 +91,8 @@ class Bot:
         # Evaluating the playtype is not being evaluated by a neural network, but by a simple algorithm
         n = len(cards)
 
-        definiteUpdown = self.getMaximumWins(cards, True) # Number of turns you definitely win, when you announce Updown
-        definiteDownup = self.getMaximumWins(cards, False) # same but for downup
+        definiteUpdown = self.getMaximumWins(cards, updown=True) # Number of turns you definitely win, when you announce Updown
+        definiteDownup = self.getMaximumWins(cards, updown=False) # same but for downup
 
         ptProp = 10 * [0]
 
