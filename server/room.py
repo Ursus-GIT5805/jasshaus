@@ -128,7 +128,7 @@ class Room:
                 break
 
         await self.send( '\x0A', toBytes( self.annplr, 1 ) )
-        await self.updateCurrentplayer()
+        await self.updateBotAnnouncing()
 
     async def startTeammateChoosing(self):
         self.resetAgreement()
@@ -241,7 +241,7 @@ class Room:
             for i in range(self.shows[t].__len__()):
                 await self.sendShow(self.shows[t][i], self.shwown[t][i] )
 
-    # Handle the end of a turn
+    # # Handle the end of a turn
     async def handleEndturn(self):
         self.curplr = self.bestplr
         self.turn += 1
@@ -272,22 +272,24 @@ class Room:
             # Handle Marriage at the beginning of a new turn
             if await self.handleMarriage(): return
 
-            await self.updateCurrentplayer()
+            await self.updateBotPlaying()
         else: # All turns have been played
             await self.sendPoints( 5, (self.bestplr+int(self.misere)) % 2 ) # The last win get's another 5 points
             await self.handleEndround()
 
-    async def updateCurrentplayer(self):
+    async def updateBotAnnouncing(self):
         if not self.players[ self.curplr ].isBot: return # We're only handling the bot
+        if self.playtype != -1: return
 
-        if self.playtype == -1: # If the current player has to announce
-            pt, mis = self.bot.evaluateAnnounce( self.players[ self.curplr ].cards.toList(), not self.passed )
-            tmp = (self.passed << 7) + (mis << 6) + (self.curplr << 4) + pt
-            await self.announce( tmp, self.curplr )
-            return
+        pt, mis = self.bot.evaluateAnnounce( self.players[ self.curplr ].cards.toList(), not self.passed )
+        tmp = (self.passed << 7) + (mis << 6) + (self.curplr << 4) + pt
+        await self.announce( tmp, self.curplr )
+
+    async def updateBotPlaying(self):
+        if not self.players[ self.curplr ].isBot: return # We're only handling the bot
+        if self.playtype == -1: return
 
         cards = self.players[ self.curplr ].cards.toList()
-
         evalState = copy.copy( self.state )
 
         index = 1
@@ -347,7 +349,7 @@ class Room:
             # Add 4, so the player knows it is a passed announcement-making
             await self.send( '\x0A', toBytes(4 + mate, 1) )
             self.curplr = mate
-            await self.updateCurrentplayer()
+            await self.updateBotAnnouncing()
             return
 
         self.misere = bool( 1 & byte >> 6 )
@@ -372,7 +374,7 @@ class Room:
         self.curplr = plr
         if self.passed and 1 < self.playtype and self.playtype < 6:
             self.curplr = self.annplr
-        await self.updateCurrentplayer()
+        await self.updateBotPlaying()
 
     async def playCard(self, crd, plr):
         # Give the player trust issues, because they might be cheating
@@ -415,7 +417,7 @@ class Room:
         if self.playedcards.__len__() == 4: # The turn has come to an end
             await self.handleEndturn()
         else:
-            await self.updateCurrentplayer()
+            await self.updateBotPlaying()
 
     # Agreement ---
 
@@ -517,7 +519,7 @@ class Room:
 
             if self.playtype == -1:
                 await self.players[plr].send( '\x0A', toBytes( self.annplr, 1 ) )
-                await self.updateCurrentplayer()
+                await self.updateBotAnnouncing()
             else:
                 await self.players[plr].send( '\x09', toBytes( self.curplr, 1) ) # When announced, send the currentplayer
         elif head == 9:
