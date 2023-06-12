@@ -289,11 +289,11 @@ class Room:
         if not self.players[ self.curplr ].isBot: return # We're only handling the bot
         if self.playtype == -1: return
 
-        cards = self.players[ self.curplr ].cards.toList()
+        cards = self.players[ self.curplr ].startcards.toList()
         evalState = copy.copy( self.state )
 
         index = 1
-        for crd in self.players[self.curplr].startcards.toList():
+        for crd in cards:
             evalState[ index, crd.col ] = 1
             evalState[ index, crd.num+4 ] = 1
             index += 1
@@ -301,9 +301,12 @@ class Room:
         legals = []
         for c in cards:
             if self.players[self.curplr].legalCard(c, self.ruletype, self.turncolor, self.bestcard):
-                legals.append(c)
+                legals.append(1)
+            else:
+                legals.append(-1)
 
-        await self.playCard(random.choice(legals), self.curplr)
+        crd = self.bot.evaluateCard( evalState, legals )
+        await self.playCard(crd, self.curplr)
 
     # Input handling ---
 
@@ -428,6 +431,7 @@ class Room:
         self.points = [0, 0]
         self.gamestate = GAME_PLAYING
         await self.send( '\x0A', toBytes( self.annplr, 1 ) )
+        await self.updateBotAnnouncing()
 
     def resetAgreement(self):
         self.agreementType = AGREEMENT_NONE

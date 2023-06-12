@@ -19,6 +19,22 @@ pip3 install -r requirements.txt
 
 ---
 
+## Handling the AI-part
+
+First you have to gather your own data of rounds by simply playing some games. Note that you have to create a log folder outside of this repository. Do this as following:
+```
+mkdir ../log
+```
+After playing a ton of rounds. You can start training a model with:
+```
+python3 server/server.py -train
+```
+*(The train stands for training, not the vehicle -.-)*
+
+The AI should now work and play.
+
+---
+
 ## Running it on your computer
 
 Simply run in the main folder:
