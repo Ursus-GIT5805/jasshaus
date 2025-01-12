@@ -4,9 +4,10 @@
 var annMisere = false;
 
 function startAnnounce(){
+	annMisere = false;
 	hand.setLegality((c) => true);
 	$("#passButton").css("visibility", ["hidden", "visibible"][+game.can_pass(own.id)]);
-	$("#announceWindow").css("display", "flex")
+	$("#announceWindow").css("display", "flex").css("filter", "");
 }
 
 function announce(pt){

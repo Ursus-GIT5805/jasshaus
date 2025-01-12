@@ -28,11 +28,6 @@ async fn handle_websocket(ws: WebSocket, room: Arc<Mutex<Room>>) {
     debug!("Client[{}] connected!", client_id);
 
     while let Some(message) = ws_rx.next().await {
-        if let Err(e) = message {
-            error!("{:?}", e);
-            break;
-        }
-
         if let Message::Text(string) = message.unwrap() {
             debug!("Client[{}]: {}", client_id, string);
             let msg: SocketMessage = serde_json::from_str(string.as_str())

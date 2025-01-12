@@ -39,7 +39,6 @@ version = "0.1.0"
 dependencies = [
  "jasshaus-game",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -47,7 +46,6 @@ name = "jasshaus-game"
 version = "0.1.0"
 dependencies = [
  "serde",
- "serde_json",
  "tsify-next",
  "wasm-bindgen",
 ]

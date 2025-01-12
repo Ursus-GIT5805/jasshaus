@@ -109,10 +109,10 @@ impl Game {
 			self.players[i].hand = hand;
 		}
 
-
         for team in self.teams.iter_mut() {
             team.won_points = 0;
             team.show_points = 0;
+			team.won.clear();
         }
 
         self.ruleset = RuleSet::default();
@@ -121,7 +121,8 @@ impl Game {
 		self.turncolor = None;
 		self.bestcard = None;
 		self.passed = 0;
-        self.announce_player = (self.announce_player + 1) % self.players.len();
+		self.marriage = MarriageState::None;
+		self.announce_player = (self.announce_player + 1) % self.players.len();
         self.current_player = self.announce_player;
     }
 

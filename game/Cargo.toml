@@ -8,6 +8,12 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 serde = { version = "1.0.183", features = ["derive"] }
-serde_json = "1.0"
 tsify-next = "0.5.4"
 wasm-bindgen = "0.2.99"
+
+[profile.release]
+lto = true
+strip = true
+opt-level = 's'
+codegen-units = 1
+panic = 'abort'

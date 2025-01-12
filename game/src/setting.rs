@@ -78,7 +78,7 @@ impl Setting {
 			// beg_passed[ROSE as usize] = false;
 			// beg_passed[BELL as usize] = false;
 
-			max_points: 20,
+			max_points: 1000,
             point_recv_order: vec![PointRule::MARRIAGE, PointRule::SHOW, PointRule::PLAY],
             // playtype_multiplier: vec![1; NUM_PLAYTYPES],
             // allow_playtype: vec![true; NUM_PLAYTYPES],

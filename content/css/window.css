@@ -15,6 +15,7 @@
     top: 50%;
     transform: translateX(-50%) translateY(-50%);
 
+	box-shadow: 0 0 1rem 0 #000000;
 	box-sizing: border-box;
 }
 
@@ -127,6 +128,7 @@
 }
 
 #roundSummary {
+	font-size: 2rem;
 	flex-direction: column;
 }
 

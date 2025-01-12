@@ -1,7 +1,7 @@
 const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
 
 let WEB_URL = "https://" + window.location.host + "/";
-let WSS_URL = "wss://127.0.0.1:7999/ws"
+let WSS_URL = "wss://" + window.location.host + "/ws"
 
 if(DEV_MODE){
     if(window.location.protocol == "http:"){
@@ -16,6 +16,14 @@ if(DEV_MODE){
 
 var socket = null;
 var handhash = null;
+
+function gameMessage(msg, plr) {
+	let name = players.getName(plr);
+	let chatmsg = "[" + name + "]: " + msg;
+
+	players.setMessage(msg, plr);
+	comm.chatMessage(MessageType.Info, chatmsg);
+}
 
 function updateHand() {
 	if(handhash) {
@@ -147,6 +155,11 @@ async function FUNC_Announce(ann) {
 		updateHand();
 	}
 
+	let title = "";
+	if(misere) title = "Misère: ";
+	title += pt_name(pt);
+	gameMessage(title, game.current_player);
+
 	said_marriage = false;
 	game.announce(pt, misere);
 	updateRoundDetails();
@@ -186,9 +199,7 @@ async function FUNC_PlayCard(card){
 
 	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
 		let plr = game.marriage['PlayedBoth'];
-		let name = players.getName(plr);
-		comm.chatMessage(MessageType.Info, "["+name+"]: Stöck!");
-		players.setMessage("Stöck", plr);
+		gameMessage("Stöck", plr);
 		said_marriage = true;
 	}
 
@@ -220,9 +231,7 @@ async function FUNC_ChatMessage(data) {
 
 async function FUNC_ShowPoints(data) {
 	let [points, plr] = data;
-	let name = players.players[plr].name;
-	comm.chatMessage(MessageType.Info, "[" + name + "]: Ich weise: " + points);
-	players.setMessage(String(points), plr);
+	gameMessage(plr, points);
 }
 
 async function FUNC_ShowList(list) {
