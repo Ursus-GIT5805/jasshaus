@@ -1,272 +1,291 @@
-var connected = false;
+const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
+
+let WEB_URL = "https://" + window.location.host + "/";
+let WSS_URL = "wss://127.0.0.1:7999/ws"
+
+if(DEV_MODE){
+    if(window.location.protocol == "http:"){
+        WEB_URL = "http://" + window.location.host + "/";
+        WSS_URL = "ws://" + window.location.hostname + ":7999/ws";
+    } else {
+        WEB_URL = "file://" + window.location.pathname.substr( 0, window.location.pathname.lastIndexOf("/jasshaus/content/")+17 ) + "/";
+        WSS_URL = "ws://127.0.0.1:7999/ws";
+    }
+}
+
+
 var socket = null;
+var handhash = null;
 
-/*
- * All the functions as following
- * FUNC + (header_byte in decimal number)
- * see headers_doc.txt for the purpose of a header
-*/
-
-async function FUNC0(dat){
-    var card = parseCard( dat[0] );
-    round.playCard( card, (dat[0] >>> 6) > 0 );
+function updateHand() {
+	if(handhash) {
+		let cards = new Cardset(handhash).as_vec();
+		hand.setCards(cards);
+		hand.setIllegal()
+		handhash = null;
+	}
 }
 
-async function FUNC1(dat){
-    let shw = new Show(dat[0] >> 4, dat[0] % 16, dat[1] % 16);
-    let plr = (dat[1] >>> 4) % 4;
-
-    toShow.push( [shw, plr, true] );
-    round.sp[ plr % 2 ] += shw.getPoints(); // Add points
-    round.updatePoints( plr % 2 ); // Update points
-
-    if( shw.row == 2 ) checkShow();
-    else if( round.cardQueue.length == 0 ) checkShow();
+function getGreet() {
+	let choices = ["Grüezi", "Guten Tag", "Heyho", "Hallo"];
+	let index = Math.floor(Math.random() * choices.length);
+	return choices[index];
 }
 
-async function FUNC2(dat){
-    if( dat[0] % 16 == 10 ) return;
-    if(document.getElementById("roundSummary").style.display == "block") closeSummary(); // close the summaryWindow if not done already
+async function setupMic(data){
+	let answerHandler = (answer, id) => send({ "RtcSignaling": [JSON.stringify(answer), "Answer", id] });
+	let ICEHandler = (candidate, id) => send({ "RtcSignaling": [JSON.stringify(candidate), "ICECandidate", id] });
 
-    hand.allUsable = false;
-    round.playtype = dat[0] % 16;
-    round.ruletype = [0,1,2,3,4,5,0,1,0,1][ round.playtype ];
-    round.misere = Boolean((dat[0] >>> 6) % 2);
-    round.passed = Boolean((dat[0] >>> 7));
+	await comm.initVoiceChat(answerHandler, ICEHandler);
+	send({ "RtcStart": 0 });
 
-    // Set the player, who will start play
-    round.beginplayer = ((dat[0] >>> 4) % 4);
-    if(round.passed && 1 < round.playtype && round.playtype < 6) round.beginplayer = (round.beginplayer+2) % 4;
-
-    round.curplr = round.beginplayer;
-    updateCurrentplayer();
-
-    // Display an announce message
-    let ann = ["", "Misère: "][+round.misere] + getPlaytypeName( dat[0] % 16, getStorageBool(2) ) + "!";
-    players.onMSG( ann, ((dat[0] >>> 4) % 4), "#FFFF00" );
-
-    // Update everything onscreen
-    round.updateRoundDetails();
-    hand.drawAll();
+	$("#botrightbuttons").append( comm.createMicbutton() )
 }
 
-async function FUNC3(dat){
-    if(dat[0] >>> 2 == 0 && players.muted[ dat[0] % 4 ]) return; // don't display if the player is muted
-    let col = ["#FFFFFF", "#FFFF00", "#DDDDDD", "#FF0000"][ (dat[0] >>> 2) % 4 ];
+async function FUNC_PlayerID(player_id) {
+	own.id = player_id;
+	players.setName(own.name, player_id);
+	players.createPlayers(player_id);
+	carpet.rotate_by_players(player_id);
 
-    players.onMSG( numArrayToString(dat.slice(1)), dat[0] % 4, col );
+	players.setMessage(getGreet(), own.id);
 }
 
-async function FUNC4(dat){
-    var name = "";
-    for(let i = 1 ; i < dat.length ; ++i) name += String.fromCharCode(dat[i]);
-    players.setName( name, dat[0] % 4 );
-    document.getElementById("plrNum").innerHTML = ++players.numconnected;
-
-    if( Boolean(1 & (dat[0] >>> 2)) ){ // This player is using the microphone
-        players.addSymbol( "img/mic.svg", dat[0] % 4 );
-        document.getElementById("volumectrl" + ((4 - id + dat[0]) % 4)).style.display = "block";
-    }
+async function FUNC_GameSetting(setting) {
+	game.setting = setting;
+	updateSetting();
 }
 
-async function FUNC5(dat){
-    document.getElementById("plrRev").innerHTML = dat[0];
+async function FUNC_ClientJoined(data) {
+	let [client_id, player_id] = data;
+	comm.newClient(client_id);
+	comm.clients[client_id].player_id = player_id;
+
+	let def = "Unnamed" + client_id
+	comm.setName(def, client_id);
+	players.setName(def, player_id );
 }
 
-async function FUNC6(dat){
-    let h = dat[0];
-    let plr = h >>> 2;
-    h = h % 4;  
+async function FUNC_JoinedClients(list) {
+	for(let [name, client_id, player_id] of list) {
+		comm.newClient(client_id);
+		comm.clients[client_id].player_id = player_id;
 
-    let json = JSON.parse( numArrayToString( dat ).substr(1) );
-    if(h == 0) await onOffer( json, plr );
-    if(h == 1) await onAnswer( json, plr );
-    if(h == 2) await onIceCanditate( json, plr );    
+		comm.setName( name, client_id );
+		players.setName( name, player_id );
+	}
 }
 
-async function FUNC7(dat){
-    let plr = dat[0];
-    players.addSymbol( "img/mic.svg", plr ); // Add a symbol so the user knows he is using the mic
-    document.getElementById("volumectrl" + ((4 - id + plr) % 4)).style.display = "block";
-    if( useMic ) await sendOffer(plr);
+async function FUNC_ClientDisconnected(client_id) {
+	let name = comm.clients[client_id].name;
+	let pid = comm.clients[client_id].player_id;
+
+	comm.removeClient(client_id);
+	comm.chatMessage(MessageType.Info, name + " left the table.");
+	players.setName( "", pid );
 }
 
-async function FUNC8(dat){
-    let order = [0,1,2,3], rOrd = [];
-    let symbols = [];
-    let names = [];
-    for(let i = 0 ; i < 4 ; ++i){
-        let ind = (4 - id + i) % 4;
-        rOrd.push( (dat[0] >> (i*2)) % 4 );
-        order[ rOrd[i] ] = i
-        names.push( document.getElementById("player" + ind).innerHTML );
-        symbols.push( document.getElementById("symbols" + ind).innerHTML );
-    }
-
-    // id i will be rOrd[i]
-    // id i will be replaced with id order[i]
-
-    id = rOrd[id];
-    pc = [ pc[ order[0] ], pc[ order[1] ], pc[ order[2] ], pc[ order[3] ] ];
-    players.muted = [ players.muted[ order[0] ], players.muted[ order[1] ], players.muted[ order[2] ], players.muted[ order[3] ]]
-
-    for(let i = 0 ; i < 4 ; ++i){
-        players.setName( names[i], rOrd[i] );
-        document.getElementById("symbols" + ((4-id) + rOrd[i]) % 4).innerHTML = symbols[i];
-    }
+async function FUNC_StartMating(u) {
+	$("#startWindow").css("display", "none");
+	$("#teamWindow").css("display", "block");
 }
 
-async function FUNC9(dat){
-    round.curplr = dat[0];
-    updateCurrentplayer();
+async function FUNC_NewCards(data) {
+	handhash = BigInt(data.list);
 }
 
-async function FUNC10(dat){
-    let plr = dat[0] % 4;
+async function FUNC_GameState(data) {
+	let [state, cardset] = data;
 
-    round.passed = Boolean( dat[0] >> 2 );
-    players.setStar( plr );
-    if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
+	let cards = new Cardset(BigInt(cardset.list)).as_vec();
+	hand.setCards(cards);
+	hand.setIllegal();
 
-    if( plr == id ) startAnnounce();
-    else {
-        hand.allUsable = false;
-        hand.drawAll();
-    }
+	for(let key in state) {
+		if(key != 'ruleset') game[key] = state[key];
+		else game[key] = RuleSet.new( state[key].playtype, state[key].misere );
+	}
+
+	if(game.marriage.hasOwnProperty('PlayedBoth')) said_marriage = true;
+
+	let pcards = game.get_playedcards();
+	let numplayers = game.players.length;
+	let begplayer = game.current_player + numplayers - pcards.length;
+
+	for(let i = 0 ; i < pcards.length ; i++) {
+		let card = pcards[i];
+		let plr = (begplayer + i) % numplayers;
+		carpet.playCard(card, plr, objEquals(card, game.bestcard));
+	}
+
+	game.update_ruletype();
+	$("#startWindow").css("display", "none");
+
+	updatePoints();
+	updateRoundDetails();
+
+	if(state.current_player == own.id) {
+		if(!game.is_announced()) startAnnounce();
+		else handleOnTurn();
+		players.setCurrent(game.current_player);
+	}
 }
 
-async function FUNC11(dat){
-    id = dat[0]; 
-    loadSettings();
+async function FUNC_SetAnnouncePlayer(plr) {
+	game.announce_player = plr;
+	game.current_player = plr;
+
+	updateHand();
+	players.setCurrent(game.current_player);
+    if( plr == own.id ) startAnnounce();
 }
 
-async function FUNC12(dat){
-    hand.cards = parseCards( dat );
-    hand.drawAll();
+async function FUNC_Announce(ann) {
+	let [pt, misere] = ann;
+    if( game.cards_played != 0 ) {
+		$("#closeSummary").click();
+		updateHand();
+	}
 
-    if(round.turn < 2 && hand.cards.length == 9){
-        var shows = hand.getShows();
-        for(let i = 0 ; i < shows.length ; ++i) toShow.push( [shows[i], id, false] );
-    }
+	said_marriage = false;
+	game.announce(pt, misere);
+	updateRoundDetails();
+
+	if( own.id == game.current_player ) handleOnTurn();
 }
 
-
-async function FUNC13(dat){
-    document.getElementById("startWindow").style.display = "none"; // The round has already started
-
-    for(let i = 0 ; i < 2 ; ++i){
-        let t = i*6;
-        round.points[i] = (dat[0+t] << 8) + dat[1+t];
-        round.gp[i] = (dat[2+t] << 8) + dat[3+t];
-        round.sp[i] = (dat[4+t] << 8) + dat[5+t];
-        round.updatePoints(i);
-    }
-
-    let pt = dat[12] % 16;
-    if(pt != 15) FUNC2( [ dat[12] ] );
-    round.passed = dat[12] >>> 7;
-
-    let numC = (dat[18] >>> 2) % 4;
-    round.turn = dat[18] >>> 4;
-    round.curplr = dat[18] % 4;
-    round.beginplayer = (4-numC + round.curplr) % 4;
-    round.curplr = round.beginplayer;
-
-    FUNC12( dat.slice(13, 18) );
-    if( round.playtype != -1 ) updateCurrentplayer();
-
-    if( pt == 6 || pt == 7 ) round.ruletype = (round.turn-1 +(pt == 7)) % 2;
-    if( pt == 8 || pt == 9 ) round.ruletype = ((pt == 9)+(round.turn > 4)) % 2;
-    round.updateRoundDetails();
-    
-    let gamestate = dat[19];
-
-    for(let i = 0 ; i < numC ; ++i) FUNC0( [ dat[20 + i] ] );
-    if(round.turn != 1) toShow.length = 0;
-    if(round.passed) document.getElementById("roundPass").style.visibility = "visible";
-
-    if( round.playtype == -1 && gamestate == 1 ){
-        let annplr = ((dat[12] >>> 4) + 2*+round.passed) % 4;
-        if( annplr == id ) startAnnounce();
-    }
+async function FUNC_Pass(u) {
+	game.pass();
+	if( own.id == game.current_player ) startAnnounce();
+	players.setCurrent(game.current_player);
 }
 
-async function FUNC14(dat){
-    let ev = dat[0];
+async function FUNC_ClientIntroduction(data) {
+	let [name, cid] = data;
+	let pid = comm.clients[cid].player_id;
 
-    if(ev == 0){ // Round has ended
-        for(let i = 0 ; i < 2 ; ++i) round.points[i] += (round.gp[i] + round.sp[i]);
-
-        var hands = [];
-        for(let i = 0 ; i < 4 ; ++i) hands.push( parseCards( dat.slice(11+i*5, 16+i*5) ) );
-
-        var cards = [dat.slice(1, 6), dat.slice(6, 11)]
-        updateSummary( cards, hands );
-
-        hand.onTurn = false;
-        hand.drawAll();
-
-        endRound = true;
-        if(round.cardQueue.length == 0) round.continueCardQueue();
-    } else if(ev == 1 || ev == 2){ // Game has ended
-        for(let i = 0 ; i < toShow.length ; ++i){ // You can't show anything when the game has ended
-            if(toShow[i][2]) continue;
-            toShow.splice(i, 1);
-            --i;
-        }
-
-        updateEndresult( id % 2 == ev - 1 );
-        players.setStar(0);
-        endGame = true;
-        if(!endRound) document.getElementById("endWindow").style.display = "block";
-    } else if(ev == 3){ // New game has started
-        document.getElementById("endWindow").style.display = "none";
-        round.reset();
-        round.points = [0, 0];
-        round.updateRoundDetails();
-        round.updatePoints(0);
-        round.updatePoints(1);
-        endGame = false;
-    } else if(ev == 4){ // Start team choosing
-        document.getElementById("startWindow").style.display = "none";
-        document.getElementById("teamWindow").style.display = "block";
-    } else if(ev == 5){ // Game starts
-        document.getElementById("teamWindow").style.display = "none";
-        endGame = false;
-    }
+	comm.setName(name, cid);
+	players.setName(name, pid);
+	comm.chatMessage(MessageType.Info, name + " joined the table.");
+	players.setMessage(getGreet(), pid);
 }
 
-async function FUNC15(dat){
-    round.gp[ dat[0] >> 1 ] += (dat[0]%2 << 8) + dat[1];
-    round.updatePoints( (dat[0] >> 1) % 2 );
+async function FUNC_PlayCard(card){
+	let isbest = false;
+	if(game.bestcard) isbest = game.ruleset.is_card_stronger(game.bestcard, card);
+	else isbest = true;
+
+	let curplr = game.current_player;
+	game.play_card(card);
+
+	if(carpet.get_num_cards() == game.players.length) carpet.clean();
+	carpet.playCard(card, curplr, isbest);
+	if(carpet.get_num_cards() == game.players.length) updatePoints();
+
+	// ---
+
+	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
+		let plr = game.marriage['PlayedBoth'];
+		let name = players.getName(plr);
+		comm.chatMessage(MessageType.Info, "["+name+"]: Stöck!");
+		players.setMessage("Stöck", plr);
+		said_marriage = true;
+	}
+
+	if(game.should_end() || game.cards_played == 36) {
+		hand.setIllegal();
+		setTimeout(openSummary, 2000);
+	} else {
+		if( game.current_player == own.id ) handleOnTurn();
+		else hand.setIllegal();
+		players.setCurrent(game.current_player);
+	}
 }
 
-async function FUNC16(dat){
-    let plr = dat[0];
-    players.setName("", plr);
-    players.onMSG( "Tschüss!", plr, "#FFFF00" );
-    players.removeSymbols( plr );
-    players.numconnected -= 1;
-    document.getElementById("volumectrl" + ((4 - id + plr) % 4)).style.display = "none";
-    renewPeer( plr );
+async function FUNC_ChatMessage(data) {
+	let [msg, client_id] = data;
+
+	let name = own.name;
+	if(client_id in comm.clients) {
+		if(comm.clients[client_id].muted) return;
+		let plr_id = comm.clients[client_id].player_id;
+		name = comm.clients[client_id].name;
+
+		players.setMessage(msg, plr_id);
+	}
+	let message = "[" + name + "]: " + msg;
+
+	comm.chatMessage(MessageType.Normal, message);
 }
 
-async function FUNC17(dat){
-    let tmp = [];
+async function FUNC_ShowPoints(data) {
+	let [points, plr] = data;
+	let name = players.players[plr].name;
+	comm.chatMessage(MessageType.Info, "[" + name + "]: Ich weise: " + points);
+	players.setMessage(String(points), plr);
+}
 
-    for(let i = 0 ; i < dat.length ; ++i){
-        if(dat[i] == 44){
-            ICEusername = tmp.join("");
-            tmp = [];
-            continue;
-        }
+async function FUNC_ShowList(list) {
+	for(let i = 0 ; i < list.length ; i++) {
+		let shows = list[i];
+		let name = players.getName(i);
 
-        tmp.push( String.fromCharCode(dat[i]) );
-    }
-    ICEpassword = tmp.join("");
+		for(let show of shows) {
+			game.play_show(show, i);
+			openShow(show, name, false);
+		}
+	}
+	updatePoints();
+}
 
-    initRTC();
-    await setupMic();
+async function FUNC_HasMarriage(plr) {
+	game.set_marriage(plr);
+}
+
+async function FUNC_RtcStart(cid) {
+	if(!comm.voiceChatInit) return;
+	let offer = await comm.createOffer(cid);
+	send({ "RtcSignaling": [JSON.stringify(offer), "Offer", cid] });
+}
+
+async function FUNC_RtcSignaling(data) {
+	let [jsonstr, signal, cid] = data;
+
+	let json = JSON.parse(jsonstr);
+
+	if(signal == "Offer") await comm.onOffer(json, cid);
+	if(signal == "Answer") await comm.onAnswer(json, cid);
+	if(signal == "ICECandidate") await comm.onIceCandidate(json, cid);
+}
+
+async function FUNC_Vote(data) {
+	if(!voting) return;
+
+	let [opt, cid] = data;
+	voting.agreeTo(opt);
+}
+
+async function FUNC_NewVote(data) {
+	let clients = comm.num_clients+1;
+	let handler = (id) => send({ "Vote": [id, 0] });
+
+	if(data === 'Revanche') voting = new Voting("Revanche", clients, ["Ja", "Nein"], handler);
+}
+
+async function FUNC_StartGame(u) {
+	if(game) {
+		let setting = game.setting;
+		game = new Game();
+		game.setting = setting;
+	}
+
+	$("#voteWindow").remove();
+	$("#startWindow").css("display", "none");
+	$("#endWindow").css("display", "none");
+	$("#teamWindow").css("display", "none");
+
+	updatePoints();
+	updateRoundDetails();
 }
 
 // Websocket handling
@@ -274,49 +293,34 @@ function startWS(){
     socket = new WebSocket( WSS_URL );
 
     socket.onopen = async function(e){
-        log("Websocket connected!"); 
-        connected = true;
+		send({ "ClientIntroduction": [own.name, 0, ] })
+		await setupMic();
     }
 
     socket.onmessage = async function(e){
-        var head = e.data[0].charCodeAt(); // The first byte contains the header
-        log( "INPUT: HEAD " + head );
+		let obj = JSON.parse(e.data);
+		let head = Object.keys(obj)[0];
+		if(head == "0") head = obj;
 
-        for(let i = 1 ; i < e.data.length ; ++i) log( toNum(e.data[i]) );
-        var dat = stringToNumArray(e.data.substr(1));
+		if(DEV_MODE) console.log(obj);
 
-        await window["FUNC" + String(head)]( dat ); // Run the function related to the header
+		// Run the function related to the header
+        await window["FUNC_" + String(head)]( obj[head] );
     }
 
     socket.onclose = function(e){
-        if(DEV_MODE) return;
-        connected = false;
-        openInfo("Meldung", 
-                "Die Verbindung zum Server wurde geschlossen! Die Seite wird nun verlassen.",
-                function(){ goTo('index.html') });
-    }
-
-    socket.onerror = function(e){
-        if(DEV_MODE) return;
-        openInfo("Fehler", 
-                "Die Verbindung zum Server konnte nicht hergestellt wieder! Die Seite wird nun verlassen.",
-                function(){ goTo('index.html') });
+        openInfo("Meldung",
+                'Die Verbindung zum Server wurde geschlossen! Die Seite wird mit "Okay" verlassen.',
+                () => window.location.replace("index.html"));
     }
 }
 
-// Converts and sends the given parameters
-// data - a list of numbers 0 <= x < 256, or a string
-function send( head, data ){
-    log( data );
-    var dat = "";
-    if(typeof data !== 'string'){
-        for(let i = 0 ; i < data.length ; ++i) dat += String.fromCharCode( data[i] );
-    } else {
-        dat = data;
-    }
+/// Converts and sends data
+function send( data ){
+	if(DEV_MODE) console.log(data);
 
-    try {
-        socket.send( String.fromCharCode(head) + dat );
+	try {
+        socket.send(JSON.stringify(data));
     } catch(e){
         console.error("Error when sending data!", e);
     }

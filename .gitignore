@@ -1,2 +1,6 @@
 server/__pycache__
 .vscode
+server/target
+comm/target
+game/target
+content/pkg

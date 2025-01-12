@@ -3,26 +3,17 @@
     <head>
         <title>Jasshaus | Start</title>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link rel="stylesheet" href="css/main.css">
     </head>
-    
-    <body>
-        <img id="backimg" src="img/background.png">        
-    
-        <div id="mainWindow">
-            <div id="title">Jasshaus</div>
-            <a style="font-size: 2rem; font-weight: 600;">Willkommen zum Jasshaus!</a>
-            <div style="position: relative; margin: 1rem;">
-                <div>
-                    <button class="Button" onclick="goTo('game.html')">Einer Partie beitreten</button>
-                </div>
-                <div>
-                    <button class="Button" onclick="goTo('settings.html')">Einstellungen</button>
-                </div>
-            </div>
-        </div>
-    </body>
 
-    <script src="js/utils.js" type="text/javascript"/></script>
-    <link rel="stylesheet" href="css/main.css">
+	<img src="img/background.jpg" id="background"/>
+    <body>
+	  <div>
+		<h1>Jasshaus</h1>
+		<h2>Willkommen zum Jasshaus!</h2>
+		<a href="game.html"><div class="Button">Einer Partie beitreten.</div></a>
+		<a href="settings.html"><div class="Button">Einstellungen</div></a>
+	  </div>
+    </body>
 </html>

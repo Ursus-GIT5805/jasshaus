@@ -1,6 +1,11 @@
 :root {
     font-size: 100%;
     font-family: Roboto, sans-serif;
+    --card-aspect-ratio: 161 / 247;
+}
+
+img {
+	user-select: none;
 }
 
 body {
@@ -18,6 +23,17 @@ body {
     background-color: #000000;
 }
 
+.CenterX {
+	position: absolute;
+	left: 50%;
+	transform: translateX(-50%);
+}
+.CenterY {
+	position: absolute;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
 #background {
     position: absolute;
 
@@ -25,31 +41,13 @@ body {
     height: 100%;
 }
 
-#cards {
-    position: absolute;
-}
-
-#carpet {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-    width: 50%;
-    height: 50%;
-
-    transform: translateX(-50%) translateY(-50%);
-
-    background-color: #00BB00;
-
-    border-radius: 1rem;
-    border-style: solid;
-    border-color: #008100;
-}
-
 .Playedcard {
     position: absolute;
 
     display: none;
+
+	height: 40%;
+	aspect-ratio: var(--card-aspect-ratio);
 
     border-style: none;
     border-radius: 0.75rem;
@@ -59,29 +57,14 @@ body {
     animation-duration: 500ms;
 }
 
-@keyframes CardPlay1 {
-    from { transform: translateX(300%) translateY(-50%); }
-    to { transform: translateX(0%) translateY(-50%); }
-}
-
-@keyframes CardPlay2 {
-    from { transform: translateX(-50%) translateY(-300%); }
-    to { transform: translateX(-50%) translateY(0%); }
-}
-
-@keyframes CardPlay3 {
-    from { transform: translateX(-300%) translateY(-50%); }
-    to { transform: translateX(0%) translateY(-50%); }
-}
-
 #roundDetails {
     position: absolute;
+	display: flex;
+	flex-direction: column;
 
-    top: 0%;
-    left: 0%;
-    width: 13rem;
-    height: 6rem;
-    
+    top: 0;
+    left: 0;
+
     text-align: center;
     font-size: 1rem;
 
@@ -95,240 +78,81 @@ body {
     border-color: #DEA487;
 }
 
-#namePT {    
-    min-width: 1rem;
-    min-height: 1rem;
-}
+#roundSymbols {
+	display: flex;
 
-.Playtype {
-    position: relative;
+	img {
+		width: 6rem;
+		height: 6rem;
+	}
 
-    visibility: hidden;
-    float: left;
+	div {
+		display: flex;
+		flex-direction: column;
 
-    width: 5rem;
-    height: 5rem;
+		img {
+			width: 3rem;
+			height: 3rem;
+		}
+	}
 }
 
 #gameDetails {
     position: absolute;
 
-    top: 0%;
-    right: 0%;
-    width: 15rem;
-    height: 5rem;
-    
+    top: 0;
+    right: 0;
+
     color: #EEEEEE;
     background-color: #000000;
     padding: 0.8rem;
 
-    font-size: 1.35rem;
+    font-size: 1.5rem;
 
     overflow: hidden;
     white-space: nowrap;
 
+    border-color: #DEA487;
     border-style: solid;
     border-bottom-left-radius: 0.5rem;
     border-width: 0 0 0.5rem 0.5rem;
-    border-color: #DEA487;
 }
 
-.Player {
-    position: absolute;
-
-    background-color: #000000;
-    color: #FFFFFF;
-
-    text-align: left;
-    font-size: 2rem;
-    font-weight: 400;
-
-    width: 11rem;
-    max-width: 20%;
-    height: 2.5rem;
-
-    border-radius: 0.2rem;
-
-    cursor: pointer;
-}
-
-.PlayerName {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.PlrDropdown {
-    position: absolute;
-    display: none;
-
-    top: 100%;
-    width: 100%;
-
-    text-align: center;
-
-    background-color: #000000;
-}
-
-.PlrDropdown div {
-    position: relative;
-    font-size: 1.5rem;
-    padding: 0.25rem;
-}
-
-.Player:hover .PlrDropdown {
-    display: block;
-}
-
-.PlayerMSG {
-    position: absolute;
-    display: none;
-
-    width: 30%;
-    height: 2.8rem;
-
-    padding: 0.3rem;
-    border-radius: 0.3rem;
-
-    text-align: left;
-    font-size: 2rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    user-select: none;
-
-    overflow: hidden;
-
-    color: var(--col_1);
-    background-color: #CCCCCC;
-}
-
-.PlayerMSG:hover {
-    height: max-content;
-    white-space: inherit;
-}
-
-.Playersymbol {
-    position: relative;
-
-    float: left;
-
-    top: 100%;
-    width: 1rem;
-    height: 1rem;
-
-    padding: 0.05rem;
-    margin: 0.05rem;
-    border-radius: 0.1rem;
-
-    background-color: #FFFFFF;
-}
-
-.Playerstar {
-    position: absolute;
-    visibility: hidden;
-    height: calc(100% - 0.5rem);
-}
-
-#micImg {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
-    height: 80%;
-
-    filter: grayscale(100%) invert(30%);
-
-    animation-duration: 3s;
-    animation-iteration-count: infinite;
-
-    transform: translateX(-50%) translateY(-50%);
+#gameTeams {
+	display: flex;
+	flex-direction: column;
 }
 
 .ActionButton {
-    position: absolute;
+    width: 1.6cm;
+    height: 1.6cm;
 
-    width: 1.2cm;
-    height: 1.2cm;
+	z-index: 420;
 
-    border-radius: 0.5rem;
-    border-width: 0.1rem;
-    border-color: #FFFFFF;
-    margin: 0.1rem;
+	border-radius: 0.1cm;
+    margin: 0.2cm;
+	padding: 0.2cm;
 
     background-color: #000000;
     cursor: pointer;
+	box-sizing: border-box;
 }
 
 .ActionButton:hover {
     background-color: #363636;
 }
 
-.ButtonIcon {
-    position: relative;
+#botrightbuttons {
+	display: flex;
+	flex-direction: column-reverse;
 
-    left: 50%;
-    top: 50%;
-    width: 60%;
-    height: 60%;
-    transform: translateX(-50%) translateY(-50%);
+	z-index: 420;
+	position: absolute;
+
+	right: 2px;
+	bottom: 2px;
 }
 
-@keyframes Fading {
-    0% {
-        opacity: 100%;
-    }
-    50% {
-        opacity: 20%;
-    }
-    100% {
-        opacity: 100%;
-    }
-}
-
-@media (orientation: portrait) {
-    #roundDetails {
-        width: 26rem;
-        height: 12rem;
-        font-size: 2rem;
-    }
-
-    .Playtype {
-        width: 10rem;
-        height: 10rem;
-    }
-
-    #gameDetails {
-        width: 30rem;
-        height: 10rem;
-        font-size: 2.7rem;
-    }
-
-    .Player {
-        font-size: 3.5rem;
-
-        width: 15rem;
-        height: 4rem;
-    }
-     
-    .PlrDropdown div {
-        font-size: 2.5rem;
-    }    
-}
-
-@media (prefers-color-scheme: dark) {
-    #background {
-        filter: brightness(40%);
-    }
-
-    #carpet {
-        background-color: #006600;
-        border-color: #003300;
-    }
-
-    .PlayerMSG {
-        background-color: #3E3E3E;
-    }
-}
+#pleft .PlayerMSG { left: 0; }
+#pup .PlayerMSG { left: 50%; transform: translateX(-50%); }
+#pright .PlayerMSG { right: 0; }

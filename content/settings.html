@@ -1,84 +1,41 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Jasshaus | Einstellungen</title>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    </head>
-    
-    <body>
-        <img id="backimg" src="img/background.png">        
-    
-        <div id="mainWindow">
-            <div id="title">Jasshaus</div>
-            <a style="font-size: 2rem; font-weight: 600;">Einstellungen</a>
-            <div style="position: relative; margin: 1rem;">
-                <div>
-                    <button class="Button" onclick="saveAndExit()">Zurück zur Startseite</button>
-                </div>
-            </div>
-            <div class="Box">
-                <h2>Spieler Einstellungen</h2>
-                <h4>Diese Einstellungen können <u>NICHT</u> während einer Partie geändert werden!</h4>
-                <div style="margin: 1rem;">
-                    Spitzname: <input type="text" id="name" placeholder="max. 16 Buchstaben" onchange="checkName()"><br>
-                </div>
-                <div style="margin: 1rem;">
-                    Alle Spieler stummschalten <input id="bool0" type="checkbox">
-                    <div class="Tooltip">
-                        <img src="img/tooltip.svg" class="Tooltipimg">
-                        <span class="Tooltipbox">Wenn angekreuzt, werden zu Beginn alle Spieler automatisch stummgeschaltet.</span>
-                    </div>
-                </div>
-            </div>
-            <div class="Box">
-                <h2>Karten Einstellungen</h2>
-                <div>
-                    <img src="img/de.svg" style="width: 1rem;">
-                    Deutsche Jasskarten <input id="boolGE" type="checkbox" onchange="cardLang(false)" checked><br>
-                    <img src="img/fr.svg" style="width: 1rem;">
-                    Französische Jasskarten <input id="bool2" type="checkbox" onchange="cardLang(true)">
-                </div>
-                <div style="margin: 1rem;">
-                    <div>
-                        Karten klicken <input id="bool1" type="checkbox">
-                        <div class="Tooltip">
-                            <img src="img/tooltip.svg" class="Tooltipimg">
-                            <span class="Tooltipbox">
-                                Wenn angekreuzt, müssen Karten nur geklickt (anstatt gezogen) werden, um sie auszuspielen.
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        Karten-Animationen deaktivieren <input id="bool3" type="checkbox">
-                        <div class="Tooltip">
-                            <img src="img/tooltip.svg" class="Tooltipimg">
-                            <span class="Tooltipbox">
-                                Deaktiviert die Animation, wenn Karten gespielt werden.
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                <div style="margin: 1rem;">
-                    <div>
-                        Kartendunkelheit
-                        <div class="Tooltip">
-                            <img src="img/tooltip.svg" class="Tooltipimg">
-                            <span class="Tooltipbox">
-                                Karten werden düster dargestellt, wenn es nicht legal ist, sie zu spielen.
-                            </span>
-                        </div><br>
-                        <input type="range" id="range0" min="0" max="255" onchange="drawExample()">
-                    </div>
-                    <canvas id="cardsettingcanvas" width="322" height="247"></canvas>
-                </div>
-            </div>
-        </div>
-    </body>
+  <head>
+    <title>Jasshaus | Einstellungen</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- <script src="js/utils.js" type="text/javascript" /> -->
+	<!-- <script src="js/storage.js" type="text/javascript" /> -->
+  </head>
 
-    <script src="js/utils.js" type="text/javascript"/></script>
-    <script src="js/storage.js" type="text/javascript"/></script>
-    <script src="js/settings.js" type="text/javascript"/></script>
-    <link rel="stylesheet" href="css/main.css">
-    <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/settings.css"/>
+
+  <body>
+	<img id="background" src="img/background.jpg">
+	<div>
+	  <h1>Jasshaus</h1>
+	  <a href="index.html" id="quitButton"><div class="Button">Zurück zur Startseite</div></a>
+	</div>
+	<div id="settings">
+	  <h1>Einstellungen</h1>
+	</div>
+  </body>
+  <script src="js/jquery.js" type="text/javascript"></script>
+  <script src="js/formcreator.js" type="text/javascript"></script>
+  <script src="js/settings.js" type="text/javascript"></script>
+
+  <script>
+	var form_getter = null;
+	window.onload = (e) => {
+		let def = getSettings();
+		[form, form_getter] = createForm(JasshausForm, def);
+		$("#settings").append( form );
+	};
+
+	document.getElementById("quitButton").onclick = (e) => {
+		let string = JSON.stringify(form_getter());
+		localStorage.setItem(LOCALSTORAGE_KEY, string);
+	};
+  </script>
 </html>

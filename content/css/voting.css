@@ -1,0 +1,35 @@
+#voteWindow {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+
+	top: 2rem;
+	left: 2rem;
+	padding: 1rem;
+	border-radius: 1rem;
+
+	color: #000000;
+	background-color: #FFFFFF;
+
+	* { margin: 1rem; }
+}
+
+#voteButtons {
+	display: flex;
+	flex-direction: row;
+	justify-content: center;
+
+	div {
+		cursor: pointer;
+		margin: 1rem;
+		padding: 1rem;
+		border-radius: 0.5rem;
+
+		color: #ffffff;
+		background-color: #444444;
+	}
+
+	div:hover {
+		filter: brightness(120%);
+	}
+}

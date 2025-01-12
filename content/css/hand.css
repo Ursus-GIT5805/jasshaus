@@ -1,0 +1,22 @@
+:root {
+	--hand_height: 22.5vh;
+}
+
+.Hand {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: center;
+
+	bottom: 0;
+	position: absolute;
+
+	width: 100%;
+    height: var(--hand_height);
+}
+
+.Hand img {
+    width: auto;
+    height: 100%;
+    --cardw: calc( var(--hand_height) * 161 / 247 );
+    margin-right: calc( min( 100vw / 9 - var(--cardw), 0px) );
+}

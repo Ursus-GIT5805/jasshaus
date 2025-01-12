@@ -1,0 +1,184 @@
+.Player {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 400;
+	padding: 0.5rem;
+
+	min-width: 6rem;
+    max-width: 12rem;
+
+    border-radius: 0.2rem;
+	border-width: 0.2rem;
+	border-color: yellow;
+	/* border-style: solid; */
+
+	overflow: hidden;
+    text-overflow: ellipsis;
+
+    background-color: #000000;
+    color: #FFFFFF;
+
+	box-sizing: border-box;
+}
+
+.Player:empty {
+	display: none;
+}
+
+.PlayerMSG {
+    position: absolute;
+
+    min-width: 10rem;
+	max-width: 20rem;
+
+	font-size: 2rem;
+
+    padding: 0.3rem;
+    border-radius: 0.3rem;
+
+    text-align: left;
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+    user-select: none;
+
+    overflow: hidden;
+
+	box-sizing: border-box;
+
+	cursor: pointer;
+    color: #000000;
+    background-color: #CCCCCC;
+}
+
+.PlayerMSG:hover {
+	max-width: 30rem;
+    height: max-content;
+    white-space: inherit;
+}
+
+
+#chatWindow {
+    position: absolute;
+    display: none;
+
+	top: 50%;
+	left: 50%;
+	transform: translateX(-50%) translateY(-50%);
+
+    width: min(60vw, 100vh);
+	height: 60vh;
+	z-index: 421;
+
+    border-width: 0.2rem;
+    border-style: solid;
+	border-color: #242424;
+
+    color: #FFFFFF;
+    background-color: #000000BB;
+}
+
+#chat {
+	display: flex;
+	flex-direction: column-reverse;
+	flex: auto;
+}
+
+#chatTopbar {
+	display: flex;
+	justify-content: right;
+
+	img {
+		padding: 0.2rem;
+		width: 1.4rem;
+		height: 1.4rem;
+
+		border-radius: 0.2rem;
+		background-color: #BABABA;
+	}
+
+	img:hover {
+		background-color: #A6A6A6;
+	}
+}
+
+#chatHistory {
+	display: flex;
+	flex-direction: column;
+
+    padding: 0.1rem;
+    overflow-y: auto;
+
+	.msg_system { color: #9F9F9F; };
+	.msg_info { color: #F8C819; };
+	.msg_error { color: #C2685F; };
+	.msg_normal { color: #FFFFFF; };
+}
+
+#chatInput {
+    box-sizing: border-box;
+
+    padding: 0.25rem;
+    height: 2rem;
+
+	color: #FFFFFF;
+    background-color: #00000099;
+
+	border-width: 0 0 2px 0;
+	border-style: solid;
+	border-color: #ffff00;
+}
+
+#playerSettings {
+	display: flex;
+	flex-direction: column;
+	width: 16rem;
+
+	overflow-y: auto;
+}
+
+.playerSettingsEntry {
+	display: flex;
+	flex-direction: column;
+
+	padding: 1rem;
+
+	border-width: 1px;
+	border-color: #FFFFFF;
+	border-style: solid;
+
+	h1 {
+		font-size: 1.5rem;
+		margin: 0;
+		padding: 0;
+	}
+}
+
+#chatClose {
+	position: absolute;
+
+	bottom: 0;
+	right: 0;
+	transform: translateX(+50%) translateY(+50%);
+
+	padding: 0.5rem;
+	cursor: pointer;
+
+	border: #FFFFFF 1px solid;
+	background-color: #000000;
+}
+
+#chatClose:hover {
+	background-color: #222222;
+}
+
+@media (orientation: portrait) {
+  #chatWindow {
+      flex-direction: column;
+	  overflow-y: auto;
+  }
+
+  #playerSettings {
+	  width: auto;
+  }
+}

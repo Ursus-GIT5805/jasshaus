@@ -4,260 +4,192 @@
 var annMisere = false;
 
 function startAnnounce(){
-    hand.allUsable = true;
-    hand.drawAll();
-
-    if( round.passed ) document.getElementById("passButton").style.visibility = "hidden";
-    else document.getElementById("passButton").style.visibility = "visible";
-    if(self.annMisere) toggleMisere();
-
-    document.getElementById("announceWindow").style.display = "block";
+	hand.setLegality((c) => true);
+	$("#passButton").css("visibility", ["hidden", "visibible"][+game.can_pass(own.id)]);
+	$("#announceWindow").css("display", "flex")
 }
 
 function announce(pt){
-    document.getElementById("announceWindow").style.display = "none";
-    send(2, [pt + (annMisere << 6)] );
+    send({"Announce": [pt, annMisere]});
+	hand.setIllegal();
+	$("#announceWindow").css("display", "none");
 }
 
-function toggleMisere(){
+$("#passButton").click((e) => {
+	send("Pass");
+	hand.setIllegal();
+	$("#announceWindow").css("display", "none");
+});
+
+$("#misereButton").click((e) => {
     annMisere = !annMisere;
-    document.getElementById("announceWindow").style.filter = ["invert(0)", "invert(100%)"][+annMisere];
-}
+	$("#announceWindow").css("filter", ["invert(0)", "invert(100%)"][+annMisere]);
+});
 
 // Show window ---
-var showing = false;
-var windowShow = new Show(4,4,4); // Currently displayed show (if show is invalid, then the window is closed)
 var toShow = [];
 
 // Displays a show in the show-window
 // isShowing (bool) - when false it means, the player must decide to show. If true, the show is visible for everyone.
-function openShow(show, plr, isShowing){
-    showing = isShowing;
-    windowShow = show;
+function openShow(show, name, showable, push=true){
+	if(push) toShow.push([show,name,showable]);
+	if(toShow.length > 1) return;
 
-    let ele = document.getElementById("showCards");
-    ele.innerHTML = ""; // Clear current cards
+	let ele = $("#showCards");
+    ele.html(""); // Clear current cards
+	$("#showTitle").text(name);
 
-    // Append all the cards to show in the window
-    let lang = ["de", "fr"][+getStorageBool(2)];
-    if(show.row == 1){
-        for(let i = 0 ; i < 4 ; ++i){
-            let img = document.createElement('img');
-            img.src = "img/" + lang + "/" + (show.col+i) + show.num + ".png";
-            img.classList.add("ShowCard");
-            img.style.maxWidth = "25%";
-            ele.appendChild(img);
-        }
-    } else {
-        for(let i = 0 ; i < show.row ; ++i){
-            let img = document.createElement('img');
-            img.src = "img/" + lang + "/" + show.col + (show.num+i) + ".png";
-            img.classList.add("ShowCard");
-            img.style.maxWidth = (100.0 / show.row) + "%";
-            ele.appendChild(img);
-        }
-    }
+	let cards = show_to_cards(show);
+	for(let card of cards) ele.append( $('<img src="' + card_get_img_url(card) + '"/>') );
 
-    document.getElementById("showConfirm").innerHTML = ["Weisen", "Weiter"][+showing];
-    document.getElementById("showCancel").style.display = ["block", "none"][+showing];
-    document.getElementById("showTitle").innerHTML = "Weisen?";
-    if(isShowing){ // Display the players name instead
-        let i = (4-id+plr) % 4;
-        document.getElementById("showTitle").innerHTML = document.getElementById("player" + i).innerHTML;
-        document.getElementById("showTitle").innerHTML += " (" + ["Sie", "Rechts", "Partner", "Links"][i] + ")";
-    }
-    
-    document.getElementById("showWindow").onmouseenter();
-    document.getElementById("showWindow").style.display = "block";
+
+	if(showable) {
+		$("#showCancel").css("display", "block");
+	} else {
+		$("#showConfirm").text("Weiter");
+		$("#showCancel").css("display", "none");
+	}
+
+    // document.getElementById("showWindow").onmouseenter();
+	$("#showWindow").css("display", "flex");
 }
 
-document.getElementById("showWindow").onmouseenter = function(e){
-    this.style.opacity = "100%";
-    this.style.boxShadow = "4px 4px 20px #000000";
+function closeShow(e) {
+	toShow.shift();
+	if(toShow.length > 0) openShow(toShow[0][0], toShow[0][1], toShow[0][2], false);
+	else $("#showWindow").css("display", "none");
 }
 
-document.getElementById("showWindow").onmouseleave = function(e){
-    this.style.opacity = "25%";
-    this.style.boxShadow = "2px 2px 10px #FFFFFF";
-}
+$("#showConfirm").click((e) => {
+	if(toShow[0][2]) send({ "PlayShow": toShow[0][0] });
+	closeShow(e);
+});
 
-// Opens a show-window when there is a show available (and if the showWindow is closed)
-function checkShow(){
-    if(toShow.length == 0 || windowShow.col != 4) return;
-    let data = toShow.pop();
-    openShow( data[0], data[1], data[2] );
-}
+$("#showCancel").click(closeShow);
 
-function showConfirm(){
-    document.getElementById("showWindow").style.display = "none";
-    if(!showing) send( 1, [(windowShow.col << 4) + windowShow.num, windowShow.row] );
-    windowShow.col = 4;
-    checkShow();
-}
-
-function showCancel(){
-    windowShow.col = 4;
-    document.getElementById("showWindow").style.display = "none";    
-    checkShow();
-}
+// document.getElementById("showWindow").onmouseenter = (e) => this.style.opacity = "100%";
+// document.getElementById("showWindow").onmouseleave = (e) => this.style.opacity = "25%";
 
 // Round summary ---
 var endRound = false;
 
-function updateSummary( cards, hands ){
-    for(let i = 0 ; i < 2 ; ++i){
-        document.getElementById("prePoints" + i).innerHTML = (round.points[i] - round.gp[i] - round.sp[i]);
-        document.getElementById("shwPoints" + i).innerHTML = round.sp[i];
-        document.getElementById("gotPoints" + i).innerHTML = ["", "(Match) "][+(round.gp[i] == 257)] + round.gp[i];
-        document.getElementById("finPoints" + i).innerHTML = round.points[i];
+function openSummary() {
+	$("#roundSummary").html("");
 
-        let ele = document.getElementById("gotPoints" + i);
-        ele.innerHTML = round.gp[i];
-        ele.style.color = ["#FFFFFF", "#FFFF00"][+(round.gp[i] == 257)];
-        ele.style.fontWeight = ["normal", "bolder"][+(round.gp[i] == 257)];
-    }
+	for(let team_id in game.teams) {
+		let team = game.teams[team_id];
 
-    let hasCard = function( bytes, col, num ){
-        let i = col*9 + num;
-        return Boolean( 1 & bytes[ 4 - Math.floor(i/8) ] >>> i%8 );
-    };
+		let bef = team.points - team.won_points - team.show_points;
 
-    // Draw all the cards the teams have won
-    let lang = ["de", "fr"][+getStorageBool(2)];
-    const ctx = [];
-    for(let t = 0 ; t < 2 ; ++t) ctx.push( document.getElementById("cardst" + t).getContext('2d') )
+		let plr_id = Array.from(game.get_players_of_team(team_id));
+		let plrs = plr_id.map((id) => players.getName(id))
 
-    for(let i = 0 ; i < 4 ; ++i){
-        for(let j = 0 ; j < 9 ; ++j){
-            ctx[0].drawImage(cardIMG[i][j], 0, 0, 161, 247, j*161, i*247, 161, 247);
-            ctx[1].drawImage(cardIMG[i][j], 0, 0, 161, 247, j*161, i*247, 161, 247);
-            for(let t = 0 ; t < 2 ; ++t){
-                ctx[t].fillStyle = "rgba(0,0,0,0.5)";
-                if( !hasCard(cards[t], i, j) ) ctx[t].fillRect(j*161, i*247, 161, 247);
-            }
-        }
-    }
+		// <span class="Summaryname">
+		// <a text="short_player3">BBB</a>
+		// <div class="Playercards" id="hand3"></div>
+		// </span>
 
-    // ---
+		let ele = $(`
+<div class="SummaryTeam">
+ <div class="SummaryStats">
+  <div style="font-size: 2.0rem;">` + plrs.join(" & ") + `</div>
+  <div><a style="float: left;">Beginn</a> <a style="float: right;">+` + bef + `</a></div>
+  <div><a style="float: left;">Stich</a> <a style="float: right;">+` + team.won_points + `</a></div>
+  <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + `</a></div>
+  <div>----------</div>
+  <div style="font-size: 1.5rem;">
+   <a style="float: left;">Endstand</a> <a style="float: right;">` + team.points + `</a></div>
+  </div>
+</div>
+`);
 
-    for(let i = 0 ; i < 4 ; ++i){
-        document.getElementById("hand" + i).innerHTML = "";
+		let woncards = new Cardset(BigInt(team.won.list));
+		let cardlist = $("<div>").addClass("SummaryCards");
+		for(let color = 0 ; color < 4 ; color++) {
+			let div = $("<div>");
+			for(let number = 0 ; number < 9 ; number++){
+				let card = new Card(color, number);
+				let img = $("<img>").attr("src", card_get_img_url(card));
+				if(!woncards.contains(card)) img.css("filter", "brightness(50%)");
+				div.append(img);
+			}
+			cardlist.append(div);
+		}
+		ele.append(cardlist);
 
-        for(let j = 0 ; j < 9 ; ++j){
-            let img = document.createElement('img');
-            img.src = "img/" + lang + "/" + hands[i][j].col + hands[i][j].num + ".png";
-            img.style.height = "100%";
-            document.getElementById("hand" + i).appendChild( img );
-        }
-    }
+		$("#roundSummary").append(ele);
+	}
+
+	$("#roundWindow").css("display", "block");
 }
 
-function closeSummary(){
-    document.getElementById("roundSummary").style.display = "none";
+$("#closeSummary").click((e) => {
+	$("#roundWindow").css("display", "none");
+	game.start_new_round([]);
 
-    round.reset();
-    document.getElementById("roundSymbols").style.filter = "invert(0)";
-    round.updateRoundDetails();
-    round.updatePoints(0);
-    round.updatePoints(1);
+	updatePoints();
+	updateRoundDetails();
+	carpet.clean();
+	updateHand();
 
-    endRound = false;
-    if(endGame) document.getElementById("endWindow").style.display = "block";
-    else send(8, ''); //Ask for the next player who must announce
-}
+	if(game.should_end()) openEndwindow();
+	else {
+		players.setCurrent(game.current_player);
+		if(game.current_player == own.id) startAnnounce();
+	}
+});
 
 // Endresult window ---
 
-var endGame = false;
 var sentRevanche = false;
+var agreedRevanche = 0;
 
-function updateEndresult(victory){
-    sentRevanche = false;
-    document.getElementById("plrRev").innerHTML = 0;
-    document.getElementById("endResult").innerHTML = ["Niederlage", "Sieg"][+victory];
-    document.getElementById("endWindow").style.backgroundColor = ["black", "white"][+victory];
-    document.getElementById("endWindow").style.color = ["white", "black"][+victory];
+$("#revancheButton").click((e) => {
+	let button = $("#revancheButton");
+	if(sentRevanche) send()
+});
 
-    let ele = [], cur = [];
-    for(let i = 0 ; i < 2 ; ++i){
-        ele.push( document.getElementById("gameWin" + i) );
-        cur.push( parseInt(ele[i].innerHTML) );
-    }
+function openEndwindow() {
+	players.setCurrent(null);
 
-    let winner = (id + !victory) % 2;
-    ele[ winner ].innerHTML = ++cur[ winner ];
+	let teams = []
+	for(let i = 0 ; i < game.teams.length; i++) teams.push([game.teams[i].points, i]);
+	teams.sort().reverse();
 
-    for(let i = 0 ; i < 2 ; ++i){
-        let better = cur[i] > cur[(i+1) % 2];
+	let container = $("#endTeams").html("");
 
-        ele[i].style.color = ["#BEC2CB", "#D4AF37"][+better];
-        ele[i].style.fontWeight = ["normal", "bolder"][+better];
-    }
-}
+	$("#endResult").text("Die Partie ist beendet!");
 
-function revanche(){
-    if(!sentRevanche) send(5, "");
-    sentRevanche = true;
+	let place = 1;
+	let p = NaN;
+	for(let i = 0 ; i < teams.length ; i++) {
+		let [points, idx] = teams[i];
+		let plr_ids = Array.from(game.get_players_of_team(idx));
+		let name = plr_ids.map((i) => players.getName(i)).join(", ");
+
+		let title = place + ". " + name + " (" + points + ")";
+
+		let ele = null;
+		if(i == 0) ele = $("<h1>").text(title);
+		else if(i == 1) ele = $("<h2>").text(title);
+		else if(i == 2) ele = $("<h3>").text(title);
+		else ele = $("<h4>").text(title);
+
+		container.append(ele);
+		if(p != points) place += 1;
+		p = points;
+	}
+
+	$("#endWindow").css("display", "flex");
 }
 
 // Info window ---
 
 function openInfo(title, info, onConfirm){
-    document.getElementById("infoTitle").innerHTML = title;
-    document.getElementById("infoText").innerHTML = info;
-    document.getElementById("infoButton").onclick = function(){
-        onConfirm();
-        document.getElementById("infoWindow").style.display = "none";
-    };
-
-    document.getElementById("infoWindow").style.display = "block";
-}
-
-// Chat window ---
-
-// Opens/Closes the chat
-function toggleChat(){
-    let ele = document.getElementById("chatWindow");
-
-    if( ele.style.display == "block") ele.style.display = "none";
-    else ele.style.display = "block";
-}
-
-// Setting window --
-
-function toggleSettings(){
-    let ele = document.getElementById("settingWindow");
-
-    if( ele.style.display == "block" ) ele.style.display = "none";
-    else ele.style.display = "block";
-}
-
-function onCardClick(){
-    hand.clickonly = document.getElementById("bool1").checked;
-    saveBool( hand.clickonly, 1 );
-}
-
-function onCardAnimationdisable(){
-    round.cardAnimation = !document.getElementById("bool3").checked;
-    saveBool( !round.cardAnimation, 3 );
-}
-
-function onRange(){
-    darkval = document.getElementById("range0").value / 255.0;
-    saveValue( document.getElementById("range0").value, 0 );
-    hand.drawAll();
-}
-
-function cardLang( fr ){
-    document.getElementById("boolGE").checked = !fr;
-    document.getElementById("bool2").checked = fr;
-    saveBool( fr, 2 );
-
-    loadCards();
-
-    round.updateCards( fr );
-    round.updateRoundDetails();
-    hand.drawAll();
+	$("#infoTitle").text(title);
+	$("#infoText").text(info);
+	$("#infoButton").click(onConfirm);
+	$("#infoWindow").css("display", "block");
 }
 
 // Team window --- (for choosing teams)
@@ -272,6 +204,6 @@ function chooseT( index ){
         document.getElementById("choose" + i).style.backgroundColor = ["#AA0000", "#00DD00"][+(index == i)];
     }
 
-    send(9, [plr]);
+    send({ "Mate": plr });
     chosen = true;
-} 
+}
