@@ -162,8 +162,9 @@ async function FUNC_Announce(ann) {
 
 	said_marriage = false;
 	game.announce(pt, misere);
-	updateRoundDetails();
 
+	players.setCurrent(game.current_player);
+	updateRoundDetails();
 	if( own.id == game.current_player ) handleOnTurn();
 }
 

@@ -97,6 +97,7 @@ function updateRoundDetails(){
 		$("#namePT").css("visibility", "hidden");
 		$("#roundMisere").css("visibility", "hidden");
 		$("#roundSymbols").css("visibility", "hidden");
+		$("#roundRT").css("visibility", "hidden");
         return;
     } else {
 		$("#namePT").css("visibility", "visible");

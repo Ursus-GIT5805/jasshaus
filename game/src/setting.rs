@@ -119,4 +119,6 @@ impl Setting {
             apply_startcondition_on_revanche: false,
         }
 	}
+
+
 }

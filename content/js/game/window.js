@@ -122,7 +122,7 @@ function openSummary() {
 <div class="SummaryTeam">
  <div class="SummaryStats">
   <div style="font-size: 2em;">` + plrs.join(" & ") + `</div>
-  <div><a style="float: left;">Beginn</a> <a style="float: right;">+` + bef + `</a></div>
+  <div><a style="float: left;">Beginn</a> <a style="float: right;">` + bef + `</a></div>
   <div><a style="float: left;">Stich</a> <a style="float: right;">+` + team.won_points + `</a></div>
   <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + `</a></div>
   <div>----------</div>
@@ -175,14 +175,13 @@ var agreedRevanche = 0;
 
 $("#revancheButton").click((e) => {
 	let button = $("#revancheButton");
-	if(sentRevanche) send()
+	if(sentRevanche) send();
 });
 
 function openEndwindow() {
 	players.setCurrent(null);
 
 	let teams = game.rank_teams();
-	if(!game.setting.less_points_win) teams.reverse();
 
 	let container = $("#endTeams").html("");
 	$("#endResult").text("Die Partie ist beendet!");

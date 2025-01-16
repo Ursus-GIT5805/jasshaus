@@ -589,7 +589,7 @@ impl Game {
 			.collect();
 
 		v.sort();
-		if self.setting.less_points_win {
+		if !self.setting.less_points_win {
 			v.reverse();
 		}
 

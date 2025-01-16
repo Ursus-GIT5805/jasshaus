@@ -98,10 +98,16 @@
     border-radius: 1rem;
     transition: 50ms;
 
+	opacity: 0.3;
+
 	div {
 		display: flex;
 		justify-content: space-evenly;
 	}
+}
+
+#showWindow:hover {
+	opacity: 1;
 }
 
 #showCards {
@@ -123,7 +129,7 @@
 /* --- */
 
 #roundWindow {
-	font-size: 1.5rem;
+	font-size: 1.25rem;
 
 	z-index: 420;
 
@@ -165,12 +171,6 @@
 
 
 #closeSummary {
-    position: absolute;
-
-    right: 100%;
-    top: 100%;
-    transform: translateX(50%) translateY(-50%);
-
     padding: 0.5rem;
     margin: 0.5rem;
 
