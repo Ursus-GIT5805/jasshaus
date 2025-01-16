@@ -89,6 +89,7 @@ function updateGameDetails() {
 function updateRoundDetails(){
 	let ruleset = game.ruleset;
 
+	let state = [ "hidden", "visible" ];
 	$("#roundPass").css("visibility", state[ +(game.passed > 0) ]);
 
 	if(ruleset.playtype == "None"){
@@ -115,7 +116,6 @@ function updateRoundDetails(){
 		$("#roundRT").css("visibility", "hidden");
 	}
 
-	let state = [ "hidden", "visible" ];
 	let filter = ["invert(0)", "invert(100%)"][ +ruleset.misere ];
 
     $("#roundDetails").css("filter", filter);

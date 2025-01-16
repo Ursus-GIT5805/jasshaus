@@ -262,7 +262,8 @@
     overflow-y: auto;
 
 	> div { margin-top: 1rem; }
-	form div { margin: 1rem; }
+	form > div { margin: 1rem; }
+	form input:disabled { color: #FFFFFF; }
 }
 
 #teamWindow {
