@@ -120,41 +120,43 @@
 /* --- */
 
 #roundWindow {
+	font-size: 1.5rem;
+
 	z-index: 420;
 
-	top: 40%;
-    max-width: 60%;
+	top: 45%;
 	max-height: 80%;
 }
 
 #roundSummary {
-	font-size: 2rem;
 	flex-direction: column;
 }
 
 .SummaryTeam {
 	display: flex;
 	justify-content: space-evenly;
+	align-items: center;
 
-    padding: 1rem;
+    padding: 1em;
 }
 
 .SummaryStats {
 	display: flex;
 	flex-direction: column;
+	white-space: nowrap;
 
-	min-width: 12rem;
-	padding: 1rem;
+	min-width: 10em;
+	padding: 1em;
 }
 
 .SummaryCards {
 	display: flex;
 	flex-direction: column;
 
-    height: 12rem;
+	padding: 1em;
 
 	div { display: flex; }
-	img { height: 3rem; }
+	img { height: 2.5em; }
 }
 
 

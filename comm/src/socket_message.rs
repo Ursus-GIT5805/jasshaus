@@ -35,7 +35,7 @@ pub enum SocketMessage {
 	PlayShow(Show), // GAMEPLAY
     Announce(Playtype, bool),
 	Pass,
-    ShowPoints(u16,usize),
+    ShowPoints(i32,usize),
     ShowList(Vec<Vec<Show>>),
     HasMarriage(usize),
     SetAnnouncePlayer(usize),

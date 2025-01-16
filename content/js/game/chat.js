@@ -97,11 +97,18 @@ class CommunicationHandler {
 		this.voiceChatInit = true;
 	}
 
+	addVolumeBar(cid) {
+		let vol = $('<input type="range" min="0" max="100" value="50">')
+			.change((e) => $("#audioObj" + cid)[0].volume = vol.val() / 100);
+
+		$("#clientSettings" + cid)
+			.append(vol);
+	}
+
 	newClient(id) {
 		this.clients[id] = new Client();
 		this.num_clients += 1;
 
-		console.log(this.chatInit);
 		if(this.chatInit) {
 			let entry = $("<div>").addClass("playerSettingsEntry");
 			entry.attr("id", "clientSettings" + id);
@@ -155,7 +162,9 @@ class CommunicationHandler {
 
 		// Create audio source
 		let audio = document.createElement('audio');
+		audio.id = "audioObj" + id;
 		audio.srcObject = this.clients[id].stream;
+		audio.volume = 0.5;
 		audio.autoplay = true;
 		document.body.appendChild(audio);
 	}
@@ -203,11 +212,13 @@ class CommunicationHandler {
 
 		// The callback must handle the forwarding
 		this.RTCanswerCallback(answer, id);
+		this.addVolumeBar(id);
 	}
 
 	async onAnswer(answer, id){
 		const remDesc = new RTCSessionDescription( answer );
 		await this.clients[id].pc.setRemoteDescription( remDesc );
+		this.addVolumeBar(id);
 	}
 
 	async onIceCandidate(candidate, id){

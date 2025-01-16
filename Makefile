@@ -3,6 +3,9 @@ run:
 	cp -r game/pkg content/pkg
 	cd server && cargo run
 
+cont:
+	python3 -m http.server -d content
+
 serv:
 	cd server && cargo run
 

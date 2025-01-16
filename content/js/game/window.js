@@ -93,12 +93,12 @@ function openSummary() {
 		let ele = $(`
 <div class="SummaryTeam">
  <div class="SummaryStats">
-  <div style="font-size: 2.0rem;">` + plrs.join(" & ") + `</div>
+  <div style="font-size: 2em;">` + plrs.join(" & ") + `</div>
   <div><a style="float: left;">Beginn</a> <a style="float: right;">+` + bef + `</a></div>
   <div><a style="float: left;">Stich</a> <a style="float: right;">+` + team.won_points + `</a></div>
   <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + `</a></div>
   <div>----------</div>
-  <div style="font-size: 1.5rem;">
+  <div style="font-size: 1.5em;">
    <a style="float: left;">Endstand</a> <a style="float: right;">` + team.points + `</a></div>
   </div>
 </div>
@@ -153,18 +153,15 @@ $("#revancheButton").click((e) => {
 function openEndwindow() {
 	players.setCurrent(null);
 
-	let teams = []
-	for(let i = 0 ; i < game.teams.length; i++) teams.push([game.teams[i].points, i]);
-	teams.sort().reverse();
+	let teams = game.rank_teams();
+	if(!game.setting.less_points_win) teams.reverse();
 
 	let container = $("#endTeams").html("");
-
 	$("#endResult").text("Die Partie ist beendet!");
 
-	let place = 1;
-	let p = NaN;
 	for(let i = 0 ; i < teams.length ; i++) {
-		let [points, idx] = teams[i];
+		let points = game.teams[i].points;
+		let place = i+1;
 		let plr_ids = Array.from(game.get_players_of_team(idx));
 		let name = plr_ids.map((i) => players.getName(i)).join(", ");
 
@@ -177,8 +174,6 @@ function openEndwindow() {
 		else ele = $("<h4>").text(title);
 
 		container.append(ele);
-		if(p != points) place += 1;
-		p = points;
 	}
 
 	$("#endWindow").css("display", "flex");

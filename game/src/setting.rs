@@ -5,7 +5,10 @@ This struct contains all the different settings you can choose before a game.
 
 */
 
-use crate::card::*;
+use crate::{
+	card::*,
+	ruleset::*,
+};
 
 use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
@@ -29,6 +32,7 @@ pub enum PointRule {
 }
 
 /// Rules of how teams are chosen
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 pub enum Team {
     None,
     Manually(Vec<usize>),
@@ -36,6 +40,11 @@ pub enum Team {
     Blocks(usize), // Creates blocks of n players each
 }
 
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum WinningCondition {
+	Points(i32),
+	Rounds(i32),
+}
 
 // #[derive(Tsify)]
 // #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -43,21 +52,25 @@ pub enum Team {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 pub struct Setting {
-    pub max_points: u16,                  // used
+    pub max_points: i32,                  // used
+	pub less_points_win: bool,
     pub point_recv_order: Vec<PointRule>, // used
-    // pub playtype_multiplier: Vec<i32>, // used
-    // pub allow_playtype: Vec<bool>, // used
-    pub allow_misere: bool,        // used
-    pub allow_pass: bool,          // used
 
-    // pub automatic_show: bool,
-    // pub automatic_marriage: bool,
-    pub match_points: u16,    // used
-    pub marriage_points: u16, // used
+	pub allow_shows: bool,            // used
+	pub show_gives_negative: bool, // used
 
-    // pub team: Team,
-    pub allow_back_pass: bool,
-    pub pass_to_same_team: bool,
+	pub allow_misere: bool,           // used
+    pub allow_pass: bool,             // used
+	pub allowed_playtypes: Vec<bool>, // used
+
+	pub passed_player_begins: Vec<bool>, // used
+	pub playtype_multiplier: Vec<i32>, // used
+
+	pub match_points: i32,    // used
+    pub marriage_points: i32, // used
+
+    pub allow_back_pass: bool, // used
+    pub pass_to_same_team: bool, // used
 
     pub startcondition: StartingCondition,      // used
     pub apply_startcondition_on_revanche: bool, // used
@@ -65,28 +78,38 @@ pub struct Setting {
     // pub react_time: u32,
 
     // pub passed_player_begins: Vec<bool>, // used
-    pub show_points_maximum: u16, // used
+    pub show_points_maximum: i32, // used
 }
 
 #[wasm_bindgen]
 impl Setting {
 	pub fn schieber() -> Self {
         Setting {
-			// let mut beg_passed = vec![true; NUM_PLAYTYPES];
-			// beg_passed[SHIELD as usize] = false;
-			// beg_passed[ACORN as usize] = false;
-			// beg_passed[ROSE as usize] = false;
-			// beg_passed[BELL as usize] = false;
-
 			max_points: 1000,
+			less_points_win: false,
             point_recv_order: vec![PointRule::MARRIAGE, PointRule::SHOW, PointRule::PLAY],
-            // playtype_multiplier: vec![1; NUM_PLAYTYPES],
-            // allow_playtype: vec![true; NUM_PLAYTYPES],
-            allow_misere: true,
-            allow_pass: true,
 
-            // automatic_show: false,
-            // automatic_marriage: true,
+			allow_shows: true,
+			show_gives_negative: false,
+
+			allow_misere: true,
+            allow_pass: true,
+			allowed_playtypes: vec![true; NUM_PLAYTYPES],
+
+			passed_player_begins: {
+				let mut v = vec![true; NUM_PLAYTYPES];
+				for c in 0..NUM_COLORS {
+					if let Some(id) = Playtype::Color(c as u8).get_id() {
+						match v.get_mut(id) {
+							Some(c) => *c = false,
+							None => {},
+						}
+					}
+				}
+				v
+			},
+			playtype_multiplier: vec![1; NUM_PLAYTYPES],
+
             allow_back_pass: false,
             pass_to_same_team: true,
 

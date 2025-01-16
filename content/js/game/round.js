@@ -84,6 +84,7 @@ function updateRoundDetails(){
 	let ruleset = game.ruleset;
 
 	if(ruleset.playtype == "None"){
+		$("#roundDetails").css("filter", "");
 		$("#namePT").css("visibility", "hidden");
 		$("#roundSymbols").css("visibility", "hidden");
 		$("#roundPass").css("visibility", "hidden");
@@ -93,7 +94,10 @@ function updateRoundDetails(){
 		$("#roundSymbols").css("visibility", "visible");
 	}
 
-	$("#namePT").text(pt_name(ruleset.playtype));
+	let title = "";
+	if(ruleset.misere) title = "Misère: ";
+	title += pt_name(ruleset.playtype);
+	$("#namePT").text(title);
 
 	$("#roundPT").attr("src", pt_img_url(ruleset.playtype));
 

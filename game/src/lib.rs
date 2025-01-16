@@ -33,16 +33,17 @@ pub struct Player {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 pub struct Team {
-    pub points: u16,
-    pub won_points: u16,
+    pub points: i32,
+    pub won_points: i32,
+    pub show_points: i32,
 	pub won: Cardset,
-    pub show_points: u16,
 }
 
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Serialize, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Game {
     // History
+	pub round: usize,
 	pub cards_played: usize,
 	pub played_cards: Vec<Card>,
 	pub best_player: usize,
@@ -78,6 +79,7 @@ impl Game {
             .collect();
 
         Game {
+			round: 0,
 			cards_played: 0,
 			played_cards: vec![],
 			best_player: 0,
@@ -101,7 +103,6 @@ impl Game {
     // Events ------
 
     pub fn start_new_round(&mut self, cards: Vec<Cardset>) {
-        // Reset round variables
         for plr in self.players.iter_mut() {
             plr.shows.clear();
         }
@@ -115,6 +116,7 @@ impl Game {
 			team.won.clear();
         }
 
+		self.round += 1;
         self.ruleset = RuleSet::default();
 		self.cards_played = 0;
 		self.played_cards.clear();
@@ -122,20 +124,13 @@ impl Game {
 		self.bestcard = None;
 		self.passed = 0;
 		self.marriage = MarriageState::None;
+
+		// Rotate to the next player who must announce
 		self.announce_player = (self.announce_player + 1) % self.players.len();
         self.current_player = self.announce_player;
     }
 
-    fn end_round(&mut self) {
-        let last_team = self.current_player as usize & 1; // The team which won the last turn
-        self.add_points(last_team, 5); // Last team get's 5 points
-
-		// When this team won ALL cards: Extra points!
-		if self.teams[last_team].won.len() == NUM_CARDS {
-            self.add_points(last_team, self.setting.match_points);
-		}
-    }
-
+	/// Play the marriage for th given player
     pub fn play_marriage(&mut self, plr: usize) {
         self.marriage = MarriageState::PlayedBoth(plr);
 
@@ -145,6 +140,7 @@ impl Game {
         team.show_points += gain;
     }
 
+	/// Returns true if the given team would win with the marriage
 	pub fn marriage_would_win(&self, team_id: usize) -> bool {
 		self.setting.max_points <= self.teams[team_id].points + self.setting.marriage_points
 	}
@@ -231,10 +227,18 @@ impl Game {
             }
 
             for show in plr.shows.iter() {
-                let sp = std::cmp::min(
-                    self.ruleset.get_show_value(*show),
-                    self.setting.show_points_maximum,
-                );
+                let sp = {
+					let mut val = std::cmp::min(
+						self.ruleset.get_show_value(*show),
+						self.setting.show_points_maximum,
+					);
+
+					if self.setting.show_gives_negative {
+						val = -val;
+					}
+					val
+				};
+
 
                 self.teams[team_id].points += sp;
                 self.teams[team_id].show_points += sp;
@@ -271,9 +275,18 @@ impl Game {
             self.add_points(best_team as usize, points);
         }
 
-        if self.cards_played == NUM_CARDS || self.should_end() {
-            self.end_round();
-        } else {
+		if self.cards_played == NUM_CARDS {
+			 // The team which won the last turn
+			let last_team = self.players[self.current_player].team_id;
+			self.add_points(last_team, 5); // Last team get's 5 points
+
+			// When this team won ALL cards: Extra points!
+			if self.teams[last_team].won.len() == NUM_CARDS {
+				self.add_points(last_team, self.setting.match_points);
+			}
+		}
+
+        if !self.should_end() {
 			self.update_ruletype();
 		}
     }
@@ -299,6 +312,7 @@ impl Game {
         self.players[self.current_player].hand.erase(card);
 
         if let Playtype::Color(trumpf) = self.ruleset.playtype {
+			// If the given card is a trumpf queen or king, handle marriage
 			if card.color == trumpf && (card.number == 6 || card.number == 7) {
 				let plr = self.current_player;
 
@@ -323,7 +337,9 @@ impl Game {
     }
 
     pub fn play_show(&mut self, show: Show, plr_id: usize) {
-		self.players[plr_id].shows.push(show);
+		if self.setting.allow_shows {
+			self.players[plr_id].shows.push(show);
+		}
     }
 
     pub fn update_ruletype(&mut self) {
@@ -360,27 +376,6 @@ impl Game {
         };
     }
 
-	/// Return whether the given player can pass
-	pub fn can_pass(&self, player_id: usize) -> bool {
-		if self.current_player != player_id || self.is_announced() {
-			return false;
-		}
-
-		let max_passes = {
-			let passes = if self.setting.pass_to_same_team {
-				self.get_players_of_team(self.players[player_id].team_id).len()
-			} else {
-				self.players.len()
-			};
-
-			// If no back pass is allowed, you can pass one time less
-			passes - (!self.setting.allow_back_pass as usize)
-		};
-
-		self.passed < max_passes
-	}
-
-	// Announce
 	pub fn pass(&mut self) {
 		if !self.setting.allow_pass { return; }
 
@@ -388,10 +383,14 @@ impl Game {
 		self.current_player = self.get_announcing_player();
 	}
 
-	// Announce
     pub fn announce(&mut self, pt: Playtype, misere: bool) {
         if !self.setting.allow_misere && misere { return; }
-        self.ruleset = RuleSet::new(pt, misere);
+		if let Some(id) = pt.get_id() {
+			if !self.setting.allowed_playtypes[id] { return; }
+		}
+
+		// Announce!
+		self.ruleset = RuleSet::new(pt, misere);
         self.current_player = self.get_startplayer();
         self.update_ruletype();
     }
@@ -421,7 +420,7 @@ impl Game {
     }
 
     // Add points to a given team (or the other on misere)
-    fn add_points(&mut self, team_id: usize, points: u16) {
+    fn add_points(&mut self, team_id: usize, points: i32) {
         let real_team_id = if self.ruleset.misere {
             (team_id + 1) % self.teams.len()
         } else {
@@ -430,8 +429,11 @@ impl Game {
 
         let team = &mut self.teams[real_team_id];
 
-        // let p = points * self.setting.playtype_multiplier[self.playtype.playtype as usize] as u16;
-        let p = points;
+        let p = if let Some(id) = self.ruleset.playtype.get_id() {
+			points * self.setting.playtype_multiplier[id]
+		} else {
+			points
+		};
         team.points += p;
         team.won_points += p;
     }
@@ -450,7 +452,12 @@ impl Game {
 
     // The startplayer is the player who started the turn the first turn
     pub fn get_startplayer(&self) -> usize {
-		self.get_announcing_player()
+		if let Some(id) = self.ruleset.playtype.get_id() {
+			if self.setting.passed_player_begins[id] {
+				return self.get_announcing_player();
+			}
+		}
+		self.announce_player
     }
 
     /// Returns the player_id in the given team_id
@@ -526,22 +533,45 @@ impl Game {
         turncolor == card.color || !hand.has_color(turncolor)
     }
 
+	/// Returns true when the given player can show
     pub fn can_show(&self, player_id: usize) -> bool {
         self.current_player == player_id
             && self.get_turn() < 1
             && self.is_announced()
     }
 
-    // Returns true when the given player can announce
+	/// Return whether the given player can pass
+	pub fn can_pass(&self, player_id: usize) -> bool {
+		if self.current_player != player_id || self.is_announced() {
+			return false;
+		}
+
+		let max_passes = {
+			let passes = if self.setting.pass_to_same_team {
+				self.get_players_of_team(self.players[player_id].team_id).len()
+			} else {
+				self.players.len()
+			};
+
+			// If no back pass is allowed, you can pass one time less
+			passes - (!self.setting.allow_back_pass as usize)
+		};
+
+		self.passed < max_passes
+	}
+
+    /// Returns true when the given player can announce
     pub fn can_announce(&self, player_id: usize) -> bool {
         !self.is_announced() && self.get_announcing_player() == player_id
     }
 
-    // Return a vector of cards which are on the board
+    /// Returns a vector of cards which are on the board
     pub fn get_playedcards(&self) -> Vec<Card> {
 		self.played_cards.clone()
     }
 
+	// TODO returns ordering of the teams
+	/// Returns the currently best team
     pub fn get_winner_team(&self) -> usize {
         self.teams
             .iter()
@@ -550,4 +580,18 @@ impl Game {
             .map(|(idx, _val)| idx)
             .expect("This should not happen...")
     }
+
+	pub fn rank_teams(&self) -> Vec<usize> {
+		let mut v: Vec<_> = self.teams
+			.iter()
+			.enumerate()
+			.map(|(i,t)| (t.points, i))
+			.collect();
+
+		v.sort();
+
+		v.iter()
+			.map(|(_,i)| *i)
+			.collect()
+	}
 }

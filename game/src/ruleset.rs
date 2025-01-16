@@ -22,6 +22,32 @@ pub enum Playtype {
     None = 255,
 }
 
+pub const NUM_PLAYTYPES: usize = 10;
+
+impl Playtype {
+	/// Returns the ID of the current playtype.
+	/// They have to map from a number between 0..NUM_PLAYTYPES
+	pub fn get_id(&self) -> Option<usize> {
+		let res = match self {
+			Playtype::Updown => 0,
+			Playtype::Downup => 1,
+			Playtype::Color(x) => match *x {
+				0 => 2,
+				1 => 3,
+				2 => 4,
+				3 => 5,
+				_ => return None,
+			},
+			Playtype::SlalomUpdown => 6,
+			Playtype::SlalomDownup => 7,
+			Playtype::Guschti => 8,
+			Playtype::Mary => 9,
+			_ => return None,
+		};
+		Some(res)
+	}
+}
+
 // #[derive(Tsify)]
 // #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug)]
@@ -65,6 +91,8 @@ impl RuleSet {
         }
     }
 
+	/// Returns true if the 'new' is a stronger card than 'current'
+	/// Regards the current ACTIVE playtype
     pub fn is_card_stronger(&self, current: Card, new: Card) -> bool {
         match self.active {
             Playtype::Updown => current.color == new.color && current.number < new.number, // Basic updown
@@ -87,25 +115,29 @@ impl RuleSet {
         }
     }
 
-    pub fn get_card_value(&self, card: Card) -> u16 {
+	/// Returns the card point value
+	/// Regards the overall playtype
+    pub fn get_card_value(&self, card: Card) -> i32 {
         match self.playtype {
             Playtype::Updown | Playtype::SlalomUpdown | Playtype::Guschti => {
-                let values: [u16; 9] = [0, 0, 8, 0, 10, 2, 3, 4, 11];
+                let values: [i32; 9] = [0, 0, 8, 0, 10, 2, 3, 4, 11];
                 values[card.number as usize]
             }
             Playtype::Downup | Playtype::SlalomDownup | Playtype::Mary => {
-                let values: [u16; 9] = [11, 0, 8, 0, 10, 2, 3, 4, 0];
+                let values: [i32; 9] = [11, 0, 8, 0, 10, 2, 3, 4, 0];
                 values[card.number as usize]
             }
             Playtype::Color(col) => {
-                let trumpf = (card.color == col) as u16;
-                let values: [u16; 9] = [0, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 11];
+                let trumpf = (card.color == col) as i32;
+                let values: [i32; 9] = [0, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 11];
                 values[card.number as usize]
             }
             _ => 0,
         }
     }
 
+	/// Returns true if the 'new' is stronger than 'new'
+	/// Regards the given playtype
     pub fn is_show_stronger(&self, current: Show, new: Show) -> bool {
         let pcur = self.get_show_value(current);
         let pnew = self.get_show_value(new);
@@ -132,7 +164,8 @@ impl RuleSet {
         return self.is_color_trumpf(new.color);
     }
 
-    pub fn get_show_value(&self, show: Show) -> u16 {
+	/// Returns the given shows value
+    pub fn get_show_value(&self, show: Show) -> i32 {
         match show.row {
             0 => 0,
             1 => match show.number {
@@ -141,7 +174,7 @@ impl RuleSet {
                 _ => 100,
             },
             2 | 3 => 20,
-            x => 50 * (x as u16 - 3),
+            x => 50 * (x as i32 - 3),
         }
     }
 }

@@ -116,10 +116,9 @@ async function FUNC_GameState(data) {
 
 	if(game.marriage.hasOwnProperty('PlayedBoth')) said_marriage = true;
 
-	let pcards = game.get_playedcards();
+	let begplayer = game.get_beginplayer();
+	let pcards = game.get_playedcards()
 	let numplayers = game.players.length;
-	let begplayer = game.current_player + numplayers - pcards.length;
-
 	for(let i = 0 ; i < pcards.length ; i++) {
 		let card = pcards[i];
 		let plr = (begplayer + i) % numplayers;
@@ -129,13 +128,13 @@ async function FUNC_GameState(data) {
 	game.update_ruletype();
 	$("#startWindow").css("display", "none");
 
+	players.setCurrent(game.current_player);
 	updatePoints();
 	updateRoundDetails();
 
 	if(state.current_player == own.id) {
 		if(!game.is_announced()) startAnnounce();
 		else handleOnTurn();
-		players.setCurrent(game.current_player);
 	}
 }
 
@@ -168,6 +167,7 @@ async function FUNC_Announce(ann) {
 }
 
 async function FUNC_Pass(u) {
+	gameMessage("Ich schiebe!", game.current_player);
 	game.pass();
 	if( own.id == game.current_player ) startAnnounce();
 	players.setCurrent(game.current_player);
@@ -231,7 +231,7 @@ async function FUNC_ChatMessage(data) {
 
 async function FUNC_ShowPoints(data) {
 	let [points, plr] = data;
-	gameMessage(plr, points);
+	gameMessage(points, plr);
 }
 
 async function FUNC_ShowList(list) {
