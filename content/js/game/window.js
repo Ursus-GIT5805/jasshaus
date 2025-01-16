@@ -8,6 +8,7 @@ function startAnnounce(){
 	hand.setLegality((c) => true);
 
 	$("#announcePT").html("");
+	$("#announcePTCol").html("");
 
 	for(let id = 0 ; id < 10 ; id++) {
 		if(!game.setting.allowed_playtypes[id]) continue;
@@ -189,7 +190,7 @@ function openEndwindow() {
 	for(let i = 0 ; i < teams.length ; i++) {
 		let points = game.teams[i].points;
 		let place = i+1;
-		let plr_ids = Array.from(game.get_players_of_team(idx));
+		let plr_ids = Array.from(game.get_players_of_team(i));
 		let name = plr_ids.map((i) => players.getName(i)).join(", ");
 
 		let title = place + ". " + name + " (" + points + ")";

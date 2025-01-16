@@ -172,6 +172,7 @@ async function FUNC_Pass(u) {
 	game.pass();
 	if( own.id == game.current_player ) startAnnounce();
 	players.setCurrent(game.current_player);
+	updateRoundDetails();
 }
 
 async function FUNC_ClientIntroduction(data) {
@@ -212,6 +213,7 @@ async function FUNC_PlayCard(card){
 		else hand.setIllegal();
 		players.setCurrent(game.current_player);
 	}
+	updateRoundDetails();
 }
 
 async function FUNC_ChatMessage(data) {

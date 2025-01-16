@@ -44,7 +44,9 @@
 	top: 40%;
 	max-width: 66vw;
 	min-width: min(66vw, 66vh);
+
 	height: min-content;
+	max-height: 75%;
 
 	overflow-y: auto;
 

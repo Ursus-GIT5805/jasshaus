@@ -89,11 +89,13 @@ function updateGameDetails() {
 function updateRoundDetails(){
 	let ruleset = game.ruleset;
 
+	$("#roundPass").css("visibility", state[ +(game.passed > 0) ]);
+
 	if(ruleset.playtype == "None"){
 		$("#roundDetails").css("filter", "");
 		$("#namePT").css("visibility", "hidden");
+		$("#roundMisere").css("visibility", "hidden");
 		$("#roundSymbols").css("visibility", "hidden");
-		$("#roundPass").css("visibility", "hidden");
         return;
     } else {
 		$("#namePT").css("visibility", "visible");
@@ -118,7 +120,6 @@ function updateRoundDetails(){
 
     $("#roundDetails").css("filter", filter);
 	$("#roundMisere").css("visibility", state[ +ruleset.misere ]);
-	$("#roundPass").css("visibility", state[ +(game.passed > 0) ]);
 }
 
 function handleOnTurn() {
