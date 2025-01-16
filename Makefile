@@ -33,4 +33,4 @@ install:
 	rm -r content/pkg
 	mv game/pkg content
 	cp -r content build
-	replaceICE
+	make replaceICE

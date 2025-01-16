@@ -136,7 +136,7 @@ function openSummary() {
 		for(let color = 0 ; color < 4 ; color++) {
 			let div = $("<div>");
 			for(let number = 0 ; number < 9 ; number++){
-				let card = new Card(color, number);
+				let card = Card.new(color, number);
 				let img = $("<img>").attr("src", card_get_img_url(card));
 				if(!woncards.contains(card)) img.css("filter", "brightness(50%)");
 				div.append(img);

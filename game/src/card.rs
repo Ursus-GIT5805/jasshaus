@@ -26,7 +26,6 @@ pub struct Card {
 
 #[wasm_bindgen]
 impl Card {
-	#[wasm_bindgen(constructor)]
     pub fn new(color: u8, number: u8) -> Self {
         Card { color, number }
     }
@@ -78,7 +77,6 @@ pub struct Show {
 
 #[wasm_bindgen]
 impl Show {
-	#[wasm_bindgen(constructor)]
     pub fn new(color: u8, number: u8, row: u8) -> Self {
         Show { color, number, row }
     }
