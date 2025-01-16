@@ -25,7 +25,7 @@ impl Client {
 
     pub async fn send(&mut self, data: SocketMessage) {
         let jsonstr = serde_json::to_string(&data).unwrap();
-        let msg = Message::Text(jsonstr);
+        let msg = Message::Text(jsonstr.into());
 
         if let Err(e) = self.ws.send(msg).await {
             eprintln!("Error sending data: {:?}", e);

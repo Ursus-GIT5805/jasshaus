@@ -7,12 +7,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4.26"
-rand = "0.8.5"
-tokio = { version = "1.28", features = ["macros", "sync", "rt-multi-thread", "fs"] }
-tokio-util = { version = "0.7.8", features = ["io"] }
-tokio-stream = "0.1.14"
-axum = {version = "0.6.19", features = ["ws"] }
+chrono = "0.4"
+rand = "0.8"
+tokio = { version = "1", features = ["macros", "sync", "rt-multi-thread", "fs"] }
+axum = {version = "0.8", features = ["ws"] }
 serde = {version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 futures = { version = "0.3", default-features = false }

@@ -40,7 +40,6 @@ async fn handle_websocket(ws: WebSocket, room: Arc<Mutex<Room>>) {
         }
     }
 
-
 	let mut rlock = room.lock().await;
     rlock.unregister(client_id).await;
 	if rlock.should_close() {
@@ -62,9 +61,6 @@ async fn main() {
         }),
     );
 
-    let addr = &"0.0.0.0:7999".parse().unwrap();
-    axum::Server::bind(addr)
-        .serve(app.into_make_service())
-        .await
-        .expect("Can not start server!");
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:7999").await.unwrap();
+	axum::serve(listener, app).await.unwrap();
 }
