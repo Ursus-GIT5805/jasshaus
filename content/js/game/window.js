@@ -6,7 +6,45 @@ var annMisere = false;
 function startAnnounce(){
 	annMisere = false;
 	hand.setLegality((c) => true);
-	$("#passButton").css("visibility", ["hidden", "visibible"][+game.can_pass(own.id)]);
+
+	$("#announcePT").html("");
+
+	for(let id = 0 ; id < 10 ; id++) {
+		if(!game.setting.allowed_playtypes[id]) continue;
+
+		let pt = Playtype.from_id(id);
+		let but = $("<div>").click(() => announce(pt))
+			.append( $("<img>").attr("src", pt_img_url(pt)) )
+			.append( $("<a>").text( pt_name(pt) ) );
+
+		if(pt.hasOwnProperty("Color")) $("#announcePTCol").append(but);
+		else $("#announcePT").append(but);
+	}
+
+	$("#passmisere").html("");
+	if(game.setting.allow_misere) {
+		let but = $("<div>")
+			.append( $("<img>").attr("src", "img/misere.png") )
+			.append( $("<a>").text( "Misère" ) )
+			.click(() => {
+				annMisere = !annMisere;
+				$("#announceWindow").css("filter", ["invert(0)", "invert(100%)"][+annMisere]);
+			});
+		$("#passmisere").append(but);
+	}
+	if(game.can_pass(own.id) && game.setting.allow_pass) {
+		let but = $("<div>")
+			.append( $("<img>").attr("src", "img/pass.png") )
+			.append( $("<a>").text( "Schieben" ) )
+			.click(() => {
+				send("Pass");
+				hand.setIllegal();
+				$("#announceWindow").css("display", "none");
+			});
+
+		$("#passmisere").append(but);
+	}
+
 	$("#announceWindow").css("display", "flex").css("filter", "");
 }
 
@@ -15,17 +53,6 @@ function announce(pt){
 	hand.setIllegal();
 	$("#announceWindow").css("display", "none");
 }
-
-$("#passButton").click((e) => {
-	send("Pass");
-	hand.setIllegal();
-	$("#announceWindow").css("display", "none");
-});
-
-$("#misereButton").click((e) => {
-    annMisere = !annMisere;
-	$("#announceWindow").css("filter", ["invert(0)", "invert(100%)"][+annMisere]);
-});
 
 // Show window ---
 var toShow = [];

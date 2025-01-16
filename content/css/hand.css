@@ -3,20 +3,34 @@
 }
 
 .Hand {
-    display: flex;
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	transform: translateX(-50%);
+
+
+	display: flex;
     flex-wrap: nowrap;
     justify-content: center;
 
-	bottom: 0;
-	position: absolute;
+	border-style: solid;
+	border-width: 2px;
+	box-sizing: border-box;
 
-	width: 100%;
+	margin: 0;
+	padding: 0;
+	max-width: 100%;
     height: var(--hand_height);
+}
+
+.Hand:empty {
+	visibility: hidden;
 }
 
 .Hand img {
     width: auto;
     height: 100%;
-    --cardw: calc( var(--hand_height) * 161 / 247 );
+    --cardw: calc( var(--hand_height) * 154 / 236 );
     margin-right: calc( min( 100vw / 9 - var(--cardw), 0px) );
+	box-sizing: border-box;
 }

@@ -42,24 +42,9 @@
         <!-- Popup windows -->
         <div class="Window" id="announceWindow">
             <h1>Sage an!</h1>
-            <div class="PTRow">
-              <div onclick='announce("SlalomUpdown")'><img id="PT6" src="img/slalomup.png" >Slalom Obenabe</div>
-              <div onclick='announce("Updown")'><img id="PT0" src="img/updown.png">Obenabe</div>
-              <div onclick='announce("Downup")'><img id="PT1" src="img/downup.png">Undeufe</div>
-              <div onclick='announce("SlalomDownup")'><img id="PT7" src="img/slalomdown.png">Slalom Undeufe</div>
-            </div>
-            <div class="PTRow">
-              <div onclick='announce({"Color": 0})'><img src="img/trumpfshield.png"><a id="PTT2">Schilten</a></div>
-              <div onclick='announce({"Color": 1})'><img src="img/trumpfacorn.png"><a id="PTT3">Eicheln</a></div>
-              <div onclick='announce({"Color": 2})'><img src="img/trumpfrose.png"><a id="PTT4">Rosen</a></div>
-              <div onclick='announce({"Color": 3})'><img src="img/trumpfbell.png"><a id="PTT5">Schellen</a></div>
-            </div>
-            <div class="PTRow">
-              <div id="misereButton"><img src="img/misere.png">Misère</div>
-              <div onclick='announce("Guschti")'><img id="PT8" src="img/guschti.png">Guschti</div>
-              <div onclick='announce("Mary")'><img id="PT9" src="img/mary.png">Mary</div>
-              <div id="passButton"><img src="img/pass.png">Schieben</div>
-            </div>
+			<div id="announcePT" class="AnnounceRow"></div>
+			<div id="announcePTCol" class="AnnounceRow"></div>
+			<div id="passmisere" class="AnnounceRow"></div>
         </div>
 
         <div class="Window" id="endWindow">
@@ -91,10 +76,9 @@
         </div>
 
 		<div id="botrightbuttons"></div>
-
-        <a href="index.html">
-		  <img class="ActionButton" src="img/settings.svg" id="settingsButton" style="position: absolute; bottom: 0; left: 0;"/>
-		</a>
+		<div id="botleftbuttons">
+		  <img class="ActionButton" src="img/settings.svg" id="settingsButton"/>
+		</div>
 
 		<div id="chatWindow">
 		  <div id="chatClose">Close</div>
@@ -105,6 +89,13 @@
 		  <div id="playerSettings"></div>
 		</div>
 
+		<div id="settingsWindow" class="Window">
+		  <div id="settings"></div>
+		  <div style="display: flex;">
+			<div class="Button" id="closeSettings">Schliessen</div>
+			<a href="index.html"><div class="Button" style="background-color:red;" id="closeSettings">Partie Verlassen</div></a>
+		  </div>
+		</div>
     </body>
 
 	<script type="module">

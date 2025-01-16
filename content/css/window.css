@@ -44,7 +44,7 @@
 	top: 40%;
 	max-width: 66vw;
 	min-width: min(66vw, 66vh);
-	height: 66vh;
+	height: min-content;
 
 	overflow-y: auto;
 
@@ -53,12 +53,13 @@
     transition: 250ms;
 }
 
-.PTRow {
+.AnnounceRow {
     display: flex;
 	justify-content: space-evenly;
+	flex-wrap: wrap;
 }
 
-.PTRow div {
+.AnnounceRow div {
     display: flex;
 	flex-direction: column;
     box-sizing: border-box;
@@ -78,7 +79,7 @@
 	}
 }
 
-.PTRow div:hover {
+.AnnounceRow div:hover {
     background-color: #88888825;
 }
 
@@ -246,7 +247,7 @@
 }
 
 #settingsWindow {
-	display: flex;
+	display: none;
 	flex-direction: column;
 
     text-align: center;

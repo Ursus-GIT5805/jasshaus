@@ -152,6 +152,18 @@ body {
 	bottom: 2px;
 }
 
+
+#botleftbuttons {
+	display: flex;
+	flex-direction: column-reverse;
+
+	z-index: 420;
+	position: absolute;
+
+	left: 2px;
+	bottom: 2px;
+}
+
 #pleft .PlayerMSG { left: 0; }
 #pup .PlayerMSG { left: 50%; transform: translateX(-50%); }
 #pright .PlayerMSG { right: 0; }

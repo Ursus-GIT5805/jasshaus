@@ -22,9 +22,28 @@ pub enum Playtype {
     None = 255,
 }
 
+// #[wasm_bindgen]
 pub const NUM_PLAYTYPES: usize = 10;
 
+#[wasm_bindgen]
 impl Playtype {
+	pub fn from_id(id: usize) -> Option<Self> {
+		let res = match id {
+			0 => Playtype::Updown,
+			1 => Playtype::Downup,
+			2 => Playtype::Color(0),
+			3 => Playtype::Color(1),
+			4 => Playtype::Color(2),
+			5 => Playtype::Color(3),
+			6 => Playtype::SlalomUpdown,
+			7 => Playtype::SlalomDownup,
+			8 => Playtype::Guschti,
+			9 => Playtype::Mary,
+			_ => return None,
+		};
+		Some(res)
+	}
+
 	/// Returns the ID of the current playtype.
 	/// They have to map from a number between 0..NUM_PLAYTYPES
 	pub fn get_id(&self) -> Option<usize> {

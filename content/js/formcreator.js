@@ -12,7 +12,10 @@ function createInput(entry) {
 		}
 	}
 
-	let blacklist = ['title', 'options', 'description'];
+	if(entry['type'] === 'checkbox') input.prop("checked", entry['default']);
+	else input.val(entry['default']);
+
+	let blacklist = ['title', 'options', 'description', 'default', 'onchange'];
 	for(let key in entry) {
 		if(blacklist.includes(key)) continue;
 		input.attr(key, entry[key]);
@@ -51,6 +54,9 @@ function createForm(obj, def=null) {
 
 		let handler = () => input.val();
 		if(entry['type'] === 'checkbox') handler = () => input.is(":checked");
+		if(entry.hasOwnProperty('onchange')) {
+			input.change((e) => entry['onchange']( handler() ));
+		}
 		getters[key] = handler;
 	}
 

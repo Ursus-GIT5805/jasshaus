@@ -9,10 +9,9 @@ function pt_img_url(pt) {
 	else if(pt == "Mary") return "img/mary.png";
 
 	if(typeof pt === 'object') {
-		if(pt["Color"] == 0) return "img/trumpfshield.png";
-		if(pt["Color"] == 1) return "img/trumpfacorn.png";
-		if(pt["Color"] == 2) return "img/trumpfrose.png";
-		if(pt["Color"] == 3) return "img/trumpfbell.png";
+		let pref = "de";
+		if(settings.card_lang == "french") pref = "fr"
+		return "img/" + pref + "/trumpf" + pt["Color"] + ".png";
 	}
 
 	return "";
@@ -27,6 +26,13 @@ function pt_name(pt) {
 	else if(pt == "Mary") return "Mary";
 
 	if(typeof pt === 'object') {
+		if(settings.card_lang == "french") {
+			if(pt["Color"] == 0) return "Trumpf Schaufel";
+			if(pt["Color"] == 1) return "Trumpf Kreuz";
+			if(pt["Color"] == 2) return "Trumpf Herz";
+			if(pt["Color"] == 3) return "Trumpf Ecken";
+		}
+
 		if(pt["Color"] == 0) return "Trumpf Schilte";
 		if(pt["Color"] == 1) return "Trumpf Eichle";
 		if(pt["Color"] == 2) return "Trumpf Rose";

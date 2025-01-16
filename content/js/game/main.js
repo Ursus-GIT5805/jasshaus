@@ -6,7 +6,6 @@ var voting = null;
 var players = new Playerhandler(4);
 
 var own = {
-	name: getName(),
 	id: 0,
 };
 
@@ -47,29 +46,18 @@ function objEquals(a, b) {
 }
 
 function card_get_img_url(card) {
-	return "img/de/" + card.color + card.number + ".png"
-}
-
-function getName() {
-    settings = getSettings();
-
-	if(!settings) settings = {};
-
-	let name = "";
-	if(settings && settings.hasOwnProperty("name")) name = settings["name"];
-
-    if(name.length > 16) name = name.substr(0,16);
-
-    while(name == ""){
-        name = prompt("Gib einen Spitznamen ein! (Max. 16 Buchstaben)", "");
-        if(name == null) name = "Unnamed"; // User must have disabled "prompt()"
-		settings["name"] = name;
-    }
-
-	return name;
+	let pref = "de";
+	if(settings.card_lang == "french") pref = "fr";
+	return "img/" + pref + "/" + card.color + card.number + ".png";
 }
 
 function initSettings() {
+	JasshausForm['name']['disabled'] = true;
+	JasshausForm['card_lang']['onchange'] = (lang) => {
+		settings.card_lang = lang;
+		hand.reloadContent();
+		updateRoundDetails();
+	};
 	[form, settings_getter] = createForm(JasshausForm, settings);
 
 	$("#settings").append(form);
@@ -78,19 +66,26 @@ function initSettings() {
 		if( ele.css("display") == "none" ) ele.css("display", "flex");
 		else ele.css("display", "none");
 	});
-	$("#closeSettings").click($("#settingsButton").click());
-}
-
-window.onload = (e) => {
-	comm = new CommunicationHandler();
-	carpet = new Carpet(4, 0);
-	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
-	$("#botrightbuttons").append( comm.createChatbutton() )
-	// initSettings();
+	$("#closeSettings").click(() => {
+		$("#settingsButton").click();
+		settings = settings_getter();
+	});
 }
 
 function afterModule() {
 	if(DEV_MODE) console.log("Loaded WASM module!");
+
+	settings = getSettings();
+	if(!settings) {
+		settings = getDefaultSettings();
+		settings.name = promptName();
+	}
+
+	comm = new CommunicationHandler();
+	carpet = new Carpet(4, 0);
+	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
+	$("#botrightbuttons").append( comm.createChatbutton() )
+	initSettings();
 
 	startWS();
 	game = new Game();

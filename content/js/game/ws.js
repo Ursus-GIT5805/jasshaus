@@ -52,7 +52,7 @@ async function setupMic(data){
 
 async function FUNC_PlayerID(player_id) {
 	own.id = player_id;
-	players.setName(own.name, player_id);
+	players.setName(settings.name, player_id);
 	players.createPlayers(player_id);
 	carpet.rotate_by_players(player_id);
 
@@ -68,6 +68,7 @@ async function FUNC_ClientJoined(data) {
 	let [client_id, player_id] = data;
 	comm.newClient(client_id);
 	comm.clients[client_id].player_id = player_id;
+	comm.clients[client_id].muted = settings.mute_players;
 
 	let def = "Unnamed" + client_id
 	comm.setName(def, client_id);
@@ -216,7 +217,7 @@ async function FUNC_PlayCard(card){
 async function FUNC_ChatMessage(data) {
 	let [msg, client_id] = data;
 
-	let name = own.name;
+	let name = settings.name;
 	if(client_id in comm.clients) {
 		if(comm.clients[client_id].muted) return;
 		let plr_id = comm.clients[client_id].player_id;
@@ -302,7 +303,7 @@ function startWS(){
     socket = new WebSocket( WSS_URL );
 
     socket.onopen = async function(e){
-		send({ "ClientIntroduction": [own.name, 0, ] })
+		send({ "ClientIntroduction": [settings.name, 0, ] })
 		await setupMic();
     }
 
