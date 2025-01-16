@@ -58,6 +58,7 @@ function initSettings() {
 		hand.reloadContent();
 		updateRoundDetails();
 	};
+	JasshausForm['cardclicks']['onchange'] = (c) => hand.enable_clicks = c;
 	[form, settings_getter] = createForm(JasshausForm, settings);
 
 	$("#settings").append(form);
@@ -80,7 +81,9 @@ function afterModule() {
 		settings = getDefaultSettings();
 		settings.name = promptName();
 	}
+	settings = complementSettings(settings);
 
+	hand.enable_clicks = settings["cardclicks"];
 	comm = new CommunicationHandler();
 	carpet = new Carpet(4, 0);
 	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));

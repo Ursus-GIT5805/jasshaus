@@ -22,6 +22,12 @@ var JasshausForm = {
 			["french", "Französisch"],
 		],
 	},
+	cardclicks: {
+		title: "Kartenklick",
+		description: "Entscheiden, ob das Klicken einer Karte sie spielen soll.",
+		type: "checkbox",
+		default: true,
+	}
 	/*darkness: {
 		title: "Kartendunkelheit",
 		type: "range",
@@ -44,6 +50,13 @@ function getDefaultSettings() {
 	let out = {};
 	for(let key in JasshausForm) out[key] = JasshausForm[key].default;
 	return out;
+}
+
+function complementSettings(setting) {
+	for(let key in JasshausForm) {
+		if(!setting.hasOwnProperty(key)) setting[key] = JasshausForm[key].default;
+	}
+	return setting;
 }
 
 let getSettings = () => JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY));

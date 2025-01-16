@@ -6,7 +6,9 @@ class Hand {
 		this.card_cnt = 0;
 
 		this.contentHandler = contentHandler;
-		this.onClick = onClick;
+
+		this.enable_clicks = true;
+		this.onPlay = onClick;
 
 		this.dragcounter = 0;
 
@@ -35,16 +37,18 @@ class Hand {
 	}
 
 	appendCard(card) {
-		let handler = (card) => this.onClick(card);
+		let handler = this.onPlay;
 		let ele = this.contentHandler(card);
 		let id = this.card_cnt++;
 
 		ele.onclick = (ev) => {
+			if(!this.enable_clicks) return;
 			if(handler(card)) {
 				this.cards = this.cards.filter(x => x[0] != id);
 				ele.remove();
 			}
 		}
+
 		ele.draggable = true;
 
 		ele.ondragstart = (e) => {

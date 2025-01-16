@@ -41,6 +41,7 @@ pub enum Team {
 }
 
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 pub enum WinningCondition {
 	Points(i32),
 	Rounds(i32),
@@ -51,34 +52,31 @@ pub enum WinningCondition {
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct Setting {
-    pub max_points: i32,                  // used
+    pub max_points: i32,
 	pub less_points_win: bool,
-    pub point_recv_order: Vec<PointRule>, // used
+    pub point_recv_order: Vec<PointRule>,
 
-	pub allow_shows: bool,            // used
-	pub show_gives_negative: bool, // used
+	pub allow_shows: bool,
+	pub show_gives_negative: bool,
 
-	pub allow_misere: bool,           // used
-    pub allow_pass: bool,             // used
-	pub allowed_playtypes: Vec<bool>, // used
+	pub allow_misere: bool,
+    pub allow_pass: bool,
+	pub allowed_playtypes: Vec<bool>,
 
-	pub passed_player_begins: Vec<bool>, // used
-	pub playtype_multiplier: Vec<i32>, // used
+	pub passed_player_begins: Vec<bool>,
+	pub playtype_multiplier: Vec<i32>,
 
-	pub match_points: i32,    // used
-    pub marriage_points: i32, // used
+	pub match_points: i32,
+    pub marriage_points: i32,
+    pub show_points_maximum: i32,
 
-    pub allow_back_pass: bool, // used
-    pub pass_to_same_team: bool, // used
+    pub allow_back_pass: bool,
+    pub pass_to_same_team: bool,
 
-    pub startcondition: StartingCondition,      // used
-    pub apply_startcondition_on_revanche: bool, // used
-
-    // pub react_time: u32,
-
-    // pub passed_player_begins: Vec<bool>, // used
-    pub show_points_maximum: i32, // used
+    pub startcondition: StartingCondition,
+    pub apply_startcondition_on_revanche: bool,
 }
 
 #[wasm_bindgen]
@@ -110,19 +108,15 @@ impl Setting {
 			},
 			playtype_multiplier: vec![1; NUM_PLAYTYPES],
 
+            match_points: 100,
+            marriage_points: 20,
+            show_points_maximum: 300,
+
             allow_back_pass: false,
             pass_to_same_team: true,
 
-            match_points: 100,
-            marriage_points: 20,
-
             startcondition: StartingCondition::CARD(Card::new(0, 4)),
             apply_startcondition_on_revanche: false,
-
-            // react_time: 0,
-
-            // passed_player_begins: beg_passed,
-            show_points_maximum: 300,
         }
 	}
 }
