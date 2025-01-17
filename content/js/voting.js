@@ -40,4 +40,13 @@ class Voting {
 		let text = this.options[option] + " (" + this.agrees[option] + "/" + this.total + ")";
 		this.buttons[option].text(text);
 	}
+
+	setTotal(total) {
+		this.total = total;
+
+		for(let option in options) {
+			let text = this.options[option] + " (" + this.agrees[option] + "/" + this.total + ")";
+			this.buttons[option].text(text);
+		}
+	}
 }

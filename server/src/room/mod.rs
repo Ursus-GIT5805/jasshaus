@@ -106,10 +106,18 @@ impl Room {
         }
 
 		self.client_next += 1;
-        return Some(id);
+        Some(id)
     }
 
     pub async fn unregister(&mut self, client_id: usize) {
+		if self.vote.is_some() {
+			if let Some(client) = self.clients.get(&client_id) {
+				if client.vote.is_some() {
+					self.num_votes -= 1;
+					self.evaluate_vote().await;
+				}
+			}
+		}
         self.clients.remove(&client_id);
         self.send_to_all(SocketMessage::ClientDisconnected(client_id))
             .await;
@@ -163,16 +171,9 @@ impl Room {
         self.state = RoomState::ENDING;
     }
 
-    /*async fn handle_marriage(&mut self) -> bool {
-        if !self.game.playtype.is_trumpf() { return false; }
-        todo!("Implement this");
-    }*/
-
     fn get_first_announceplayer(&self) -> usize {
         match self.game.setting.startcondition {
-            StartingCondition::CARD(card) => self
-                .game
-                .players
+            StartingCondition::CARD(card) => self.game.players
                 .iter()
                 .enumerate()
                 .find(|(_, plr)| plr.hand.contains(card))
@@ -183,7 +184,6 @@ impl Room {
                 rng.gen::<usize>() % self.game.players.len()
             }
             _ => 0,
-            // StartingCondition::PLAYER(plr) => plr,
         }
     }
 
@@ -322,6 +322,10 @@ impl Room {
 			None => return,
 		};
 
+		if self.num_votes != self.clients.len() {
+			return;
+		}
+
 		debug!("Evaluate: {:?}", vote);
 
 		match vote {
@@ -356,9 +360,7 @@ impl Room {
 		self.send_to_all_except(client_id, SocketMessage::Vote(vote, client_id)).await;
 
 		self.num_votes += 1;
-		if self.num_votes == self.clients.len() {
-			self.evaluate_vote().await;
-		}
+		self.evaluate_vote().await;
 	}
 
     async fn handle_team_choosing(&mut self) {
@@ -403,7 +405,6 @@ impl Room {
             SocketMessage::Announce(pt, misere) => self.announce(pt, misere, plr_id).await,
             SocketMessage::Pass => self.pass(plr_id).await,
             SocketMessage::PlayShow(show) => self.play_show(show, plr_id).await,
-            // SocketMessage::Vote(vote, _) => self.handle_voting(vote, client_id).await,
 			SocketMessage::RtcStart(_) => self.send_to_all_except(client_id, SocketMessage::RtcStart(client_id)).await,
             SocketMessage::RtcSignaling(s, signal, recv) => {
                 self.send_to(recv, SocketMessage::RtcSignaling(s, signal, client_id))

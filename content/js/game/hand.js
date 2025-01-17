@@ -1,3 +1,12 @@
+class HandCard {
+	constructor(info) {
+		this.info = info;
+		this.selected = false;
+		this.legal = true;
+		this.ele = null;
+	}
+}
+
 class Hand {
 	constructor(container, contentHandler, onClick) {
 		this.cards = [];
@@ -5,12 +14,13 @@ class Hand {
 
 		this.card_cnt = 0;
 
-		this.contentHandler = contentHandler;
-
 		this.enable_clicks = true;
 		this.onPlay = onClick;
+		this.selecting = false;
 
 		this.dragcounter = 0;
+
+		this.contentHandler = contentHandler;
 
 		// Container events ---
 
@@ -33,51 +43,57 @@ class Hand {
 	}
 
 	getCards() {
-		return this.cards.map(x => x[1]);
+		return this.cards.map(x => x.info);
 	}
 
-	appendCard(card) {
-		let handler = this.onPlay;
-		let ele = this.contentHandler(card);
-		let id = this.card_cnt++;
+	appendCard(info) {
+		let card = new HandCard(info, this.contentHandler);
 
-		ele.onclick = (ev) => {
-			if(!this.enable_clicks) return;
-			if(handler(card)) {
-				this.cards = this.cards.filter(x => x[0] != id);
-				ele.remove();
-			}
-		}
-
+		let ele = this.contentHandler(info);
 		ele.draggable = true;
 
+		ele.onclick = (ev) => {
+			if(this.selecting) {
+				card.selected = !card.selected;
+				this.handleSelectedEffect(ele, card.selected);
+			} else {
+				if(!this.enable_clicks) return;
+				if(this.onPlay(info)) {
+					this.cards = this.cards.filter(x => x.ele != ele);
+					ele.remove();
+				}
+			}
+		}
 		ele.ondragstart = (e) => {
+			if(this.selecting) return;
 			this.dragcounter = 0;
 
 			let node = ele.cloneNode();
-			e.dataTransfer.setData("text/plain", id);
+			e.dataTransfer.setData("text/plain", info);
 			e.dataTransfer.effectAllowed = "move";
 			e.dataTransfer.setDragImage(node, e.offsetX, e.offsetY);
 
 			ele.style['opacity'] = "0";
- 		};
+ 		}
 		ele.ondragend = (e) => {
+			if(this.selecting) return;
 			e.preventDefault();
 			ele.style['opacity'] = "100";
 			if(this.dragcounter == 0) {
-				if(handler(card)) {
-					this.cards = this.cards.filter(x => x[0] != id);
+				if(this.onPlay(info)) {
+					this.cards = this.cards.filter(x => x.ele != ele);
 					ele.remove();
 				}
 			}
 
 			this.container.style['border-color'] = "#000000";
-		};
+		}
 
 		ele.style["z-index"] = this.cards.length;
+		card.ele = ele;
 
-		this.cards.push([id, card, ele]);
-		this.container.appendChild(ele);
+		this.cards.push(card);
+		this.container.appendChild(card.ele);
 	}
 
 	clear() {
@@ -90,37 +106,64 @@ class Hand {
 		for(let card of cards) this.appendCard(card);
 	}
 
-	reloadContent() {
-		let cards = this.cards.map((v) => [v[1], v[2].style["pointer-events"] == "none"]);
-
-		console.log(cards);
-
-		this.clear();
-		for(let [card, illegal] of cards) this.appendCard(card);
-
-		for(let i = 0 ; i < cards.length ; i++) {
-			if(cards[i][1]) {
-				this.cards[i][2].style["pointer-events"] = "none";
-				this.cards[i][2].style["filter"] = "brightness(50%)";
-			}
+	handleLegalityEffect(ele, legal) {
+		if( legal ) {
+			ele.style['filter'] = "";
+			ele.style['pointer-events'] = "auto";
+		} else {
+			ele.style['filter'] = "brightness(50%)";
+			ele.style['pointer-events'] = "none";
 		}
+	}
 
+	handleSelectedEffect(ele, selected) {
+		ele.style['pointer-events'] = "auto";
+		ele.style['filter'] = "";
+
+		if( selected ) ele.style['transform'] = "translateY(-2rem)";
+		else ele.style['transform'] = "";
+	}
+
+	reloadContent() {
+		for(let card of this.cards) {
+			card.ele = this.contentHandler(this.card.info);
+			this.handleLegalityEffect(card.ele, card.legal);
+		}
 	}
 
 	setLegality(legalityHandler) {
-		for(let [id, card, ele] of this.cards) {
-			if( legalityHandler(card) ) {
-				ele.style["filter"] = "";
-				ele.style["pointer-events"] = "auto";
-			} else {
-				ele.style["filter"] = "brightness(50%)";
-				ele.style["pointer-events"] = "none";
+		for(let card of this.cards) {
+			let legal = legalityHandler(card.info);
+			card.legal = legal;
+			this.handleLegalityEffect(card.ele, legal);
+		}
+	}
+
+	setSelectMode(select) {
+		if(select == undefined) this.selecting = !this.selecting;
+		else this.selecting = select;
+
+		for(let card of this.cards) {
+			card.ele.draggable = !this.selecting;
+			card.selected = false;
+			this.handleSelectedEffect(card.ele, false);
+		}
+
+		if(!this.selecting) {
+			for(let card of this.cards) {
+				this.handleLegalityEffect(card.ele, card.legal);
 			}
 		}
+	}
+
+	get_selected() {
+		return Array.from(this.cards
+						  .filter((card) => card.selected)
+						  .map((card) => card.info));
 	}
 
 	/// Set all cards illegal to play
 	setIllegal() {
-		this.setLegality((c) => false);
+		this.setLegality(() => false);
 	}
 }

@@ -92,6 +92,7 @@ async function FUNC_ClientDisconnected(client_id) {
 	comm.removeClient(client_id);
 	comm.chatMessage(MessageType.Info, name + " left the table.");
 	players.setName( "", pid );
+	if(!voting) voting.setTotal(comm.clients.num_clients+1);
 }
 
 async function FUNC_StartMating(u) {
@@ -169,9 +170,9 @@ async function FUNC_Announce(ann) {
 }
 
 async function FUNC_Pass(u) {
-	gameMessage("Ich schiebe!", game.current_player);
 	game.pass();
 	if( own.id == game.current_player ) startAnnounce();
+	gameMessage("Ich schiebe!", game.current_player);
 	players.setCurrent(game.current_player);
 	updateRoundDetails();
 }
@@ -281,11 +282,10 @@ async function FUNC_Vote(data) {
 async function FUNC_NewVote(data) {
 	let clients = comm.num_clients+1;
 	let handler = (id) => send({ "Vote": [id, 0] });
-
 	if(data === 'Revanche') voting = new Voting("Revanche", clients, ["Ja", "Nein"], handler);
 }
 
-async function FUNC_StartGame(u) {
+async function FUNC_StartGame() {
 	if(game) {
 		let setting = game.setting;
 		game = new Game();
