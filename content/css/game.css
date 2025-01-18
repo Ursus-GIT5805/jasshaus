@@ -164,6 +164,17 @@ body {
 	bottom: 2px;
 }
 
+#showButtons {
+	position: absolute;
+	bottom: 23vh;
+
+	display: flex;
+	div {
+		background-color: #BBBBBB;
+		color: #000000;
+	}
+}
+
 #pleft .PlayerMSG { left: 0; }
 #pup .PlayerMSG { left: 50%; transform: translateX(-50%); }
 #pright .PlayerMSG { right: 0; }

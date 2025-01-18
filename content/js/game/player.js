@@ -42,17 +42,18 @@ class Playerhandler {
 			.map((_,ele) => ele.innerText = name);
 		$('*[text="short_player' + plr + '"]')
 			.map((_,ele) => ele.innerText = shortname);
-
-		// document.querySelectorAll('[text="player' + plr + '"]')
-			// .forEach((ele) => ele.innerText = name);
-		// document.querySelectorAll('[text="short_player' + plr + '"]')
-			// .forEach((ele) => ele.innerText = name.substr(0,3));
     }
 
 	setMessage(msg, plr) {
-		let div = $('<div class="PlayerMSG"></div>').text(msg);
+		let div = $('<a>').text(msg);
+		this.setEleMessage( div, plr );
+	}
+
+	setEleMessage(ele, plr, delay=6000) {
+		console.log("hey");
+		let div = $('<div class="PlayerMSG"></div>').append(ele);
 		div.click(() => div.remove());
-		setTimeout(() => div.remove(), 6000);
+		if(delay > 0) setTimeout(() => div.remove(), delay);
 
 		if(plr == own.id) $("body").append( div.css("bottom", "30%").addClass("CenterX") );
 		else $("#player" + plr).append( div );

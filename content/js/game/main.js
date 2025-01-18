@@ -94,3 +94,22 @@ function afterModule() {
 	game = new Game();
 	updateRoundDetails();
 }
+
+$("#showBack").click(() => {
+	hand.setSelectMode(false);
+	$("#showBack").toggle();
+});
+
+$("#showOk").click(() => {
+	if(hand.selecting) {
+		let cards = hand.get_selected();
+		let show = parse_show(cards);
+		if(show) {
+			send({"PlayShow": show});
+			hand.setSelected(() => false);
+		}
+	} else {
+		hand.setSelectMode(true);
+		$("#showBack").toggle();
+	}
+});

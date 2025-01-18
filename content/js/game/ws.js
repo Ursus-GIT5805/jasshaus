@@ -170,9 +170,9 @@ async function FUNC_Announce(ann) {
 }
 
 async function FUNC_Pass(u) {
+	gameMessage("Ich schiebe!", game.current_player);
 	game.pass();
 	if( own.id == game.current_player ) startAnnounce();
-	gameMessage("Ich schiebe!", game.current_player);
 	players.setCurrent(game.current_player);
 	updateRoundDetails();
 }
@@ -201,6 +201,7 @@ async function FUNC_PlayCard(card){
 
 	// ---
 
+	$("#showButtons").css("display", "none");
 	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
 		let plr = game.marriage['PlayedBoth'];
 		gameMessage("Stöck", plr);
@@ -245,8 +246,18 @@ async function FUNC_ShowList(list) {
 		let name = players.getName(i);
 
 		for(let show of shows) {
+			let cards = show_to_cards(show);
+
+			let row = $("<div>");
+			for(let card of cards) {
+				let img = $("<img>")
+					.attr("src", card_get_img_url(card))
+					.css("height", "3em");
+				row.append(img);
+			}
+
 			game.play_show(show, i);
-			openShow(show, name, false);
+			players.setEleMessage(row, i, 15000);
 		}
 	}
 	updatePoints();

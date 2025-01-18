@@ -139,6 +139,14 @@ class Hand {
 		}
 	}
 
+	setSelected(selectHandler) {
+		for(let card of this.cards) {
+			let select = selectHandler(card.info);
+			card.selected = select;
+			this.handleSelectedEffect(card.ele, select);
+		}
+	}
+
 	setSelectMode(select) {
 		if(select == undefined) this.selecting = !this.selecting;
 		else this.selecting = select;

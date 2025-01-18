@@ -127,8 +127,6 @@ function handleOnTurn() {
 	let cardset = Cardset.from_list( hand.getCards() );
 	hand.setLegality((card) => game.is_legal_card(cardset, card));
 
-	if(game.get_turn() == 0) {
-		let shows = cardset.get_shows();
-		for(let show of shows) openShow(show, "Weisen?", true);
-	}
+	if(game.get_turn() == 0 && game.setting.allow_shows) $("#showButtons").css("display", "flex");
+	else $("#showButtons").css("display", "none");
 }

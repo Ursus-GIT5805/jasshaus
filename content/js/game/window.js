@@ -73,13 +73,13 @@ function openShow(show, name, showable, push=true){
 
 
 	if(showable) {
+		$("#showConfirm").text("Weisen");
 		$("#showCancel").css("display", "block");
 	} else {
 		$("#showConfirm").text("Weiter");
 		$("#showCancel").css("display", "none");
 	}
 
-    // document.getElementById("showWindow").onmouseenter();
 	$("#showWindow").css("display", "flex");
 }
 
@@ -95,9 +95,6 @@ $("#showConfirm").click((e) => {
 });
 
 $("#showCancel").click(closeShow);
-
-// document.getElementById("showWindow").onmouseenter = (e) => this.style.opacity = "100%";
-// document.getElementById("showWindow").onmouseleave = (e) => this.style.opacity = "25%";
 
 // Round summary ---
 var endRound = false;
@@ -149,12 +146,12 @@ function openSummary() {
 		$("#roundSummary").append(ele);
 	}
 
+	game.start_new_round([]);
 	$("#roundWindow").css("display", "block");
 }
 
 $("#closeSummary").click((e) => {
 	$("#roundWindow").css("display", "none");
-	game.start_new_round([]);
 
 	updatePoints();
 	updateRoundDetails();

@@ -19,6 +19,7 @@ pub enum CardNumber {
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
+#[derive(PartialOrd, Ord)]
 pub struct Card {
     pub color: u8,
     pub number: u8,
@@ -83,12 +84,45 @@ impl Show {
 
     pub fn as_cards(&self) -> Vec<Card> {
         match self.row {
-            1 => (0..4).map(|i| Card::new(i, self.number)).collect(),
+            1 => (0..NUM_COLORS as u8).map(|i| Card::new(i, self.number)).collect(),
             _ => (0..self.row)
                 .map(|i| Card::new(self.color, self.number + i))
                 .collect(),
         }
     }
+}
+
+impl TryFrom<Vec<Card>> for Show {
+	type Error = ();
+
+	fn try_from(value: Vec<Card>) -> Result<Self, Self::Error> {
+		if value.len() <= 2 { return Err(()); }
+
+		let mut cards = value;
+		cards.sort();
+
+		let col = cards[0].color;
+		let num = cards[0].number;
+
+		// Four different cards
+		if cards[1].color != col {
+			for i in 0..cards.len()-1 {
+				if cards[i].number != cards[i+1].number || cards[i].color + 1 != cards[i+1].color {
+					return Err(());
+				}
+			}
+
+			return Ok(Show::new(col, num, 1));
+		}
+
+		for i in 0..cards.len()-1 {
+			if cards[i].color != cards[i+1].color || cards[i].number+1 != cards[i+1].number {
+				return Err(());
+			}
+		}
+
+		Ok(Show::new(col, num, cards.len() as u8))
+	}
 }
 
 impl Default for Show {
@@ -283,6 +317,15 @@ impl From<Vec<Card>> for Cardset {
 #[wasm_bindgen]
 pub fn show_to_cards(show: Show) -> Vec<Card> {
 	show.as_cards()
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn parse_show(item: Vec<Card>) -> Option<Show> {
+	match Show::try_from(item) {
+		Ok(r) => Some(r),
+		_ => None,
+	}
 }
 
 #[cfg(target_family = "wasm")]
