@@ -164,15 +164,15 @@ body {
 	bottom: 2px;
 }
 
-#showButtons {
+#showButton {
 	position: absolute;
+
+	left: 0;
 	bottom: 23vh;
 
-	display: flex;
-	div {
-		background-color: #BBBBBB;
-		color: #000000;
-	}
+	display: none;
+	background-color: #BBBBBB;
+	color: #000000;
 }
 
 #pleft .PlayerMSG { left: 0; }

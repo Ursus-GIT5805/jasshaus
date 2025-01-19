@@ -201,7 +201,7 @@ async function FUNC_PlayCard(card){
 
 	// ---
 
-	$("#showButtons").css("display", "none");
+	$("#showButton").css("display", "none");
 	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
 		let plr = game.marriage['PlayedBoth'];
 		gameMessage("Stöck", plr);
@@ -243,12 +243,21 @@ async function FUNC_ShowPoints(data) {
 async function FUNC_ShowList(list) {
 	for(let i = 0 ; i < list.length ; i++) {
 		let shows = list[i];
+		if(shows.length == 0) continue;
+
 		let name = players.getName(i);
+		let rows = $("<div>")
+			.css("display", "flex")
+			.css("flex-direction", "column");
 
 		for(let show of shows) {
 			let cards = show_to_cards(show);
 
-			let row = $("<div>");
+			let row = $("<div>")
+				.css("display", "flex")
+				.css("flex-direction", "row")
+				.css("flex-wrap", "nowrap");
+
 			for(let card of cards) {
 				let img = $("<img>")
 					.attr("src", card_get_img_url(card))
@@ -256,9 +265,11 @@ async function FUNC_ShowList(list) {
 				row.append(img);
 			}
 
+			rows.append(row);
 			game.play_show(show, i);
-			players.setEleMessage(row, i, 15000);
 		}
+
+		players.setEleMessage(rows, i, 15000);
 	}
 	updatePoints();
 }

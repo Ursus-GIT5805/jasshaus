@@ -95,21 +95,21 @@ function afterModule() {
 	updateRoundDetails();
 }
 
-$("#showBack").click(() => {
-	hand.setSelectMode(false);
-	$("#showBack").toggle();
-});
-
-$("#showOk").click(() => {
+$("#showButton").click(() => {
 	if(hand.selecting) {
 		let cards = hand.get_selected();
 		let show = parse_show(cards);
 		if(show) {
 			send({"PlayShow": show});
 			hand.setSelected(() => false);
+		} else {
+			players.setMessage("Dies ist kein Weis!", own.id, 2000);
 		}
+
+		$("#showButton").text("Weisen")
 	} else {
-		hand.setSelectMode(true);
-		$("#showBack").toggle();
+		$("#showButton").text("Fertig")
 	}
+
+	hand.setSelectMode();
 });

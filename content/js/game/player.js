@@ -44,13 +44,12 @@ class Playerhandler {
 			.map((_,ele) => ele.innerText = shortname);
     }
 
-	setMessage(msg, plr) {
+	setMessage(msg, plr, delay=6000) {
 		let div = $('<a>').text(msg);
-		this.setEleMessage( div, plr );
+		this.setEleMessage( div, plr, delay );
 	}
 
 	setEleMessage(ele, plr, delay=6000) {
-		console.log("hey");
 		let div = $('<div class="PlayerMSG"></div>').append(ele);
 		div.click(() => div.remove());
 		if(delay > 0) setTimeout(() => div.remove(), delay);
