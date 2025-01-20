@@ -156,9 +156,7 @@ async function FUNC_Announce(ann) {
 		updateHand();
 	}
 
-	let title = "";
-	if(misere) title = "Misère: ";
-	title += pt_name(pt);
+	let title = pt_name(pt, misere);
 	gameMessage(title, game.current_player);
 
 	said_marriage = false;
@@ -188,12 +186,15 @@ async function FUNC_ClientIntroduction(data) {
 }
 
 async function FUNC_PlayCard(card){
-	let isbest = false;
-	if(game.bestcard) isbest = game.ruleset.is_card_stronger(game.bestcard, card);
-	else isbest = true;
-
 	let curplr = game.current_player;
 	game.play_card(card);
+
+	let isbest = false;
+	if(game.bestcard) {
+		if(objEquals(game.bestcard, card)) isbest = true;
+	} else {
+		if(game.current_player == curplr) isbest = true;
+	}
 
 	if(carpet.get_num_cards() == game.players.length) carpet.clean();
 	carpet.playCard(card, curplr, isbest);
@@ -210,7 +211,12 @@ async function FUNC_PlayCard(card){
 
 	if(game.should_end() || game.cards_played == 36) {
 		hand.setIllegal();
-		setTimeout(openSummary, 2000);
+		setTimeout(() => {
+			openSummary();
+
+			carpet.clean();
+			game.start_new_round([]);
+		}, 2000);
 	} else {
 		if( game.current_player == own.id ) handleOnTurn();
 		else hand.setIllegal();
@@ -320,6 +326,17 @@ async function FUNC_StartGame() {
 	$("#teamWindow").css("display", "none");
 
 	updatePoints();
+	updateRoundDetails();
+}
+
+async function FUNC_EverythingPlaytype(pt) {
+	let title = pt_name(pt, game.misere);
+	gameMessage(title, game.current_player);
+
+	let ruleset = game.ruleset;
+	ruleset.active = pt;
+	game.ruleset = ruleset;
+
 	updateRoundDetails();
 }
 

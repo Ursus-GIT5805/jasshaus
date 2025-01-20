@@ -271,8 +271,31 @@ impl Room {
         if self.game.should_end() {
             self.end_game().await;
         }
-        self.send_to_all(SocketMessage::PlayCard(card)).await;
-    }
+
+		self.send_to_all(SocketMessage::PlayCard(card)).await;
+
+		if let Playtype::Everything = self.game.ruleset.playtype {
+			if self.game.num_played_cards() == 0 {
+				let choices = vec![
+					Playtype::Updown,
+					Playtype::Downup,
+					Playtype::Color(0),
+					Playtype::Color(1),
+					Playtype::Color(2),
+					Playtype::Color(3),
+				];
+				let ele = {
+					let mut rng = rand::thread_rng();
+					*choices.choose(&mut rng)
+						.unwrap_or(&Playtype::Updown)
+				};
+
+				self.game.ruleset.active = ele;
+
+				self.send_to_all(SocketMessage::EverythingPlaytype(ele)).await;
+			}
+		}
+	}
 
     async fn announce(&mut self, pt: Playtype, misere: bool, plr_id: usize) {
         if self.game.can_announce(plr_id) {

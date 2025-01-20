@@ -18,12 +18,16 @@ pub enum Playtype {
     SlalomDownup,
     Guschti,
     Mary,
+	BigSlalomUpdown,
+	BigSlalomDownup,
+	Molotow,
+	Everything,
 	#[default]
     None = 255,
 }
 
 // #[wasm_bindgen]
-pub const NUM_PLAYTYPES: usize = 10;
+pub const NUM_PLAYTYPES: usize = 14;
 
 #[wasm_bindgen]
 impl Playtype {
@@ -39,6 +43,10 @@ impl Playtype {
 			7 => Playtype::SlalomDownup,
 			8 => Playtype::Guschti,
 			9 => Playtype::Mary,
+			10 => Playtype::BigSlalomUpdown,
+			11 => Playtype::BigSlalomDownup,
+			12 => Playtype::Molotow,
+			13 => Playtype::Everything,
 			_ => return None,
 		};
 		Some(res)
@@ -61,6 +69,10 @@ impl Playtype {
 			Playtype::SlalomDownup => 7,
 			Playtype::Guschti => 8,
 			Playtype::Mary => 9,
+			Playtype::BigSlalomUpdown => 10,
+			Playtype::BigSlalomDownup => 11,
+			Playtype::Molotow => 12,
+			Playtype::Everything => 13,
 			_ => return None,
 		};
 		Some(res)
@@ -144,11 +156,14 @@ impl RuleSet {
 	/// Regards the overall playtype
     pub fn get_card_value(&self, card: Card) -> i32 {
         match self.playtype {
-            Playtype::Updown | Playtype::SlalomUpdown | Playtype::Guschti => {
+			Playtype::Everything |
+            Playtype::Updown | Playtype::SlalomUpdown |
+			Playtype::Guschti  | Playtype::BigSlalomUpdown => {
                 let values: [i32; 9] = [0, 0, 8, 0, 10, 2, 3, 4, 11];
                 values[card.number as usize]
             }
-            Playtype::Downup | Playtype::SlalomDownup | Playtype::Mary => {
+            Playtype::Downup | Playtype::SlalomDownup |
+			Playtype::Mary | Playtype::BigSlalomDownup => {
                 let values: [i32; 9] = [11, 0, 8, 0, 10, 2, 3, 4, 0];
                 values[card.number as usize]
             }
@@ -156,7 +171,18 @@ impl RuleSet {
                 let trumpf = (card.color == col) as i32;
                 let values: [i32; 9] = [0, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 11];
                 values[card.number as usize]
-            }
+            },
+			Playtype::Molotow => {
+				// Special about molotow: You have to handle the points
+				// seperately and depending on the ACTIVE playtype
+				let trumpf = match self.active {
+					Playtype::Color(c) => card.color == c,
+					_ => false,
+				} as i32;
+
+				let values: [i32; 9] = [0, 0, 0, 14*trumpf, 10, 2 + 18*trumpf, 3, 4, 11];
+                values[card.number as usize]
+			},
             _ => 0,
         }
     }
@@ -173,11 +199,12 @@ impl RuleSet {
         if current.row != new.row {
             return current.row < new.row;
         } // You don't have to check for the 4-equals seperately
-          // The shows are equally long
 
+        // The shows are equally long
         if current.number != new.number {
             return match self.playtype {
-                Playtype::Downup | Playtype::SlalomDownup | Playtype::Mary => {
+                Playtype::Downup | Playtype::SlalomDownup|
+				Playtype::Mary | Playtype::BigSlalomDownup => {
                     current.number > new.number
                 }
                 _ => current.number < new.number,

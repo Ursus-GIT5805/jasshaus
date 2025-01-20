@@ -190,6 +190,10 @@ impl Cardset {
         (self.list & (0x01FF << (color * NUM_NUMBERS as u8))).count_ones()
     }
 
+	pub fn count_number(&self, number: u8) -> u32 {
+        (self.list & (0x0008040201 << number)).count_ones()
+	}
+
     pub fn has_stronger_trumpf(&self, card: Card) -> bool {
         // Make a bitmask where each card with higher number is marked with 1
         let mask = match card.number {

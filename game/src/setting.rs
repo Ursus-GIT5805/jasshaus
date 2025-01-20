@@ -1,10 +1,3 @@
-/*
-
-//TODO some fancy comments EVERYWHERE!
-This struct contains all the different settings you can choose before a game.
-
-*/
-
 use crate::{
 	card::*,
 	ruleset::*,
@@ -59,16 +52,21 @@ pub struct Setting {
     pub point_recv_order: Vec<PointRule>,
 
 	pub allow_shows: bool,
+	pub allow_table_shows: bool,
 	pub show_gives_negative: bool,
 
 	pub allow_misere: bool,
     pub allow_pass: bool,
 	pub allowed_playtypes: Vec<bool>,
 
+	pub allow_marriage: bool,
+	pub marriage_gives_negative: bool,
+
 	pub passed_player_begins: Vec<bool>,
 	pub playtype_multiplier: Vec<i32>,
 
 	pub match_points: i32,
+	pub last_points: i32,
     pub marriage_points: i32,
     pub show_points_maximum: i32,
 
@@ -83,16 +81,20 @@ pub struct Setting {
 impl Setting {
 	pub fn schieber() -> Self {
         Setting {
-			max_points: 1000,
+			max_points: 20,
 			less_points_win: false,
             point_recv_order: vec![PointRule::MARRIAGE, PointRule::SHOW, PointRule::PLAY],
 
 			allow_shows: true,
+			allow_table_shows: false,
 			show_gives_negative: false,
 
 			allow_misere: true,
             allow_pass: true,
 			allowed_playtypes: vec![true; NUM_PLAYTYPES],
+
+			allow_marriage: true,
+			marriage_gives_negative: false,
 
 			passed_player_begins: {
 				let mut v = vec![true; NUM_PLAYTYPES];
@@ -109,6 +111,7 @@ impl Setting {
 			playtype_multiplier: vec![1; NUM_PLAYTYPES],
 
             match_points: 100,
+			last_points: 5,
             marriage_points: 20,
             show_points_maximum: 300,
 
@@ -119,6 +122,4 @@ impl Setting {
             apply_startcondition_on_revanche: false,
         }
 	}
-
-
 }

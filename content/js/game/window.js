@@ -10,7 +10,7 @@ function startAnnounce(){
 	$("#announcePT").html("");
 	$("#announcePTCol").html("");
 
-	for(let id = 0 ; id < 10 ; id++) {
+	for(let id = 0 ; id < 14 ; id++) {
 		if(!game.setting.allowed_playtypes[id]) continue;
 
 		let pt = Playtype.from_id(id);
@@ -136,8 +136,6 @@ function openSummary() {
 		$("#roundSummary").append(ele);
 	}
 
-	carpet.clean();
-	game.start_new_round([]);
 	$("#roundWindow").css("display", "block");
 }
 

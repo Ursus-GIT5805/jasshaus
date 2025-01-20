@@ -62,13 +62,32 @@ const PlayTypes = [
 		name: "Mary",
 		img: "img/mary.svg",
 	},
+	{
+		name: "Riesenslalom Obenabe",
+		img: "img/bigslalomup.svg",
+	},
+	{
+		name: "Riesenslalom Undeufe",
+		img: "img/bigslalomdown.svg",
+	},
+	{
+		name: "Molotow",
+		img: "img/molotow.svg",
+	},
+	{
+		name: "Alles",
+		img: "img/de/everything.svg",
+	},
 ];
 
-function pt_name(pt) {
+function pt_name(pt, misere=false) {
 	let id = get_playtype_id(pt);
+	let pref = "";
+	if(misere) pref = "Misère: ";
+
 	let name = PlayTypes[id].name;
-	if(typeof name === 'function') return name();
-	return name;
+	if(typeof name === 'function') return pref + name();
+	return pref + name;
 }
 
 function pt_img_url(pt) {
@@ -140,9 +159,7 @@ function updateRoundDetails(){
 		$("#roundSymbols").css("visibility", "visible");
 	}
 
-	let title = "";
-	if(ruleset.misere) title = "Misère: ";
-	title += pt_name(ruleset.playtype);
+	let title = pt_name(ruleset.playtype, ruleset.misere);
 	$("#namePT").text(title);
 
 	$("#roundPT").attr("src", pt_img_url(ruleset.playtype));

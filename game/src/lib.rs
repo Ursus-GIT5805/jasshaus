@@ -134,7 +134,11 @@ impl Game {
     pub fn play_marriage(&mut self, plr: usize) {
         self.marriage = MarriageState::PlayedBoth(plr);
 
-        let gain = self.setting.marriage_points;
+        let gain = if self.setting.marriage_gives_negative{
+			-self.setting.marriage_points
+		} else {
+			self.setting.marriage_points
+		};
         let team = self.team_of(plr);
         team.points += gain;
         team.show_points += gain;
@@ -188,6 +192,10 @@ impl Game {
 
     // Handles marriage
     pub fn handle_marriage(&mut self) {
+		if !self.setting.allow_marriage {
+			return;
+		}
+
 		let plr = match self.player_with_marriage() {
 			Some(c) => c,
 			None => return,
@@ -197,6 +205,18 @@ impl Game {
 		if self.marriage_would_win(team) {
 			self.play_marriage(plr);
 		}
+	}
+
+	pub fn get_show_value(&self, show: Show) -> i32 {
+		let mut val = std::cmp::min(
+			self.ruleset.get_show_value(show),
+			self.setting.show_points_maximum,
+		);
+
+		if self.setting.show_gives_negative {
+			val = -val;
+		}
+		val
 	}
 
     // Handles shows and add the points
@@ -220,26 +240,14 @@ impl Game {
         let team_id = self.players[bestplr].team_id;
 
         // Handle shows
-        for plr in self.players.iter_mut() {
-            if plr.team_id != team_id {
-				plr.shows.clear();
+        for plr in 0..self.players.len() {
+            if self.players[plr].team_id != team_id {
+				self.players[plr].shows.clear();
 				continue;
             }
 
-            for show in plr.shows.iter() {
-                let sp = {
-					let mut val = std::cmp::min(
-						self.ruleset.get_show_value(*show),
-						self.setting.show_points_maximum,
-					);
-
-					if self.setting.show_gives_negative {
-						val = -val;
-					}
-					val
-				};
-
-
+            for show in self.players[plr].shows.iter() {
+                let sp = self.get_show_value(*show);
                 self.teams[team_id].points += sp;
                 self.teams[team_id].show_points += sp;
             }
@@ -272,13 +280,29 @@ impl Game {
 				if self.should_end() { return; }
             }
         } else {
+			if self.should_end() { return; }
             self.add_points(best_team as usize, points);
         }
 
 		if self.cards_played == NUM_CARDS {
 			 // The team which won the last turn
 			let last_team = self.players[self.current_player].team_id;
-			self.add_points(last_team, 5); // Last team get's 5 points
+			// Last team gets extra points
+			self.add_points(last_team, self.setting.last_points);
+
+			// It's important to add the eights if no trumpf has been decided
+			if let Playtype::Molotow = self.ruleset.playtype {
+				match self.ruleset.active {
+					Playtype::Color(_) => {},
+					_ => {
+						for tid in 0..self.teams.len() {
+							// Count the number of eights
+							let num = self.teams[tid].won.count_number(2) as i32;
+							self.add_points(tid, num * 8);
+						}
+					}
+				}
+			}
 
 			// When this team won ALL cards: Extra points!
 			if self.teams[last_team].won.len() == NUM_CARDS {
@@ -291,9 +315,51 @@ impl Game {
 		}
     }
 
+	fn handle_molotow(&mut self, card: Card) {
+		let turncolor = match self.turncolor {
+			Some(c) => c,
+			None => return,
+		};
+
+		// Switch the active Playtype, only if it's the first color not held
+		if card.color == turncolor { return; }
+		let trumpf = card.color;
+
+		for tid in 0..self.teams.len() {
+			// When a teams has the nine: extra (14-0) points
+			if self.teams[tid].won.contains(Card::new(trumpf, 3)) {
+				self.add_points(tid, 14);
+			}
+			// When a team has the trumpf boy extra (20-2) = 18 points
+			if self.teams[tid].won.contains(Card::new(trumpf, 5)) {
+				self.add_points(tid, 18);
+			}
+		}
+
+		// Switch to trumpf
+		self.ruleset.active = Playtype::Color(trumpf);
+	}
+
+	fn handle_table_show(&mut self) {
+		let cards = Cardset::from(self.played_cards.clone());
+		let tid = self.players[self.best_player].team_id;
+		for show in cards.get_shows() {
+            let sp = self.get_show_value(show);
+            self.teams[tid].points += sp;
+            self.teams[tid].show_points += sp;
+		}
+	}
+
     // Action functions ------
 
     pub fn play_card(&mut self, card: Card) {
+		if let Playtype::Molotow = self.ruleset.playtype {
+			match self.ruleset.active {
+				Playtype::Color(_) => {},
+				_ => self.handle_molotow(card),
+			}
+		}
+
 		let newbest = match self.bestcard {
 			Some(bcrd) => self.ruleset.is_card_stronger(bcrd, card),
 			None => {
@@ -310,6 +376,13 @@ impl Game {
         self.played_cards.push(card);
 		self.cards_played += 1;
         self.players[self.current_player].hand.erase(card);
+
+
+		// TODO there are serious flaws with the Marriage/Show/Point ordering
+		// Weird points like those are unhandled by the order!
+		if self.setting.allow_table_shows {
+			self.handle_table_show();
+		}
 
         if let Playtype::Color(trumpf) = self.ruleset.playtype {
 			// If the given card is a trumpf queen or king, handle marriage
@@ -372,6 +445,23 @@ impl Game {
                     Playtype::Updown
                 }
             }
+			Playtype::BigSlalomUpdown => {
+				if (self.get_turn() / 3) & 1 == 1 {
+					Playtype::Downup
+				} else {
+					Playtype::Updown
+				}
+			},
+			Playtype::BigSlalomDownup => {
+				if (self.get_turn() / 3) & 1 == 1 {
+					Playtype::Updown
+				} else {
+					Playtype::Downup
+				}
+			},
+			// This Playtype has to be handled externally afterwards!
+			Playtype::Everything => Playtype::Updown,
+			Playtype::Molotow => self.ruleset.active,
             x => x,
         };
     }
@@ -392,6 +482,11 @@ impl Game {
 		// Announce!
 		self.ruleset = RuleSet::new(pt, misere);
         self.current_player = self.get_startplayer();
+
+
+		if let Playtype::Molotow = pt {
+			self.ruleset.active = Playtype::Updown;
+		}
         self.update_ruletype();
     }
 
@@ -570,7 +665,6 @@ impl Game {
 		self.played_cards.clone()
     }
 
-	// TODO returns ordering of the teams
 	/// Returns the currently best team
     pub fn get_winner_team(&self) -> usize {
         self.teams

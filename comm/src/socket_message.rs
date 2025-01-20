@@ -41,6 +41,7 @@ pub enum SocketMessage {
     SetAnnouncePlayer(usize),
     GameState(Game, Cardset),
     GameSetting(Setting),
+	EverythingPlaytype(Playtype),
 
 	StartGame,
 
