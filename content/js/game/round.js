@@ -1,45 +1,81 @@
 var said_marriage = false;
 
-function pt_img_url(pt) {
-	if(pt == "Updown") return "img/updown.png";
-	else if(pt == "Downup") return "img/downup.png";
-	else if(pt == "SlalomUpdown") return "img/slalomup.png";
-	else if(pt == "SlalomDownup") return "img/slalomdown.png";
-	else if(pt == "Guschti") return "img/guschti.png";
-	else if(pt == "Mary") return "img/mary.png";
+const PASS_IMG = "img/pass.svg";
+const MISERE_IMG = "img/misere.svg";
 
-	if(typeof pt === 'object') {
-		let pref = "de";
-		if(settings.card_lang == "french") pref = "fr"
-		return "img/" + pref + "/trumpf" + pt["Color"] + ".png";
-	}
-
-	return "";
+function trumpf_img(col) {
+	let pref = "de";
+	if(settings.card_lang == "french") pref = "fr";
+	return "img/" + pref + "/trumpf" + col + ".svg";
 }
 
+const PlayTypes = [
+	{
+		name: "Obenabe",
+		img: "img/updown.svg"
+	},
+	{
+		name: "Undeufe",
+		img: "img/downup.svg",
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Schaufeln";
+			return "Trumpf Schilten";
+		},
+		img: () => trumpf_img(0),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Kreuz";
+			return "Trumpf Eichle";
+		},
+		img: () => trumpf_img(1),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Herz";
+			return "Trumpf Rose";
+		},
+		img: () => trumpf_img(2),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Ecken";
+			return "Trumpf Schellen";
+		},
+		img: () => trumpf_img(3),
+	},
+	{
+		name: "Slalom Obenabe",
+		img: "img/slalomup.svg",
+	},
+	{
+		name: "Slalom Undeufe",
+		img: "img/slalomdown.svg",
+	},
+	{
+		name: "Guschti",
+		img: "img/guschti.svg",
+	},
+	{
+		name: "Mary",
+		img: "img/mary.svg",
+	},
+];
+
 function pt_name(pt) {
-	if(pt == "Updown") return "Obenabe";
-	else if(pt == "Downup") return "Undeufe";
-	else if(pt == "SlalomUpdown") return "Slalom Obenabe";
-	else if(pt == "SlalomDownup") return "Slalom Undeufe";
-	else if(pt == "Guschti") return "Guschti";
-	else if(pt == "Mary") return "Mary";
+	let id = get_playtype_id(pt);
+	let name = PlayTypes[id].name;
+	if(typeof name === 'function') return name();
+	return name;
+}
 
-	if(typeof pt === 'object') {
-		if(settings.card_lang == "french") {
-			if(pt["Color"] == 0) return "Trumpf Schaufel";
-			if(pt["Color"] == 1) return "Trumpf Kreuz";
-			if(pt["Color"] == 2) return "Trumpf Herz";
-			if(pt["Color"] == 3) return "Trumpf Ecken";
-		}
-
-		if(pt["Color"] == 0) return "Trumpf Schilte";
-		if(pt["Color"] == 1) return "Trumpf Eichle";
-		if(pt["Color"] == 2) return "Trumpf Rose";
-		if(pt["Color"] == 3) return "Trumpf Schelle";
-	}
-
-	return "";
+function pt_img_url(pt) {
+	let id = get_playtype_id(pt);
+	let src = PlayTypes[id].img;
+	if(typeof src === 'function') return src();
+	return src;
 }
 
 function updateSetting() {

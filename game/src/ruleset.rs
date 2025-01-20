@@ -67,6 +67,12 @@ impl Playtype {
 	}
 }
 
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn get_playtype_id(item: Playtype) -> Option<usize> {
+	item.get_id()
+}
+
 // #[derive(Tsify)]
 // #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug)]

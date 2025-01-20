@@ -78,11 +78,12 @@
 
 	img {
 		height: 6rem;
+		padding: 0.5rem;
 	}
 }
 
 .AnnounceRow div:hover {
-    background-color: #88888825;
+    background-color: #88888840;
 }
 
 

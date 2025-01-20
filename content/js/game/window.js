@@ -25,7 +25,7 @@ function startAnnounce(){
 	$("#passmisere").html("");
 	if(game.setting.allow_misere) {
 		let but = $("<div>")
-			.append( $("<img>").attr("src", "img/misere.png") )
+			.append( $("<img>").attr("src", MISERE_IMG) )
 			.append( $("<a>").text( "Misère" ) )
 			.click(() => {
 				annMisere = !annMisere;
@@ -35,7 +35,7 @@ function startAnnounce(){
 	}
 	if(game.can_pass(own.id) && game.setting.allow_pass) {
 		let but = $("<div>")
-			.append( $("<img>").attr("src", "img/pass.png") )
+			.append( $("<img>").attr("src", PASS_IMG) )
 			.append( $("<a>").text( "Schieben" ) )
 			.click(() => {
 				send("Pass");
@@ -60,25 +60,15 @@ var toShow = [];
 
 // Displays a show in the show-window
 // isShowing (bool) - when false it means, the player must decide to show. If true, the show is visible for everyone.
-function openShow(show, name, showable, push=true){
-	if(push) toShow.push([show,name,showable]);
+function openShow(show, push=true){
+	if(push) toShow.push(show);
 	if(toShow.length > 1) return;
 
 	let ele = $("#showCards");
     ele.html(""); // Clear current cards
-	$("#showTitle").text(name);
 
 	let cards = show_to_cards(show);
 	for(let card of cards) ele.append( $('<img src="' + card_get_img_url(card) + '"/>') );
-
-
-	if(showable) {
-		$("#showConfirm").text("Weisen");
-		$("#showCancel").css("display", "block");
-	} else {
-		$("#showConfirm").text("Weiter");
-		$("#showCancel").css("display", "none");
-	}
 
 	$("#showWindow").css("display", "flex");
 }
@@ -90,7 +80,7 @@ function closeShow(e) {
 }
 
 $("#showConfirm").click((e) => {
-	if(toShow[0][2]) send({ "PlayShow": toShow[0][0] });
+	send({ "PlayShow": toShow[0][0] });
 	closeShow(e);
 });
 
@@ -146,6 +136,7 @@ function openSummary() {
 		$("#roundSummary").append(ele);
 	}
 
+	carpet.clean();
 	game.start_new_round([]);
 	$("#roundWindow").css("display", "block");
 }
@@ -155,7 +146,6 @@ $("#closeSummary").click((e) => {
 
 	updatePoints();
 	updateRoundDetails();
-	carpet.clean();
 	updateHand();
 
 	if(game.should_end()) openEndwindow();
