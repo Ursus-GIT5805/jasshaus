@@ -69,14 +69,29 @@ pub struct Game {
 #[wasm_bindgen]
 impl Game {
 	#[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
-        let plrs: Vec<_> = (0..4)
-            .map(|i| {
-                let mut plr = Player::default();
-                plr.team_id = i & 1;
-                plr
-            })
-            .collect();
+    pub fn new(setting: Setting) -> Self {
+		let mut plrs = vec![Player::default(); setting.num_players];
+
+		let num_teams = match setting.team_choosing {
+			TeamChoosing::None => {
+				for (id, plr) in plrs.iter_mut().enumerate() {
+					plr.team_id = id;
+				}
+				setting.num_players
+			},
+			TeamChoosing::Periodic(n) => {
+				for (id, plr) in plrs.iter_mut().enumerate() {
+					plr.team_id = id % n;
+				}
+				std::cmp::min(n, setting.num_players)
+			}
+			TeamChoosing::Blocks(n) => {
+				for (id, plr) in plrs.iter_mut().enumerate() {
+					plr.team_id = id / n;
+				}
+				(n as f32 / setting.num_players as f32).ceil() as usize
+			}
+		};
 
         Game {
 			round: 0,
@@ -88,7 +103,7 @@ impl Game {
 			marriage: MarriageState::None,
 
             players: plrs,
-            teams: vec![Team::default(); 2],
+            teams: vec![Team::default(); num_teams],
 
             ruleset: RuleSet::default(),
             announce_player: 0,
@@ -146,7 +161,10 @@ impl Game {
 
 	/// Returns true if the given team would win with the marriage
 	pub fn marriage_would_win(&self, team_id: usize) -> bool {
-		self.setting.max_points <= self.teams[team_id].points + self.setting.marriage_points
+		match self.setting.end_condition {
+			EndCondition::Points(maxp) => maxp <= self.teams[team_id].points + self.setting.marriage_points,
+			_ => false,
+		}
 	}
 
 	/// Set a player to have the marriage
@@ -284,7 +302,7 @@ impl Game {
             self.add_points(best_team as usize, points);
         }
 
-		if self.cards_played == NUM_CARDS {
+		if self.round_ended() {
 			 // The team which won the last turn
 			let last_team = self.players[self.current_player].team_id;
 			// Last team gets extra points
@@ -305,7 +323,7 @@ impl Game {
 			}
 
 			// When this team won ALL cards: Extra points!
-			if self.teams[last_team].won.len() == NUM_CARDS {
+			if self.teams[last_team].won.len() == self.cards_distributed() {
 				self.add_points(last_team, self.setting.match_points);
 			}
 		}
@@ -533,11 +551,22 @@ impl Game {
         team.won_points += p;
     }
 
+	pub fn cards_distributed(&self) -> usize {
+		NUM_CARDS - (NUM_CARDS % self.players.len())
+	}
+
+	pub fn round_ended(&self) -> bool {
+		self.cards_played == self.cards_distributed()
+	}
+
     // The game should end if any team has reached the number of points for winning
     pub fn should_end(&self) -> bool {
-        self.teams
-            .iter()
-            .any(|team| team.points >= self.setting.max_points)
+		match self.setting.end_condition {
+			EndCondition::Points(maxp) => self.teams
+				.iter()
+				.any(|team| maxp <= team.points),
+			EndCondition::Rounds(r) => r as usize <= self.round,
+		}
     }
 
     /// The beginplayer is the player who began the current turn

@@ -100,8 +100,9 @@ function pt_img_url(pt) {
 function updateSetting() {
 	updateGameDetails();
 	players.updateNames();
-	$('*[text="max_points"]')
-		.map((_,ele) => ele.innerText = game.setting.max_points);
+	updateRoundDetails();
+	// $('*[text="max_points"]')
+		// .map((_,ele) => ele.innerText = game.setting.max_points);
 }
 
 // Updates the points of a team in the gameDetails
@@ -121,6 +122,12 @@ function updatePoints() {
 }
 
 function updateGameDetails() {
+	let end = game.setting.end_condition;
+	if(end.hasOwnProperty('Points')) $("#gameTitle").text("Punkte " + end['Points']);
+	if(end.hasOwnProperty('Rounds')) $("#gameTitle").text("Runden " + end['Rounds']);
+
+	$("#gameTeams").html("");
+
 	for(let team = 0 ; team < game.teams.length ; team++) {
 		let plrs = Array.from(game.get_players_of_team(team));
 

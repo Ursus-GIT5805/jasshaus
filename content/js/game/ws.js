@@ -52,16 +52,6 @@ async function setupMic(data){
 
 async function FUNC_PlayerID(player_id) {
 	own.id = player_id;
-	players.setName(settings.name, player_id);
-	players.createPlayers(player_id);
-	carpet.rotate_by_players(player_id);
-
-	players.setMessage(getGreet(), own.id);
-}
-
-async function FUNC_GameSetting(setting) {
-	game.setting = setting;
-	updateSetting();
 }
 
 async function FUNC_ClientJoined(data) {
@@ -83,6 +73,7 @@ async function FUNC_JoinedClients(list) {
 		comm.setName( name, client_id );
 		players.setName( name, player_id );
 	}
+	players.updateNames();
 }
 
 async function FUNC_ClientDisconnected(client_id) {
@@ -92,7 +83,7 @@ async function FUNC_ClientDisconnected(client_id) {
 	comm.removeClient(client_id);
 	comm.chatMessage(MessageType.Info, name + " left the table.");
 	players.setName( "", pid );
-	if(!voting) voting.setTotal(comm.clients.num_clients+1);
+	// if(!voting) voting.setTotal(comm.clients.num_clients+1);
 }
 
 async function FUNC_StartMating(u) {
@@ -104,8 +95,26 @@ async function FUNC_NewCards(data) {
 	handhash = BigInt(data.list);
 }
 
+function initGame(n) {
+	players = new Playerhandler(n);
+	carpet = new Carpet(n, 0);
+
+	players.createPlayers(own.id);
+	players.setName(settings.name, own.id);
+	players.setMessage(getGreet(), own.id);
+	carpet.rotate_by_players(own.id);
+}
+
+async function FUNC_GameSetting(setting) {
+	game = new Game(setting);
+	initGame(setting.num_players);
+	updateSetting();
+}
+
 async function FUNC_GameState(data) {
 	let [state, cardset] = data;
+	initGame(state.setting.num_players);
+	game = new Game(state.setting);
 
 	let cards = new Cardset(BigInt(cardset.list)).as_vec();
 	hand.setCards(cards);
@@ -131,9 +140,11 @@ async function FUNC_GameState(data) {
 	$("#startWindow").css("display", "none");
 
 	players.setCurrent(game.current_player);
-	updatePoints();
+	updateGameDetails();
 	updateRoundDetails();
+	updatePoints();
 
+	console.log("HES");
 	if(state.current_player == own.id) {
 		if(!game.is_announced()) startAnnounce();
 		else handleOnTurn();
@@ -316,8 +327,7 @@ async function FUNC_NewVote(data) {
 async function FUNC_StartGame() {
 	if(game) {
 		let setting = game.setting;
-		game = new Game();
-		game.setting = setting;
+		game = new Game(setting);
 	}
 
 	$("#voteWindow").remove();

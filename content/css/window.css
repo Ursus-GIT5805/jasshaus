@@ -132,6 +132,7 @@
 #roundWindow {
 	font-size: 1.25rem;
 
+	overflow-y: auto;
 	z-index: 420;
 
 	top: 45%;

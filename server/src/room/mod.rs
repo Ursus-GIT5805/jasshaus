@@ -35,7 +35,7 @@ impl Room {
             client_next: 0,
             clients: HashMap::new(),
 
-            game: Game::new(),
+            game: Game::new( Setting::schieber() ),
             state: RoomState::ENTERING,
 
 			num_votes: 0,
@@ -51,7 +51,7 @@ impl Room {
 
 		self.client_next = 0;
 		self.clients.clear();
-		self.game = Game::new();
+		self.game = Game::new( Setting::schieber() );
 		self.state = RoomState::ENTERING;
 		self.num_votes = 0;
 		self.vote = None;
@@ -85,23 +85,27 @@ impl Room {
 			.collect();
 
         self.clients.insert(id, Client::new(plr_id, ws_tx));
+        self.send_to(id, SocketMessage::PlayerID(plr_id)).await;
+
+		if self.state == RoomState::ENTERING {
+			self.send_to(id, SocketMessage::GameSetting(self.game.setting.clone()))
+				.await;
+		} else {
+            let game = self.game.clone();
+            let hand = self.game.players[plr_id].hand;
+            self.send_to(id, SocketMessage::GameState(game, hand)).await;
+		}
+
         self.send_to_all_except(id, SocketMessage::ClientJoined(id, plr_id))
             .await;
-        self.send_to(id, SocketMessage::PlayerID(plr_id)).await;
-        self.send_to(id, SocketMessage::GameSetting(self.game.setting.clone()))
-            .await;
 		self.send_to(id, SocketMessage::JoinedClients(joined_clients)).await;
-
         let num_connected = self.clients.len();
+
 
         if num_connected == self.game.players.len() {
             if self.state == RoomState::ENTERING {
 				self.quit_vote();
 				self.start_new_game(false).await;
-            } else {
-                let game = self.game.clone();
-                let hand = self.game.players[plr_id].hand;
-                self.send_to(id, SocketMessage::GameState(game, hand)).await;
             }
         }
 
@@ -219,7 +223,7 @@ impl Room {
 
     async fn start_new_game(&mut self, revanche: bool) {
         debug!("Start game!");
-		self.game = Game::new();
+		self.game = Game::new( Setting::schieber() );
         self.state = RoomState::PLAYING;
 		self.quit_vote();
 
@@ -249,28 +253,24 @@ impl Room {
 
         self.game.play_card(card);
 
-        match self.game.get_turn() {
-            1 => {
-				if self.game.num_played_cards() == 0 {
-					let shows: Vec<Vec<Show>> = self
-						.game
-						.players
-						.iter()
-						.map(|plr| plr.shows.clone())
-						.collect();
+        if self.game.get_turn() == 1 && self.game.setting.allow_shows {
+			if self.game.num_played_cards() == 0 {
+				let shows: Vec<Vec<Show>> = self
+					.game
+					.players
+					.iter()
+					.map(|plr| plr.shows.clone())
+					.collect();
 
-					self.send_to_all(SocketMessage::ShowList(shows)).await;
-				}
-            }
-            9 => {
-                self.start_round().await;
-            }
-            _ => {}
+				self.send_to_all(SocketMessage::ShowList(shows)).await;
+			}
         }
 
         if self.game.should_end() {
             self.end_game().await;
-        }
+        } else if self.game.round_ended() {
+            self.start_round().await;
+		}
 
 		self.send_to_all(SocketMessage::PlayCard(card)).await;
 

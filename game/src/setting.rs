@@ -26,16 +26,18 @@ pub enum PointRule {
 
 /// Rules of how teams are chosen
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
-pub enum Team {
-    None,
-    Manually(Vec<usize>),
-    Evenly(usize), // Evenly spaced with n teams
+pub enum TeamChoosing {
+    None, // There are no teams, everyone vs everyone
+    // Manually(Vec<usize>),
+	Periodic(usize), // Creates n teams, where player_id=(pid) has team (pid%n)
     Blocks(usize), // Creates blocks of n players each
 }
 
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum WinningCondition {
+pub enum EndCondition {
 	Points(i32),
 	Rounds(i32),
 }
@@ -47,7 +49,10 @@ pub enum WinningCondition {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Setting {
-    pub max_points: i32,
+	pub num_players: usize,
+	pub team_choosing: TeamChoosing,
+	pub end_condition: EndCondition,
+
 	pub less_points_win: bool,
     pub point_recv_order: Vec<PointRule>,
 
@@ -81,7 +86,9 @@ pub struct Setting {
 impl Setting {
 	pub fn schieber() -> Self {
         Setting {
-			max_points: 20,
+			num_players: 4,
+			team_choosing: TeamChoosing::Periodic(2),
+			end_condition: EndCondition::Points(1000),
 			less_points_win: false,
             point_recv_order: vec![PointRule::MARRIAGE, PointRule::SHOW, PointRule::PLAY],
 

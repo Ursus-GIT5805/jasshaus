@@ -3,7 +3,8 @@ var settings_getter = null;
 var game = null;
 var comm = null;
 var voting = null;
-var players = new Playerhandler(4);
+var players = null;
+var carpet = null;
 
 var own = {
 	id: 0,
@@ -85,14 +86,11 @@ function afterModule() {
 
 	hand.enable_clicks = settings["cardclicks"];
 	comm = new CommunicationHandler();
-	carpet = new Carpet(4, 0);
 	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
 	$("#botrightbuttons").append( comm.createChatbutton() )
 	initSettings();
 
 	startWS();
-	game = new Game();
-	updateRoundDetails();
 }
 
 $("#showButton").click(() => {
