@@ -149,11 +149,7 @@ impl Game {
     pub fn play_marriage(&mut self, plr: usize) {
         self.marriage = MarriageState::PlayedBoth(plr);
 
-        let gain = if self.setting.marriage_gives_negative{
-			-self.setting.marriage_points
-		} else {
-			self.setting.marriage_points
-		};
+        let gain = self.setting.marriage_points;
         let team = self.team_of(plr);
         team.points += gain;
         team.show_points += gain;
@@ -291,9 +287,9 @@ impl Game {
 			// Acknowledge the order in the first round only!
             for rule in self.setting.point_recv_order.clone() {
                 match rule {
-                    PointRule::PLAY => self.add_points(best_team as usize, points),
-                    PointRule::SHOW => self.handle_shows(),
-                    PointRule::MARRIAGE => self.handle_marriage(),
+                    PointRule::Play => self.add_points(best_team as usize, points),
+                    PointRule::Show => self.handle_shows(),
+                    PointRule::Marriage => self.handle_marriage(),
                 }
 				if self.should_end() { return; }
             }
@@ -494,7 +490,7 @@ impl Game {
     pub fn announce(&mut self, pt: Playtype, misere: bool) {
         if !self.setting.allow_misere && misere { return; }
 		if let Some(id) = pt.get_id() {
-			if !self.setting.allowed_playtypes[id] { return; }
+			if !self.setting.playtype[id].allow { return; }
 		}
 
 		// Announce!
@@ -543,7 +539,7 @@ impl Game {
         let team = &mut self.teams[real_team_id];
 
         let p = if let Some(id) = self.ruleset.playtype.get_id() {
-			points * self.setting.playtype_multiplier[id]
+			points * self.setting.playtype[id].multiplier
 		} else {
 			points
 		};
@@ -577,7 +573,7 @@ impl Game {
     // The startplayer is the player who started the turn the first turn
     pub fn get_startplayer(&self) -> usize {
 		if let Some(id) = self.ruleset.playtype.get_id() {
-			if self.setting.passed_player_begins[id] {
+			if self.setting.playtype[id].passed_player_begins {
 				return self.get_announcing_player();
 			}
 		}

@@ -11,7 +11,7 @@ function startAnnounce(){
 	$("#announcePTCol").html("");
 
 	for(let id = 0 ; id < 14 ; id++) {
-		if(!game.setting.allowed_playtypes[id]) continue;
+		if(!game.setting.playtype[id].allow) continue;
 
 		let pt = Playtype.from_id(id);
 		let but = $("<div>").click(() => announce(pt))

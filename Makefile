@@ -1,7 +1,14 @@
-run:
+b:
 	cd game && wasm-pack build --target web
 	cp -r game/pkg content/pkg
+
+run:
+	make b
 	cd server && cargo run
+
+br:
+	rm -r content/pkg/
+	make b
 
 cont:
 	python3 -m http.server -d content

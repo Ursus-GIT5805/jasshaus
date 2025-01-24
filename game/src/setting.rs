@@ -7,29 +7,48 @@ use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
 use wasm_bindgen::prelude::*;
 
+use htmlform::*;
+use htmlform_macros::*;
+
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(HtmlForm)]
 pub enum StartingCondition {
-    RANDOM,
-    PLAYER(u8),
-    CARD(Card),
+	#[Form("#title": "Zufällig")]
+    Random,
+	#[Form("#title": "Karte")]
+    Card(Card),
 }
 
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[wasm_bindgen]
+#[derive(HtmlForm)]
 pub enum PointRule {
-    PLAY,
-    SHOW,
-    MARRIAGE,
+	#[Form("#title": "Stich")]
+    Play,
+	#[Form("#title": "Weis")]
+    Show,
+	#[Form("#title": "Stöck")]
+    Marriage,
+}
+
+#[wasm_bindgen]
+pub fn get_gamesettingform() -> String {
+	json::stringify(Setting::form_data())
 }
 
 /// Rules of how teams are chosen
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
+#[derive(HtmlForm)]
 pub enum TeamChoosing {
+	#[Form("#title": "Keine Teams")]
     None, // There are no teams, everyone vs everyone
-    // Manually(Vec<usize>),
+	#[Form("#title": "Periodisch")]
+	#[Form("#description": "Personen werden gegenuhrzeiger Sinn bis n nummeriert.")]
 	Periodic(usize), // Creates n teams, where player_id=(pid) has team (pid%n)
+	#[Form("#title": "Block")]
+	#[Form("#description": "Immer n spieler nacheinander werden gruppiert.")]
     Blocks(usize), // Creates blocks of n players each
 }
 
@@ -37,9 +56,26 @@ pub enum TeamChoosing {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
+#[derive(HtmlForm)]
 pub enum EndCondition {
+	#[Form("#title": "Auf Punkte")]
 	Points(i32),
+	#[Form("#title": "Auf Runden")]
 	Rounds(i32),
+}
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(HtmlForm)]
+pub struct PlaytypeSetting {
+	#[Form("#title": "Erlauben")]
+	pub allow: bool,
+	#[Form("#title": "Multiplikator")]
+	pub multiplier: i32,
+	#[Form("#title": "Zugeschobener Spieler beginnt")]
+	pub passed_player_begins: bool,
 }
 
 // #[derive(Tsify)]
@@ -48,37 +84,59 @@ pub enum EndCondition {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
+#[derive(HtmlForm)]
 pub struct Setting {
+	#[Form("#title": "Anzahl Spieler")]
 	pub num_players: usize,
+	#[Form("#title": "Teams")]
 	pub team_choosing: TeamChoosing,
+	#[Form("#title": "Ziel")]
 	pub end_condition: EndCondition,
 
+	#[Form("#title": "Weniger Punkte sind besser")]
 	pub less_points_win: bool,
+	#[Form("#title": "Punkteregelung")]
+	#[Form("#description": "In welcher Reihenfolge die Punkte verechnet werden.")]
     pub point_recv_order: Vec<PointRule>,
 
+
+	#[Form("#title": "Weise erlauben")]
 	pub allow_shows: bool,
+	#[Form("#title": "Tischweise erlauben")]
 	pub allow_table_shows: bool,
+	#[Form("#title": "Weise zählen negativ")]
 	pub show_gives_negative: bool,
-
-	pub allow_misere: bool,
-    pub allow_pass: bool,
-	pub allowed_playtypes: Vec<bool>,
-
-	pub allow_marriage: bool,
-	pub marriage_gives_negative: bool,
-
-	pub passed_player_begins: Vec<bool>,
-	pub playtype_multiplier: Vec<i32>,
-
-	pub match_points: i32,
-	pub last_points: i32,
-    pub marriage_points: i32,
+	#[Form("#title": "Maximale Weispunkte")]
     pub show_points_maximum: i32,
 
+	#[Form("#title": "Misère erlauben")]
+	pub allow_misere: bool,
+
+	#[Form("#title": "")]
+	pub playtype: Vec<PlaytypeSetting>,
+
+	#[Form("#title": "Stöck erlauben")]
+	pub allow_marriage: bool,
+	#[Form("#title": "Stöckpunkte")]
+    pub marriage_points: i32,
+
+	#[Form("#title": "Matchpunkte")]
+	pub match_points: i32,
+	#[Form("#title": "Punkte des letzten Stichs")]
+	pub last_points: i32,
+
+	#[Form("#title": "Schieben erlauben")]
+    pub allow_pass: bool,
+	#[Form("#title": "Zurückschieben erlauben")]
     pub allow_back_pass: bool,
+	#[Form("#title": "Zum gleichen Team schieben")]
+	#[Form("#description": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
     pub pass_to_same_team: bool,
 
+	#[Form("#title": "Beginnender Spieler")]
+	#[Form("#description": "Enstscheiden, wie der beginnende Spieler bestimmt wird.")]
     pub startcondition: StartingCondition,
+	#[Form("#title": "Diese Regel bei Revanche anwenden.")]
     pub apply_startcondition_on_revanche: bool,
 }
 
@@ -90,7 +148,7 @@ impl Setting {
 			team_choosing: TeamChoosing::Periodic(2),
 			end_condition: EndCondition::Points(1000),
 			less_points_win: false,
-            point_recv_order: vec![PointRule::MARRIAGE, PointRule::SHOW, PointRule::PLAY],
+            point_recv_order: vec![PointRule::Marriage, PointRule::Show, PointRule::Play],
 
 			allow_shows: true,
 			allow_table_shows: false,
@@ -98,24 +156,25 @@ impl Setting {
 
 			allow_misere: true,
             allow_pass: true,
-			allowed_playtypes: vec![true; NUM_PLAYTYPES],
 
-			allow_marriage: true,
-			marriage_gives_negative: false,
-
-			passed_player_begins: {
-				let mut v = vec![true; NUM_PLAYTYPES];
+			playtype: {
+				let mut v = vec![PlaytypeSetting {
+					allow: true,
+					multiplier: 1,
+					passed_player_begins: true,
+				}; NUM_PLAYTYPES];
 				for c in 0..NUM_COLORS {
 					if let Some(id) = Playtype::Color(c as u8).get_id() {
 						match v.get_mut(id) {
-							Some(c) => *c = false,
+							Some(c) => c.passed_player_begins = false,
 							None => {},
 						}
 					}
 				}
 				v
 			},
-			playtype_multiplier: vec![1; NUM_PLAYTYPES],
+
+			allow_marriage: true,
 
             match_points: 100,
 			last_points: 5,
@@ -125,7 +184,7 @@ impl Setting {
             allow_back_pass: false,
             pass_to_same_team: true,
 
-            startcondition: StartingCondition::CARD(Card::new(0, 4)),
+            startcondition: StartingCondition::Card(Card::new(0, 4)),
             apply_startcondition_on_revanche: false,
         }
 	}

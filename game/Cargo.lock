@@ -28,6 +28,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "htmlform"
+version = "0.1.0"
+dependencies = [
+ "htmlform-macros",
+ "json",
+]
+
+[[package]]
+name = "htmlform-macros"
+version = "0.1.0"
+dependencies = [
+ "json",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -37,6 +55,9 @@ checksum = "d75a2a4b1b190afb6f5425f10f6a8f959d2ea0b9c2b1d79553551850539e4674"
 name = "jasshaus-game"
 version = "0.1.0"
 dependencies = [
+ "htmlform",
+ "htmlform-macros",
+ "json",
  "serde",
  "tsify-next",
  "wasm-bindgen",
@@ -51,6 +72,12 @@ dependencies = [
  "once_cell",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "json"
+version = "0.12.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
 name = "log"

@@ -1,5 +1,5 @@
 var settings = null;
-var settings_getter = null;
+var form = null;
 var game = null;
 var comm = null;
 var voting = null;
@@ -60,9 +60,9 @@ function initSettings() {
 		updateRoundDetails();
 	};
 	JasshausForm['cardclicks']['onchange'] = (c) => hand.enable_clicks = c;
-	[form, settings_getter] = createForm(JasshausForm, settings);
+	form = createForm(JasshausForm, settings);
 
-	$("#settings").append(form);
+	$("#settings").append(form.ele);
 	$("#settingsButton").click((e) => {
 		let ele = $("#settingsWindow");
 		if( ele.css("display") == "none" ) ele.css("display", "flex");
@@ -70,7 +70,7 @@ function initSettings() {
 	});
 	$("#closeSettings").click(() => {
 		$("#settingsButton").click();
-		settings = settings_getter();
+		settings = form.get();
 	});
 }
 

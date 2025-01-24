@@ -177,17 +177,16 @@ impl Room {
 
     fn get_first_announceplayer(&self) -> usize {
         match self.game.setting.startcondition {
-            StartingCondition::CARD(card) => self.game.players
+            StartingCondition::Card(card) => self.game.players
                 .iter()
                 .enumerate()
                 .find(|(_, plr)| plr.hand.contains(card))
                 .map(|(i, _)| i)
                 .unwrap_or(0),
-            StartingCondition::RANDOM => {
+            StartingCondition::Random => {
                 let mut rng = rand::thread_rng();
                 rng.gen::<usize>() % self.game.players.len()
             }
-            _ => 0,
         }
     }
 

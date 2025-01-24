@@ -1,3 +1,32 @@
-form {
-	> div { margin: 1rem; }
+.SettingList,
+.SettingGroup {
+	align-items: center;
+
+	margin: 0.5rem;
+	padding: 0.5rem;
+	border: 1px solid black;
+}
+
+.SingleSetting {
+	margin: 0.5rem;
+}
+
+.Title {
+	font-size: 1.2rem;
+	font-weight: bold;
+}
+
+.SettingListEntry {
+	display: flex;
+	justify-content: space-evenly;
+	padding: 0.5rem;
+
+	.Buttons {
+		display: flex;
+		flex-direction: column;
+	}
+	.SettingGroup {
+		margin: 0;
+		width: max-content;
+	}
 }

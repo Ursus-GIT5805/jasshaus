@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
 use wasm_bindgen::prelude::*;
 
+use htmlform::HtmlForm;
+use htmlform_macros::HtmlForm;
 
 pub const NUM_COLORS: usize = 4;
 pub const NUM_NUMBERS: usize = 9;
@@ -20,6 +22,7 @@ pub enum CardNumber {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
 #[derive(PartialOrd, Ord)]
+#[derive(HtmlForm)]
 pub struct Card {
     pub color: u8,
     pub number: u8,

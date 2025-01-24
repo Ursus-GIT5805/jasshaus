@@ -4,8 +4,7 @@
     <title>Jasshaus | Einstellungen</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<!-- <script src="js/utils.js" type="text/javascript" /> -->
-	<!-- <script src="js/storage.js" type="text/javascript" /> -->
+	<script type="module" src="js/loadwasm.js"></script>
   </head>
 
   <link rel="stylesheet" href="css/main.css"/>
@@ -22,21 +21,9 @@
 	</div>
   </body>
 
+
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-  <script src="js/formcreator.js" type="text/javascript"></script>
-  <script src="js/settings.js" type="text/javascript"></script>
-
-  <script>
-	var form_getter = null;
-	window.onload = (e) => {
-		let def = getSettings();
-		[form, form_getter] = createForm(JasshausForm, def);
-		$("#settings").append( form );
-	};
-
-	document.getElementById("quitButton").onclick = (e) => {
-		let string = JSON.stringify(form_getter());
-		localStorage.setItem(LOCALSTORAGE_KEY, string);
-	};
-  </script>
+  <script src="js/formcreator.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/settingpage.js"></script>
 </html>
