@@ -73,7 +73,7 @@ async function FUNC_JoinedClients(list) {
 		comm.setName( name, client_id );
 		players.setName( name, player_id );
 	}
-	players.updateNames();
+	if(players) players.updateNames();
 }
 
 async function FUNC_ClientDisconnected(client_id) {

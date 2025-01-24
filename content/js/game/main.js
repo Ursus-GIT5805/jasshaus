@@ -53,14 +53,14 @@ function card_get_img_url(card) {
 }
 
 function initSettings() {
-	JasshausForm['name']['disabled'] = true;
-	JasshausForm['card_lang']['onchange'] = (lang) => {
+	JasshausForm['name']['#disabled'] = true;
+	JasshausForm['card_lang']['#onchange'] = (lang) => {
 		settings.card_lang = lang;
 		hand.reloadContent();
 		updateRoundDetails();
 	};
-	JasshausForm['cardclicks']['onchange'] = (c) => hand.enable_clicks = c;
-	form = createForm(JasshausForm, settings);
+	JasshausForm['cardclicks']['#onchange'] = (c) => hand.enable_clicks = c;
+	form = createForm("Einstellungen", JasshausForm, settings);
 
 	$("#settings").append(form.ele);
 	$("#settingsButton").click((e) => {

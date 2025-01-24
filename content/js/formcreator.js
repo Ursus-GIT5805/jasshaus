@@ -7,13 +7,6 @@ var form_type_handler = {
 	'none': () => createForm(),
 }
 
-const attr_whitelist = ['min', 'max', 'value', 'disabled'];
-function addAttributes(ele, attributes) {
-	for (let key of attr_whitelist) {
-		if(key in attributes) ele.attr(key, attributes[key]);
-	}
-}
-
 function createGeneral(type) {
 	let input = $("<input>").attr("type", type);
 	return {
@@ -154,11 +147,9 @@ function createFromObject(ident, obj) {
 
 	let title = ident;
 	let option = false;
-	let disabled = false;
 
 	if("#title" in obj) title = obj["#title"];
 	if("#option" in obj) option = obj["#option"];
-	if("#disabled" in obj) disabled = obj["#disabled"];
 	if(obj.hasOwnProperty('#id')) form.prop("id", obj["#id"]);
 
 	if("#type" in obj) return createForm(title, obj['#type']);
@@ -169,9 +160,6 @@ function createFromObject(ident, obj) {
 
 	for(let key in obj) {
 		if(key.startsWith("#")) continue;
-
-		// Append it to the final form
-		if(disabled) obj[key]['#disabled'] = true;
 
 		let input = createForm(key, obj[key]);
 		children[key] = input;
@@ -208,7 +196,6 @@ function createFromObject(ident, obj) {
 				}
 			}
 		});
-		if(disabled) select.prop("disabled", "true");
 
 		form.append(select)
 
@@ -232,6 +219,7 @@ function createFromObject(ident, obj) {
 			select.change();
 		};
 	}
+
 
 	form.append(opts);
 
@@ -263,8 +251,18 @@ function createForm(ident, entry, def=null) {
 
 	let input = null;
 	if(typeof entry === 'string') input = createFromString(ident, entry);
-	else if(Object.prototype.toString.call(entry) === '[object Object]')
+	else if(Object.prototype.toString.call(entry) === '[object Object]') {
 		input = createFromObject(ident, entry);
+
+		if('#disabled' in entry && entry['#disabled']) {
+			input.ele.find("input,select").each((i, e) => e.setAttribute("disabled", "true"));
+		}
+		if('#onchange' in entry) {
+			input.ele.find("input,select").each((i, e) => {
+				e.addEventListener("change", () => entry['#onchange']( input.get() ))
+			});
+		}
+	}
 	else if(Object.prototype.toString.call(entry) === '[object Array]')
 		input = createListed(ident, entry);
 

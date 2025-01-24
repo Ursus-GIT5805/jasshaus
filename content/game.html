@@ -103,24 +103,19 @@
 		<div id="showButton" class="Button">Weisen</div>
 	</body>
 
-	<script type="module">
-	  import init, * as exports from "./pkg/jasshaus_game.js";
-	  Object.entries(exports).forEach(([name, exported]) => window[name] = exported);
-      await init();
-	  afterModule();
-	</script>
 
+	<script type="module" src="js/loadwasm.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-	<script src="js/voting.js" type="text/javascript"/></script>
-    <script src="js/formcreator.js" type="text/javascript"/></script>
-    <script src="js/settings.js" type="text/javascript"/></script>
+	<script src="js/voting.js"></script>
+    <script src="js/formcreator.js"></script>
+    <script src="js/settings.js"></script>
 
-    <script src="js/game/chat.js" type="text/javascript"/></script>
-    <script src="js/game/player.js" type="text/javascript"/></script>
-    <script src="js/game/carpet.js" type="text/javascript"/></script>
-    <script src="js/game/hand.js" type="text/javascript"/></script>
-    <script src="js/game/round.js" type="text/javascript"/></script>
-    <script src="js/game/main.js" type="text/javascript"/></script>
-    <script src="js/game/window.js" type="text/javascript"/></script>
-    <script src="js/game/ws.js" type="text/javascript"/></script>
+    <script src="js/game/chat.js"></script>
+    <script src="js/game/player.js"></script>
+    <script src="js/game/carpet.js"></script>
+    <script src="js/game/hand.js"></script>
+    <script src="js/game/round.js"></script>
+    <script src="js/game/main.js"></script>
+    <script src="js/game/window.js"></script>
+    <script src="js/game/ws.js"></script>
 </html>
