@@ -204,7 +204,7 @@ impl Game {
 		}
 	}
 
-    // Handles marriage
+	/// Handles marriage
     pub fn handle_marriage(&mut self) {
 		if !self.setting.allow_marriage {
 			return;
@@ -221,6 +221,7 @@ impl Game {
 		}
 	}
 
+	/// Return the value of the given show (taking additional game setting into account)
 	pub fn get_show_value(&self, show: Show) -> i32 {
 		let mut val = std::cmp::min(
 			self.ruleset.get_show_value(show),
@@ -233,25 +234,28 @@ impl Game {
 		val
 	}
 
-    // Handles shows and add the points
+	/// Determines the best show and gives point to the respective team
     pub fn handle_shows(&mut self) {
-        let mut bestshow: Option<Show> = None;
-        let mut bestplr = 0;
+		if self.get_turn() > 1 { return; }
+
+		let mut bestshow: Option<Show> = None;
+        let mut team_id = 0;
 
         // Get best show
-        for (plr_id, plr) in self.players.iter().enumerate() {
-            for show in plr.shows.iter() {
+		let begplr = self.get_beginplayer();
+		for i in 0..self.players.len() {
+			let idx = (begplr + i) % self.players.len();
+
+            for show in self.players[idx].shows.iter() {
                 if bestshow.is_none() || self.ruleset.is_show_stronger(bestshow.unwrap(), *show) {
                     bestshow = Some(*show);
-                    bestplr = plr_id;
+                    team_id = self.players[idx].team_id;
                 }
             }
         }
         if bestshow.is_none() {
             return;
         }
-
-        let team_id = self.players[bestplr].team_id;
 
         // Handle shows
         for plr in 0..self.players.len() {
@@ -268,6 +272,7 @@ impl Game {
         }
     }
 
+	// Handle events at the end of a turn
     fn end_turn(&mut self) {
 		let points = self.played_cards
 			.iter()
@@ -276,27 +281,21 @@ impl Game {
 
         let best_team = self.players[self.best_player].team_id;
         self.current_player = self.best_player;
-
 		self.teams[best_team].won.merge(Cardset::from(self.played_cards.clone()));
-		self.played_cards.clear();
 
+        for rule in self.setting.point_recv_order.clone() {
+            match rule {
+                PointRule::Play => self.add_points(best_team as usize, points),
+                PointRule::Show => self.handle_shows(),
+                PointRule::Marriage => self.handle_marriage(),
+                PointRule::TableShow => self.handle_table_show(),
+            }
+			if self.should_end() { return; }
+        }
+
+		self.played_cards.clear();
 		self.bestcard = None;
 		self.turncolor = None;
-
-        if self.get_turn() == 1 {
-			// Acknowledge the order in the first round only!
-            for rule in self.setting.point_recv_order.clone() {
-                match rule {
-                    PointRule::Play => self.add_points(best_team as usize, points),
-                    PointRule::Show => self.handle_shows(),
-                    PointRule::Marriage => self.handle_marriage(),
-                }
-				if self.should_end() { return; }
-            }
-        } else {
-			if self.should_end() { return; }
-            self.add_points(best_team as usize, points);
-        }
 
 		if self.round_ended() {
 			 // The team which won the last turn
@@ -355,6 +354,8 @@ impl Game {
 	}
 
 	fn handle_table_show(&mut self) {
+		if !self.setting.allow_table_shows { return; }
+
 		let cards = Cardset::from(self.played_cards.clone());
 		let tid = self.players[self.best_player].team_id;
 		for show in cards.get_shows() {
@@ -366,6 +367,7 @@ impl Game {
 
     // Action functions ------
 
+	/// Play a card
     pub fn play_card(&mut self, card: Card) {
 		if let Playtype::Molotow = self.ruleset.playtype {
 			match self.ruleset.active {
@@ -390,13 +392,6 @@ impl Game {
         self.played_cards.push(card);
 		self.cards_played += 1;
         self.players[self.current_player].hand.erase(card);
-
-
-		// TODO there are serious flaws with the Marriage/Show/Point ordering
-		// Weird points like those are unhandled by the order!
-		if self.setting.allow_table_shows {
-			self.handle_table_show();
-		}
 
         if let Playtype::Color(trumpf) = self.ruleset.playtype {
 			// If the given card is a trumpf queen or king, handle marriage

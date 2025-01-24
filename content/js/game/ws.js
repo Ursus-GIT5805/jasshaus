@@ -198,6 +198,10 @@ async function FUNC_ClientIntroduction(data) {
 
 async function FUNC_PlayCard(card){
 	let curplr = game.current_player;
+
+	let playedcards = Cardset.from_list(game.get_playedcards());
+	playedcards.insert(card);
+
 	game.play_card(card);
 
 	let isbest = false;
@@ -209,7 +213,16 @@ async function FUNC_PlayCard(card){
 
 	if(carpet.get_num_cards() == game.players.length) carpet.clean();
 	carpet.playCard(card, curplr, isbest);
-	if(carpet.get_num_cards() == game.players.length) updatePoints();
+	if(carpet.get_num_cards() == game.players.length) {
+		if(game.setting.allow_table_shows) {
+			let shows = playedcards.get_shows();
+			let sum = 0;
+			for(let show of shows) sum += game.get_show_value(show);
+			if(sum != 0) gameMessage("Tischweis: " + sum, game.current_player);
+		}
+
+		updatePoints();
+	}
 
 	// ---
 
@@ -219,6 +232,7 @@ async function FUNC_PlayCard(card){
 		gameMessage("Stöck", plr);
 		said_marriage = true;
 	}
+
 
 	if(game.should_end() || game.cards_played == 36) {
 		hand.setIllegal();

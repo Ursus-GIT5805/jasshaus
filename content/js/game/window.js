@@ -172,10 +172,12 @@ function openEndwindow() {
 	$("#endResult").text("Die Partie ist beendet!");
 
 	for(let i = 0 ; i < teams.length ; i++) {
-		let points = game.teams[i].points;
+		let tid = teams[i];
+		let points = game.teams[tid].points;
+
 		let place = i+1;
-		let plr_ids = Array.from(game.get_players_of_team(i));
-		let name = plr_ids.map((i) => players.getName(i)).join(", ");
+		let plr_ids = Array.from(game.get_players_of_team(tid));
+		let name = plr_ids.map((pid) => players.getName(pid)).join(", ");
 
 		let title = place + ". " + name + " (" + points + ")";
 

@@ -31,6 +31,8 @@ pub enum PointRule {
     Show,
 	#[Form("#title": "Stöck")]
     Marriage,
+	#[Form("#title": "Tischweis")]
+    TableShow,
 }
 
 #[wasm_bindgen]
@@ -148,7 +150,7 @@ impl Setting {
 			team_choosing: TeamChoosing::Periodic(2),
 			end_condition: EndCondition::Points(1000),
 			less_points_win: false,
-            point_recv_order: vec![PointRule::Marriage, PointRule::Show, PointRule::Play],
+            point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
 
 			allow_shows: true,
 			allow_table_shows: false,

@@ -241,6 +241,10 @@ impl Room {
     }
 
     async fn play_card(&mut self, card: Card, plr_id: usize) {
+		if self.game.should_end() {
+			error!("Player played when game ended!");
+			return;
+		}
 		if self.game.current_player != plr_id {
 			error!("Player played when it's not his turn.");
 			return;
