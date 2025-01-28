@@ -3,6 +3,8 @@ class Voting {
 		this.voted = false;
 		this.total = n;
 
+		this.votes = {};
+
 		this.options = options;
 		this.buttons = [];
 		this.agrees = [];
@@ -35,8 +37,9 @@ class Voting {
 						 .append( ele ));
 	}
 
-	agreeTo(option) {
+	agreeTo(option, cid=null) {
 		this.agrees[option] += 1;
+		if(cid) this.votes[cid] = option;
 		let text = this.options[option] + " (" + this.agrees[option] + "/" + this.total + ")";
 		this.buttons[option].text(text);
 	}
@@ -44,9 +47,22 @@ class Voting {
 	setTotal(total) {
 		this.total = total;
 
-		for(let option in options) {
+		for(let option in this.options) {
 			let text = this.options[option] + " (" + this.agrees[option] + "/" + this.total + ")";
 			this.buttons[option].text(text);
 		}
+	}
+
+	onClientJoin() {
+		this.setTotal(this.total+1);
+	}
+
+	onClientQuit(cid) {
+		if(cid in this.votes) {
+			let opt = this.votes[cid];
+			this.agrees[opt] -= 1;
+			delete this.votes[cid];
+		}
+		this.setTotal(this.total-1);
 	}
 }

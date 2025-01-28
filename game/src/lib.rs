@@ -1,6 +1,8 @@
 pub mod card;
 pub mod ruleset;
 pub mod setting;
+#[cfg(feature = "server")]
+pub mod server;
 
 use card::*;
 use ruleset::*;

@@ -1,15 +1,29 @@
-mod client;
+pub mod client;
 
-use futures::SinkExt;
-use jasshaus_game::{card::*, ruleset::*, setting::*, Game};
-
-use rand::Rng;
 use rand::prelude::SliceRandom;
 
-use client::*;
-use jasshaus_comm::socket_message::*;
-use std::collections::HashMap;
+use async_trait::async_trait;
+use std::marker::PhantomData;
 
+use serde::*;
+use client::*;
+use crate::socket_message::{SocketMessage::*, *};
+
+#[async_trait]
+pub trait ServerRoom<T> {
+	type Err;
+
+	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err>;
+
+	async fn on_enter(&mut self, clients: &mut ClientHandler, plr_id: usize);
+	async fn on_leave(&mut self, clients: &mut ClientHandler, plr_id: usize);
+	async fn on_event(&mut self, clients: &mut ClientHandler, event: T, plr_id: usize) -> Result<(), Self::Err>;
+
+	fn get_num_players(&self) -> usize;
+	fn should_end(&self) -> bool;
+}
+
+#[derive(Clone)]
 #[derive(PartialEq, Eq)]
 pub enum RoomState {
 	Entering,
@@ -18,24 +32,31 @@ pub enum RoomState {
     Ending,
 }
 
-pub struct Room {
-    pub client_next: usize,
-    pub clients: HashMap<usize, Client>,
+pub struct Room<E, G>
+where
+	G: ServerRoom<E>, E: Clone,
+{
+    _marker: PhantomData<E>,
+    pub clients: ClientHandler,
 
-    pub game: Game,
+	pub game: G,
     pub state: RoomState,
 
 	pub num_votes: usize,
 	pub vote: Option<VotingType>,
 }
 
-impl Room {
+impl<E,G> Room<E,G>
+where
+	G: Default + ServerRoom<E> + Send,
+	E: Clone + Serialize,
+{
     pub fn new() -> Self {
         Room {
-            client_next: 0,
-            clients: HashMap::new(),
+			_marker: PhantomData,
+            clients: ClientHandler::default(),
 
-            game: Game::new( Setting::schieber() ),
+            game: G::default(),
             state: RoomState::Entering,
 
 			num_votes: 0,
@@ -44,74 +65,57 @@ impl Room {
     }
 
 	pub async fn cleanup(&mut self) {
-		debug!("Room cleanup!");
-		for (_,client) in self.clients.iter_mut() {
-			let _ = client.ws.close().await;
+		for (_, client) in self.clients.iter_mut() {
+			client.close().await;
 		}
-
-		self.client_next = 0;
 		self.clients.clear();
-		self.game = Game::new( Setting::schieber() );
-		self.state = RoomState::Entering;
-		self.num_votes = 0;
-		self.vote = None;
 	}
 
-    // Registering ---
+	/// Returns a player ID, if one exists
     fn get_unused_player_id(&self) -> Option<usize> {
-        let mut mex = vec![true; self.game.players.len()];
-        for (_, client) in &self.clients {
+        let mut mex = vec![true; self.game.get_num_players()];
+        for (_, client) in self.clients.iter() {
             mex[client.player_id] = false;
         }
-
-        for (i, v) in mex.into_iter().enumerate() {
-            if v {
-                return Some(i);
-            }
-        }
-        None
+		mex.into_iter().position(|r| r)
     }
 
+	/// Register a new client given the SplitSink
     pub async fn register(&mut self, ws_tx: WsWriter) -> Option<usize> {
-        let id = self.client_next;
-
-        let plr_id = match self.get_unused_player_id() {
-            Some(pid) => pid,
-            None => return None,
-        };
+        let plr_id = self.get_unused_player_id()?;
 
 		let joined_clients = self.clients.iter()
 			.map(|(i,client)| (client.name.clone(), *i, client.player_id))
 			.collect();
+		let id = self.clients.register(plr_id, ws_tx);
+        self.clients.send_to(id, PlayerID::<E>(plr_id, self.game.get_num_players())).await;
+        self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
+            .await;
 
-        self.clients.insert(id, Client::new(plr_id, ws_tx));
-        self.send_to(id, SocketMessage::PlayerID(plr_id)).await;
+		self.game.on_enter(&mut self.clients, plr_id).await;
+		self.clients.send_to(id, JoinedClients::<E>(joined_clients)).await;
 
-		if self.state == RoomState::Entering {
-			self.send_to(id, SocketMessage::GameSetting(self.game.setting.clone()))
-				.await;
-		} else {
-            let game = self.game.clone();
-            let hand = self.game.players[plr_id].hand;
-            self.send_to(id, SocketMessage::GameState(game, hand)).await;
+		if let Some(vote) = self.vote.clone() {
+			let votes = self.clients.iter()
+				.filter(|(_, c)| c.vote.is_some())
+				.map(|(i, c)| (c.vote.unwrap(), *i))
+				.collect();
+			self.clients.send_to(id, CurrentVote::<E>(vote, votes)).await;
 		}
 
-        self.send_to_all_except(id, SocketMessage::ClientJoined(id, plr_id))
-            .await;
-		self.send_to(id, SocketMessage::JoinedClients(joined_clients)).await;
-        let num_connected = self.clients.len();
-
-        if num_connected == self.game.players.len() {
-            if self.state == RoomState::Entering {
+		if self.state == RoomState::Entering {
+			let num_connected = self.clients.len();
+			if num_connected == self.game.get_num_players() {
 				self.quit_vote();
-				self.start_new_game(false).await;
-            }
-        }
+				let _ = self.game.start(&mut self.clients).await;
+				self.state = RoomState::Playing;
+			}
+		}
 
-		self.client_next += 1;
         Some(id)
     }
 
+	/// Unregister the client with the given id
     pub async fn unregister(&mut self, client_id: usize) {
 		if self.vote.is_some() {
 			if let Some(client) = self.clients.get(&client_id) {
@@ -121,224 +125,43 @@ impl Room {
 				}
 			}
 		}
-        self.clients.remove(&client_id);
-        self.send_to_all(SocketMessage::ClientDisconnected(client_id))
+
+		let pid = if let Some(client) = self.clients.get(&client_id) {
+			Some(client.player_id)
+		} else {
+			None
+		};
+		self.clients.remove(&client_id);
+
+		if let Some(id) = pid {
+			let _ = self.game.on_leave(&mut self.clients, id).await;
+		}
+        self.clients.send_to_all(ClientDisconnected::<E>(client_id))
             .await;
     }
 
-    // Communication functions ---
-
-    // TODO Add errors
-    async fn send_to(&mut self, client_id: usize, data: SocketMessage) {
-        if let Some(client) = self.clients.get_mut(&client_id) {
-            client.send(data).await;
-        }
-    }
-
-    async fn send_to_all_except(&mut self, client_id: usize, data: SocketMessage) {
-        for (id, client) in self.clients.iter_mut() {
-            if *id == client_id {
-                continue;
-            }
-            client.send(data.clone()).await;
-        }
-    }
-
-    async fn send_to_all(&mut self, data: SocketMessage) {
-        for (_, client) in self.clients.iter_mut() {
-            client.send(data.clone()).await;
-        }
-    }
-
-    // Utility functions ---
-
-    async fn start_vote(&mut self, vote: VotingType) {
+	/// Start a new vote
+	async fn start_vote(&mut self, vote: VotingType) {
 		self.vote = Some(vote.clone());
 		self.num_votes = 0;
 		for (_, client) in self.clients.iter_mut() {
 			client.vote = None;
 		}
-		self.send_to_all(SocketMessage::NewVote(vote)).await;
+		self.clients.send_to_all(NewVote::<E>(vote)).await;
     }
 
+	/// Quit the current vote
 	fn quit_vote(&mut self) {
 		self.vote = None;
 	}
 
-    // Gameplay functions ---
-
 	/// Ends the current game
     async fn end_game(&mut self) {
-        debug!("End game");
-        self.start_vote(VotingType::Revanche).await;
-        self.state = RoomState::Ending;
-    }
-
-    fn get_first_announceplayer(&self) -> usize {
-        match self.game.setting.startcondition {
-            StartingCondition::Card(card) => self.game.players
-                .iter()
-                .enumerate()
-                .find(|(_, plr)| plr.hand.contains(card))
-                .map(|(i, _)| i)
-                .unwrap_or(0),
-            StartingCondition::Random => {
-                let mut rng = rand::thread_rng();
-                rng.gen::<usize>() % self.game.players.len()
-            }
-        }
-    }
-
-    async fn start_round(&mut self) {
-        debug!("Start new round");
-
-		let cards = {
-			let mut cards = all_cards();
-			let mut rng = rand::thread_rng();
-			cards.shuffle(&mut rng);
-
-			let plrs = self.game.players.len();
-			let cards_per_player = cards.len() / plrs;
-
-			let mut out = vec![Cardset::default(); plrs];
-
-			for (i, card) in cards.into_iter().enumerate() {
-				out[i / cards_per_player].insert(card);
-			}
-
-			out
-		};
-
-		self.game.start_new_round(cards);
-
-        for (_, client) in self.clients.iter_mut() {
-            let plr_id = client.player_id;
-            client
-                .send(SocketMessage::NewCards(self.game.players[plr_id].hand))
-                .await;
-        }
-    }
-
-    async fn start_new_game(&mut self, revanche: bool) {
-        debug!("Start game!");
-		self.game = Game::new( Setting::schieber() );
-        self.state = RoomState::Playing;
-		self.quit_vote();
-
-        self.start_round().await;
-
-        if !revanche || self.game.setting.apply_startcondition_on_revanche {
-            self.game.announce_player = self.get_first_announceplayer();
-            self.game.current_player = self.game.announce_player;
-            debug!("Starting player is {}", self.game.announce_player);
-        }
-		// TODO change beginner player after Revanche
-
-        self.send_to_all(SocketMessage::StartGame).await;
-        self.send_to_all(SocketMessage::SetAnnouncePlayer(self.game.announce_player))
-            .await;
-    }
-
-    async fn play_card(&mut self, card: Card, plr_id: usize) {
-		if self.game.should_end() {
-			error!("Player played when game ended!");
-			return;
+		if self.state != RoomState::Ending {
+			debug!("End game");
+			self.start_vote(VotingType::Revanche).await;
+			self.state = RoomState::Ending;
 		}
-		if self.game.current_player != plr_id {
-			error!("Player played when it's not his turn.");
-			return;
-		}
-        if !self.game.is_legal_card(&self.game.players[plr_id].hand, card) {
-            error!("It's illegal to play this card!");
-            return;
-        }
-
-        self.game.play_card(card);
-
-        if self.game.get_turn() == 1 && self.game.setting.allow_shows {
-			if self.game.num_played_cards() == 0 {
-				let shows: Vec<Vec<Show>> = self
-					.game
-					.players
-					.iter()
-					.map(|plr| plr.shows.clone())
-					.collect();
-
-				self.send_to_all(SocketMessage::ShowList(shows)).await;
-			}
-        }
-
-        if self.game.should_end() {
-            self.end_game().await;
-        } else if self.game.round_ended() {
-            self.start_round().await;
-		}
-
-		self.send_to_all(SocketMessage::PlayCard(card)).await;
-
-		if let Playtype::Everything = self.game.ruleset.playtype {
-			if self.game.num_played_cards() == 0 {
-				let choices = vec![
-					Playtype::Updown,
-					Playtype::Downup,
-					Playtype::Color(0),
-					Playtype::Color(1),
-					Playtype::Color(2),
-					Playtype::Color(3),
-				];
-				let ele = {
-					let mut rng = rand::thread_rng();
-					*choices.choose(&mut rng)
-						.unwrap_or(&Playtype::Updown)
-				};
-
-				self.game.ruleset.active = ele;
-
-				self.send_to_all(SocketMessage::EverythingPlaytype(ele)).await;
-			}
-		}
-	}
-
-    async fn announce(&mut self, pt: Playtype, misere: bool, plr_id: usize) {
-        if self.game.can_announce(plr_id) {
-			self.game.announce(pt, misere);
-			self.send_to_all(SocketMessage::Announce(pt, misere)).await;
-
-			if let Some(plr) = self.game.player_with_marriage() {
-				let team = self.game.players[plr].team_id;
-				if self.game.marriage_would_win(team) {
-					self.send_to_all(SocketMessage::HasMarriage(plr)).await;
-				}
-			}
-        }
-    }
-
-	async fn pass(&mut self, plr_id: usize) {
-		if self.game.can_pass(plr_id) {
-			self.game.pass();
-			self.send_to_all(SocketMessage::Pass).await;
-		} else {
-			error!("Player cannot pass!");
-		}
-	}
-
-    async fn play_show(&mut self, show: Show, plr_id: usize) {
-        if !self.game.can_show(plr_id) {
-            error!("Player mustn't show at this time!");
-            return;
-        }
-        if let Err(e) = self.game.players[plr_id].hand.has_show(show) {
-            error!("Player can't show it: {:?}", e);
-            return;
-        }
-        if self.game.players[plr_id].shows.iter().any(|s| *s == show) {
-            error!("Player has already shown show!");
-            return;
-        }
-
-		self.game.play_show(show, plr_id);
-        let points = self.game.ruleset.get_show_value(show);
-        self.send_to_all(SocketMessage::ShowPoints(points, plr_id)).await;
     }
 
 	async fn evaluate_vote( &mut self ) {
@@ -363,7 +186,10 @@ impl Room {
 					.count();
 
 				if agree > decline {
-					self.start_new_game(true).await;
+					let _ = self.game.start(&mut self.clients).await;
+					self.state = RoomState::Playing;
+				} else {
+					self.cleanup().await;
 				}
 			}
 			VotingType::Teaming => self.handle_team_choosing().await,
@@ -382,19 +208,20 @@ impl Room {
 			None => return,
 		}
 
-		self.send_to_all_except(client_id, SocketMessage::Vote(vote, client_id)).await;
+		self.clients.send_to_all_except(client_id, Vote::<E>(vote, client_id)).await;
 
 		self.num_votes += 1;
 		self.evaluate_vote().await;
 	}
 
-	// TODO Correctly handle team choosing
     async fn handle_team_choosing(&mut self) {
         if self.state != RoomState::Teaming { return; }
 
+		// TODO Correctly handle team choosing
+		// TODO This is merely shuffling, actually handle the requests
 		let players = {
             let mut rng = rand::thread_rng();
-			let mut v: Vec<usize> = (0..self.game.players.len()).collect();
+			let mut v: Vec<usize> = (0..self.game.get_num_players()).collect();
 			v.shuffle(&mut rng);
 			v
 		};
@@ -405,53 +232,48 @@ impl Room {
 			.map(|(i,cid)| (cid, players[i]))
 			.collect();
 
-        self.send_to_all(SocketMessage::PlayerOrder(order)).await;
-        self.start_new_game(false).await;
+        self.clients.send_to_all(PlayerOrder::<E>(order)).await;
+		let _ = self.game.start(&mut self.clients).await;
     }
 
 	pub fn should_close(&self) -> bool {
-		let num_clients = self.clients.len();
-		let num_players = self.game.players.len();
-
-		match self.state {
-			RoomState::Entering => num_players == 0,
-			_ => num_clients <= num_players - 2,
-		}
+		self.clients.is_empty()
 	}
 
-    pub async fn handle_input(&mut self, input: SocketMessage, client_id: usize) {
+	async fn handle_event(&mut self, ev: E, plr_id: usize) {
+		let _ = self.game.on_event(&mut self.clients, ev, plr_id).await;
+		if self.game.should_end() { self.end_game().await; }
+	}
+
+    pub async fn handle_input(&mut self, input: SocketMessage<E>, client_id: usize) {
         let plr_id = match self.clients.get(&client_id) {
             Some(client) => client.player_id,
             None => return,
         };
-        debug!("[{}] {:?}", plr_id, input);
 
         match input {
-            SocketMessage::PlayCard(card) => self.play_card(card, plr_id).await,
-            SocketMessage::Announce(pt, misere) => self.announce(pt, misere, plr_id).await,
-            SocketMessage::Pass => self.pass(plr_id).await,
-            SocketMessage::PlayShow(show) => self.play_show(show, plr_id).await,
-			SocketMessage::RtcStart(_) => self.send_to_all_except(client_id, SocketMessage::RtcStart(client_id)).await,
-            SocketMessage::RtcSignaling(s, signal, recv) => {
-                self.send_to(recv, SocketMessage::RtcSignaling(s, signal, client_id))
+			Event(ev) => self.handle_event(ev, plr_id).await,
+			RtcStart(_) => self.clients.send_to_all_except(client_id, RtcStart::<E>(client_id)).await,
+            RtcSignaling(s, signal, recv) => {
+                self.clients.send_to(recv, RtcSignaling::<E>(s, signal, client_id))
                     .await
             }
-			SocketMessage::ChatMessage(text, _) => {
-				self.send_to_all(SocketMessage::ChatMessage(text, client_id)).await;
+			ChatMessage(text, _) => {
+				self.clients.send_to_all(ChatMessage::<E>(text, client_id)).await;
 			},
-            SocketMessage::ClientIntroduction(name, _) => {
+            ClientIntroduction(name, _) => {
                 if let Some(client) = self.clients.get_mut(&client_id) {
                     if client.name.is_empty() {
                         client.name = name.clone();
-                        self.send_to_all_except(
+                        self.clients.send_to_all_except(
                             client_id,
-                            SocketMessage::ClientIntroduction(name, client_id),
+                            ClientIntroduction::<E>(name, client_id),
                         )
                         .await;
                     }
                 }
             }
-			SocketMessage::Vote(opt, _) => self.handle_vote(opt, client_id).await,
+			Vote(opt, _) => self.handle_vote(opt, client_id).await,
             _ => {
                 error!("Invalid header!");
             }

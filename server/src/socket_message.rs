@@ -1,14 +1,5 @@
 use serde::{Serialize, Deserialize};
 
-// use crate::voting::*;
-
-use jasshaus_game::{
-    Game,
-    card::*,
-    setting::*,
-    ruleset::*,
-};
-
 #[derive(Clone)]
 #[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 pub enum RTCSignal {
@@ -29,25 +20,12 @@ pub enum VotingType {
 #[derive(Clone)]
 #[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 #[non_exhaustive]
-pub enum SocketMessage {
-    // Gameplay Variants
-    PlayCard(Card),
-	PlayShow(Show), // GAMEPLAY
-    Announce(Playtype, bool),
-	Pass,
-    ShowPoints(i32,usize),
-    ShowList(Vec<Vec<Show>>),
-    HasMarriage(usize),
-    SetAnnouncePlayer(usize),
-    GameState(Game, Cardset),
-    GameSetting(Setting),
-	EverythingPlaytype(Playtype),
+pub enum SocketMessage<T> {
+	Event(T), // Contains a Game Event
 
-	StartGame,
-
-    // Non-Gameplay Variants
     Vote(usize,usize),
     NewVote(VotingType),
+	CurrentVote(VotingType, Vec<(usize,usize)>),
 
 	RtcStart(usize),
 	RtcSignaling(String, RTCSignal, usize),
@@ -57,9 +35,8 @@ pub enum SocketMessage {
 	ClientIntroduction(String,usize),
 	JoinedClients(Vec<(String,usize,usize)>),
 
-	PlayerID(usize),
+	PlayerID(usize, usize),
 	ChatMessage(String,usize),
-    NewCards(Cardset),
 
     PlayerOrder(Vec<(usize,usize)>),
 

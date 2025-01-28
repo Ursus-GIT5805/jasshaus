@@ -20,14 +20,8 @@ var hand = new Hand(
 		return img;
 	},
 	(card) => {
-		// Cancel if the announceWindow is active
-		if( $("#announceWindow").visible() ) return false;
-		send({
-			"PlayCard": {
-				"color": card.color,
-				"number": card.number,
-			}
-		});
+		if( $("#announceWindow").visible() ) return false; // Cancel
+		ev_play_card(card);
 		return true;
 	}
 );
@@ -90,20 +84,24 @@ function afterModule() {
 	comm = new CommunicationHandler();
 	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
 
+	setupShowButton();
 	setupSettings();
 	startWS();
 }
 
-$("#showButton").click(function () {
-	if(hand.selecting) {
-		let cards = hand.get_selected();
-		let show = parse_show(cards);
-		if(show) send({"PlayShow": show});
-		else players.setMessage("Dies ist kein Weis!", ownid, 2000);
-		this.text("Weisen");
-	} else {
-		this.text("Fertig")
-	}
+function setupShowButton() {
+	let showButton = $("#showButton");
+	showButton.click(function () {
+		if(hand.selecting) {
+			let cards = hand.get_selected();
+			let show = parse_show(cards);
+			if(show) ev_play_show(show);
+			else players.setMessage("Dies ist kein Weis!", ownid, 2000);
+			showButton.text("Weisen");
+		} else {
+			showButton.text("Fertig")
+			}
 
-	hand.setSelectMode();
-});
+		hand.setSelectMode();
+	});
+}

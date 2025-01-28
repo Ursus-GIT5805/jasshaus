@@ -20,9 +20,14 @@ function startAnnounce(){
 	for(let id = 0 ; id < 14 ; id++) {
 		if(!game.setting.playtype[id].allow) continue;
 
-		// Create Button
 		let pt = Playtype.from_id(id);
-		let but = button(pt_name(pt), pt_img_url(pt), () => announce(pt));
+		let mult = game.setting.playtype[id].multiplier;
+
+		let title = pt_name(pt);
+		if(mult != 1) title += " (" + mult + "x)";
+
+		// Create Button
+		let but = button(title, pt_img_url(pt), () => announce(pt));
 
 		// Append it
 		if(pt.hasOwnProperty("Color")) cpts.append(but);
@@ -52,20 +57,20 @@ function startAnnounce(){
 }
 
 function announce(pt){
-    send({"Announce": [pt, annMisere]});
+	ev_announce(pt, annMisere);
 	hand.setIllegal();
 	announceWindow.display(false);
 }
 
 function pass() {
-	send("Pass");
+	ev_pass();
 	hand.setIllegal();
 	announceWindow.display(false);
 }
 
 // Round summary ---
 function openSummary() {
-	let summaryWindow = $("#roundSummary").html("");
+	let roundSummary = $("#roundSummary").html("");
 
 	for(let team_id in game.teams) {
 		let team = game.teams[team_id];
@@ -103,14 +108,14 @@ function openSummary() {
 		}
 		ele.append(cardlist);
 
-		summaryWindow.append(ele);
+		roundSummary.append(ele);
 	}
 
-	summaryWindow.css("display", "block");
+	$("#roundWindow").display(true);
 }
 
 $("#closeSummary").click((e) => {
-	$("#roundWindow").css("display", "none");
+	$("#roundWindow").display(false);
 	$('*[text="game_rounds"]').text(game.round+1);
 
 	updatePoints();

@@ -50,8 +50,10 @@ async function setupMic(data){
 	$("#botrightbuttons").append( comm.createMicbutton() )
 }
 
-async function FUNC_PlayerID(player_id) {
+async function FUNC_PlayerID(data) {
+	let [player_id, num_players] = data;
 	ownid = player_id;
+	initGame(num_players);
 }
 
 async function FUNC_ClientJoined(data) {
@@ -63,6 +65,8 @@ async function FUNC_ClientJoined(data) {
 	let def = "Unnamed" + client_id
 	comm.setName(def, client_id);
 	players.setName(def, player_id );
+
+	if(voting) voting.onClientJoin(client_id);
 }
 
 async function FUNC_JoinedClients(list) {
@@ -83,7 +87,7 @@ async function FUNC_ClientDisconnected(client_id) {
 	comm.removeClient(client_id);
 	comm.chatMessage(MessageType.Info, name + " left the table.");
 	players.setName( "", pid );
-	// if(!voting) voting.setTotal(comm.clients.num_clients+1);
+	if(voting) voting.onClientQuit(client_id);
 }
 
 async function FUNC_NewCards(data) {
@@ -102,13 +106,11 @@ function initGame(n) {
 
 async function FUNC_GameSetting(setting) {
 	game = new Game(setting);
-	initGame(setting.num_players);
 	setupInterface();
 }
 
 async function FUNC_GameState(data) {
 	let [state, cardset] = data;
-	initGame(state.setting.num_players);
 	game = new Game(state.setting);
 
 	let cards = new Cardset(BigInt(cardset.list)).as_vec();
@@ -317,7 +319,6 @@ async function FUNC_RtcSignaling(data) {
 
 async function FUNC_Vote(data) {
 	if(!voting) return;
-
 	let [opt, cid] = data;
 	voting.agreeTo(opt);
 }
@@ -326,6 +327,13 @@ async function FUNC_NewVote(data) {
 	let clients = comm.num_clients+1;
 	let handler = (id) => send({ "Vote": [id, 0] });
 	if(data === 'Revanche') voting = new Voting("Revanche", clients, ["Ja", "Nein"], handler);
+}
+
+
+async function FUNC_CurrentVote(data) {
+	let [votetype, votes] = data;
+	FUNC_NewVote(votetype);
+	for(let vote of votes) FUNC_Vote(vote);
 }
 
 async function FUNC_StartGame() {
@@ -371,13 +379,19 @@ function startWS(){
 		if(DEV_MODE) console.log(obj);
 
 		// Run the function related to the header
-        await window["FUNC_" + String(head)]( obj[head] );
+		if(head == "Event") {
+			obj = obj[head];
+			head = Object.keys(obj)[0];
+			if(head == "0") head = obj;
+		}
+
+		await window["FUNC_" + String(head)]( obj[head] )
     }
 
     socket.onclose = function(e){
         openInfo("Meldung",
-                'Die Verbindung zum Server wurde geschlossen! Die Seite wird mit "Okay" verlassen.',
-                () => window.location.replace("index.html"));
+                 'Die Verbindung zum Server wurde geschlossen! Die Seite wird mit "Okay" verlassen.',
+                 () => window.location.replace("index.html"));
     }
 }
 
@@ -391,3 +405,10 @@ function send( data ){
         console.error("Error when sending data!", e);
     }
 }
+
+// Gameplay methods
+function ev_send(ele) { send({ "Event": ele }); }
+function ev_play_card(card) { ev_send({ "PlayCard": { "color": card.color, "number": card.number } }); }
+function ev_announce(pt, misere) { ev_send({ "Announce": [pt, misere] }) }
+function ev_pass() { ev_send("Pass"); }
+function ev_play_show(show) { ev_send({ "PlayShow": show }); }

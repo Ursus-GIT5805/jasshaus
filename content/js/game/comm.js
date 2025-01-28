@@ -13,6 +13,7 @@ class Client {
 		this.name = "";
 		this.player_id = -1;
 		this.muted = false;
+		this.vote = false;
 	}
 
 	getShortName() {

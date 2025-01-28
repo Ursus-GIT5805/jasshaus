@@ -1,0 +1,10 @@
+[package]
+name = "jassserver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["macros", "sync", "rt-multi-thread", "fs"] }
+
+game-server = { path = ".." }
+jasshaus-game = { path = "../../game", features = ["server"] }

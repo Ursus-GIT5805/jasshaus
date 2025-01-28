@@ -4,7 +4,7 @@ b:
 
 run:
 	make b
-	cd server && cargo run
+	make serv
 
 br:
 	rm -r content/pkg/
@@ -14,12 +14,13 @@ cont:
 	python3 -m http.server -d content
 
 serv:
-	cd server && cargo run
+	cd server/jassserver && cargo run
 
 clean:
 	cd game && cargo clean
-	cd comm && cargo clean
 	cd server && cargo clean
+	cd htmlform && cargo clean
+	cd server/jassserver && cargo clean
 	rm -r content/pkg
 
 ICEusername=""

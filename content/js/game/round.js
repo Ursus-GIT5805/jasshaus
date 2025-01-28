@@ -85,6 +85,8 @@ function pt_name(pt, misere=false) {
 	let pref = "";
 	if(misere) pref = "Misère: ";
 
+	if(!(id in PlayTypes)) return "";
+
 	let name = PlayTypes[id].name;
 	if(typeof name === 'function') return pref + name();
 	return pref + name;
@@ -92,6 +94,8 @@ function pt_name(pt, misere=false) {
 
 function pt_img_url(pt) {
 	let id = get_playtype_id(pt);
+
+	if(!(id in PlayTypes)) return "";
 	let src = PlayTypes[id].img;
 	if(typeof src === 'function') return src();
 	return src;
@@ -153,29 +157,25 @@ function setupGamedetails() {
 // Updates the symbols in the top left corner
 function updateRoundDetails(){
 	let ruleset = game.ruleset;
-
-	// Invert everything on misere
-	let filter = ["invert(0)", "invert(100%)"][ +ruleset.misere ];
-    $("#roundDetails").css("filter", filter);
-
-	// Show everything if it's annoucne (quit otherwise)
 	let announced = game.is_announced();
-	$("#roundSymbols").vis(announced);
-	if(!announced) return;
 
-	// Display the main playtype
+	// display the main playtype
 	let title = pt_name(ruleset.playtype, ruleset.misere);
-	$("#namePT").text(title);
-	$("#roundPT").attr("src", pt_img_url(ruleset.playtype));
+	$("#namePT").text(title).vis(announced);
+	$("#roundPT").attr("src", pt_img_url(ruleset.playtype)).vis(announced);
 
 	// Handle Ruletype (if it differs the playtype)
 	let hasRT = !objEquals(ruleset.playtype, ruleset.active)
-	let rt = $("#roundRT").vis(hasRT);
+	let rt = $("#roundRT").vis(hasRT && announced);
 	if(hasRT) rt.attr("src", pt_img_url(ruleset.active));
 
 	// Handle show/pass
 	$("#roundPass").vis(game.passed > 0);
-	$("#roundMisere").vis(ruleset.misere);
+	$("#roundMisere").vis(ruleset.misere && announced);
+
+	// Invert everything on misere
+	let filter = ["invert(0)", "invert(100%)"][ +ruleset.misere ];
+    $("#roundDetails").css("filter", filter);
 }
 
 // Handles
