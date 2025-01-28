@@ -2,16 +2,16 @@
 
 A german Jass-website inclusive Websocket-server. Now rewritten in Rust.
 
-
 ## Simple usage
 
-Run the following to compile the website and the server and run a local http-server serving the `content` directory.
+Run the following to compile, run, and serve the website on your local machine,
 
 ```
 make run
 ```
 
-Don't forget to have `cargo` installed.
+Don't forget to have `cargo`, and `rsync` installed.
+Make also sure that you can run `python3 -m http.server`.
 
 ## Infos regarding running it on the server
 

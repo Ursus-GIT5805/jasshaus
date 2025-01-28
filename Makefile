@@ -1,33 +1,25 @@
+ICEusername=""
+ICEpassword=""
+server_pwd="server/jasshaus_server"
+target="aarch64-unknown-linux-gnu"
+
 b:
 	cd game && wasm-pack build --target web
-	cp -r game/pkg content/pkg
+	rsync -av game/pkg content/
 
 run:
 	make b
-	make serv
-
-br:
-	rm -r content/pkg/
-	make b
+	bash make/run.sh
 
 cont:
 	python3 -m http.server -d content
 
 serv:
-	cd server/jassserver && cargo run
+	cd $(server_pwd) && cargo run
 
 clean:
-	cd game && cargo clean
-	cd server && cargo clean
-	cd htmlform && cargo clean
-	cd server/jassserver && cargo clean
+	find . -type f -name Cargo.toml -exec dirname {} \; | xargs -I {} bash -c "cd {} && pwd && cargo clean"
 	rm -r content/pkg
-
-ICEusername=""
-ICEpassword=""
-ICEfile="./build/content/js/chat.js"
-
-target="aarch64-unknown-linux-gnu"
 
 replaceICE:
 	bash make/replace.sh $(ICEusername) $(ICEpassword)
@@ -35,10 +27,9 @@ replaceICE:
 install:
 	mkdir -p build
 	mkdir -p build/content
-	cd server && cargo build --release --target $(target)
-	cp server/target/$(target)/release/jasshaus-server build/jasshaus-server
+	cd $(server_pwd) && cargo build --release --target $(target)
+	cp $(server_pwd)/target/$(target)/release/jasshaus-server build/jasshaus-server
 	cd game && wasm-pack build --target web --release
-	rm -r content/pkg
-	mv game/pkg content
-	cp -r content build
+	rsync -av game/pkg content/
+	rsync -av content build
 	make replaceICE

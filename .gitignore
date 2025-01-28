@@ -3,3 +3,6 @@ server/__pycache__
 .vscode
 **/target
 **/pkg
+server/Cargo.lock
+game/**Cargo.lock
+htmlform/**Cargo.lock
