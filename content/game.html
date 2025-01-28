@@ -61,15 +61,6 @@
           <div id="closeSummary">Weiter</div>
         </div>
 
-        <div class="Window" id="showWindow">
-            <h1 id="showTitle">Weisen?</h1>
-            <div id="showCards"></div>
-			<div>
-              <div id="showConfirm" class="Button">Weisen</div>
-              <div id="showCancel" class="Button">Schinden</div>
-			</div>
-		</div>
-
 		<div class="Window" id="startWindow">Bitte warten Sie auf weitere Spieler...</div>
 
         <div class="Window" id="infoWindow">
@@ -79,18 +70,7 @@
         </div>
 
 		<div id="botrightbuttons"></div>
-		<div id="botleftbuttons">
-		  <img class="ActionButton" src="img/settings.svg" id="settingsButton"/>
-		</div>
-
-		<div id="chatWindow">
-		  <div id="chatClose">Close</div>
-		  <div id="chat">
-			<input id="chatInput" placeholder="Input"/>
-			<div id="chatHistory"></div>
-		  </div>
-		  <div id="playerSettings"></div>
-		</div>
+		<div id="botleftbuttons"></div>
 
 		<div id="settingsWindow" class="Window">
 		  <div id="settings"></div>
@@ -103,14 +83,13 @@
 		<div id="showButton" class="Button">Weisen</div>
 	</body>
 
-
 	<script type="module" src="js/loadwasm.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 	<script src="js/voting.js"></script>
     <script src="js/formcreator.js"></script>
     <script src="js/settings.js"></script>
 
-    <script src="js/game/chat.js"></script>
+    <script src="js/game/comm.js"></script>
     <script src="js/game/player.js"></script>
     <script src="js/game/carpet.js"></script>
     <script src="js/game/hand.js"></script>

@@ -36,8 +36,17 @@ class CommunicationHandler {
 	}
 
 	initChat(onMessageCallback) {
-		let chat = $("#chatWindow");
-		let input = $("#chatInput");
+		let chat = $(`
+                      <div id="chatWindow">
+                       <div id="chatClose">Close</div>
+                       <div id="chat">
+                        <input id="chatInput" placeholder="Input"/>
+                        <div id="chatHistory"></div>
+                       </div>
+                       <div id="playerSettings"></div>
+                      </div>`);
+
+		let input = chat.find("#chatInput");
 
 		window.addEventListener('keydown', (e) => {
 			if(chat.css("display") == "none"){
@@ -48,7 +57,7 @@ class CommunicationHandler {
 			}
 		});
 
-		$("#chatClose").click((e) => this.toggleChat());
+		chat.find("#chatClose").click((e) => this.toggleChat());
 
 		input.keydown((e) => {
 			// If enter is pressed
@@ -60,8 +69,9 @@ class CommunicationHandler {
 			}
 		});
 
-		this.chatMessage(MessageType.System, "Dies ist der Chat. Bleibe respektvoll!")
+		this.chatMessage(MessageType.System, "This is the chat. Be respectful!");
 		this.chatInit = true;
+		$(document.body).append(chat);
 	}
 
 	async initVoiceChat(answerCallback, ICEcandidateCallback) {
@@ -136,11 +146,13 @@ class CommunicationHandler {
 		delete this.clients[id];
 	}
 
+	// Display a chatmessage
 	chatMessage(type, message) {
 		let div = $('<div>').addClass(type).text(message);
 		$("#chatHistory").append(div).scrollTop($("#chatHistory").height());
 	}
 
+	// Toggle the chatWindow
 	toggleChat() {
 		let ele = $("#chatWindow");
 		if(ele.css("display") == "flex") ele.css("display", "none");

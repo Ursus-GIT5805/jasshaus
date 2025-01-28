@@ -97,12 +97,15 @@ function pt_img_url(pt) {
 	return src;
 }
 
-function updateSetting() {
-	updateGameDetails();
-	players.updateNames();
+function setupInterface() {
+	// Display the chatbutton
+	$("#botrightbuttons").append( comm.createChatbutton() );
+
+	// Setup the game/round-details
+	setupGamedetails();
 	updateRoundDetails();
-	// $('*[text="max_points"]')
-		// .map((_,ele) => ele.innerText = game.setting.max_points);
+	players.updateNames();
+	updatePoints();
 }
 
 // Updates the points of a team in the gameDetails
@@ -110,21 +113,22 @@ function updatePoints() {
 	game.teams.map((team, idx) => {
 		let bef = team.points - team.won_points - team.show_points;
 
-		$('*[text="points_team' + idx + '"]')
-			.map((_,ele) => ele.innerText = bef);
-		$('*[text="wonpoints_team' + idx + '"]')
-			.map((_,ele) => ele.innerText = team.won_points);
-		$('*[text="showpoints_team' + idx + '"]')
-			.map((_,ele) => ele.innerText = team.show_points);
-		$('*[text="wonshowpoints_team' + idx + '"]')
-			.map((_,ele) => ele.innerText = team.won_points + team.show_points);
+		$('*[text="points_team' + idx + '"]').text(bef);
+		$('*[text="wonpoints_team' + idx + '"]').text(team.won_points);
+		$('*[text="showpoints_team' + idx + '"]').text(team.show_points);
+		$('*[text="wonshowpoints_team' + idx + '"]').text(team.won_points + team.show_points);
 	});
 }
 
-function updateGameDetails() {
+function setupGamedetails() {
 	let end = game.setting.end_condition;
 	if(end.hasOwnProperty('Points')) $("#gameTitle").text("Punkte " + end['Points']);
-	if(end.hasOwnProperty('Rounds')) $("#gameTitle").text("Runden " + end['Rounds']);
+	if(end.hasOwnProperty('Rounds')) {
+		$("#gameTitle")
+			.append( $("<a>").text("Round ") )
+			.append( $("<a>").attr('text', 'game_rounds').text(game.round+1) )
+			.append( $("<a>").text("/" + end['Rounds']) );
+	}
 
 	$("#gameTeams").html("");
 
@@ -138,11 +142,10 @@ function updateGameDetails() {
 			if(i+1 < plrs.length) ele.append( $("<a> + </a>") );
 		}
 
-		ele.append( $("<a>: </a>") );
-		ele.append( $("<a>").text("0").attr("text", "points_team" + team) );
-		ele.append( $("<a> + </a>") );
-		ele.append( $("<a>").text("0").attr("text", "wonshowpoints_team" + team) );
-
+		ele.append(
+			$('<a>: <a text="points_team{}">0</a> + <a text="wonshowpoints_team{}">0</a></a>'
+			  .replaceAll("{}", team))
+		)
 		$("#gameTeams").append(ele);
 	}
 }
@@ -151,42 +154,36 @@ function updateGameDetails() {
 function updateRoundDetails(){
 	let ruleset = game.ruleset;
 
-	let state = [ "hidden", "visible" ];
-	$("#roundPass").css("visibility", state[ +(game.passed > 0) ]);
+	// Invert everything on misere
+	let filter = ["invert(0)", "invert(100%)"][ +ruleset.misere ];
+    $("#roundDetails").css("filter", filter);
 
-	if(ruleset.playtype == "None"){
-		$("#roundDetails").css("filter", "");
-		$("#namePT").css("visibility", "hidden");
-		$("#roundMisere").css("visibility", "hidden");
-		$("#roundSymbols").css("visibility", "hidden");
-		$("#roundRT").css("visibility", "hidden");
-        return;
-    } else {
-		$("#namePT").css("visibility", "visible");
-		$("#roundSymbols").css("visibility", "visible");
-	}
+	// Show everything if it's annoucne (quit otherwise)
+	let announced = game.is_announced();
+	$("#roundSymbols").vis(announced);
+	if(!announced) return;
 
+	// Display the main playtype
 	let title = pt_name(ruleset.playtype, ruleset.misere);
 	$("#namePT").text(title);
-
 	$("#roundPT").attr("src", pt_img_url(ruleset.playtype));
 
-	if( !objEquals(ruleset.playtype, ruleset.active) ) {
-		$("#roundRT").attr("src", pt_img_url(ruleset.active)).css("visibility", "visible");
-	} else {
-		$("#roundRT").css("visibility", "hidden");
-	}
+	// Handle Ruletype (if it differs the playtype)
+	let hasRT = !objEquals(ruleset.playtype, ruleset.active)
+	let rt = $("#roundRT").vis(hasRT);
+	if(hasRT) rt.attr("src", pt_img_url(ruleset.active));
 
-	let filter = ["invert(0)", "invert(100%)"][ +ruleset.misere ];
-
-    $("#roundDetails").css("filter", filter);
-	$("#roundMisere").css("visibility", state[ +ruleset.misere ]);
+	// Handle show/pass
+	$("#roundPass").vis(game.passed > 0);
+	$("#roundMisere").vis(ruleset.misere);
 }
 
+// Handles
 function handleOnTurn() {
+	if(game.should_end()) return;
+
 	let cardset = Cardset.from_list( hand.getCards() );
 	hand.setLegality((card) => game.is_legal_card(cardset, card));
 
-	if(game.get_turn() == 0 && game.setting.allow_shows) $("#showButton").css("display", "block");
-	else $("#showButton").css("display", "none");
+	$("#showButton").display(game.get_turn() == 0 && game.setting.allow_shows);
 }

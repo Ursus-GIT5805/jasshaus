@@ -38,10 +38,8 @@ class Playerhandler {
 		let shortname = name.substr(0,3);
 		if(name.length == 0) shortname = "???";
 
-		$('*[text="player' + plr + '"]')
-			.map((_,ele) => ele.innerText = name);
-		$('*[text="short_player' + plr + '"]')
-			.map((_,ele) => ele.innerText = shortname);
+		$('*[text="player' + plr + '"]').text(name);
+		$('*[text="short_player' + plr + '"]').text(shortname);
     }
 
 	setMessage(msg, plr, delay=6000) {
@@ -50,11 +48,11 @@ class Playerhandler {
 	}
 
 	setEleMessage(ele, plr, delay=6000) {
-		let div = $('<div class="PlayerMSG"></div>').append(ele);
+		let div = $('<div class="PlayerMSG">').append(ele);
 		div.click(() => div.remove());
 		if(delay > 0) setTimeout(() => div.remove(), delay);
 
-		if(plr == own.id) $("body").append( div.css("bottom", "30%").addClass("CenterX") );
+		if(plr == ownid) $("body").append( div.css("bottom", "30%").addClass("CenterX") );
 		else $("#player" + plr).append( div );
 	}
 

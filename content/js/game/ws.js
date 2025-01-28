@@ -51,7 +51,7 @@ async function setupMic(data){
 }
 
 async function FUNC_PlayerID(player_id) {
-	own.id = player_id;
+	ownid = player_id;
 }
 
 async function FUNC_ClientJoined(data) {
@@ -86,11 +86,6 @@ async function FUNC_ClientDisconnected(client_id) {
 	// if(!voting) voting.setTotal(comm.clients.num_clients+1);
 }
 
-async function FUNC_StartMating(u) {
-	$("#startWindow").css("display", "none");
-	$("#teamWindow").css("display", "block");
-}
-
 async function FUNC_NewCards(data) {
 	handhash = BigInt(data.list);
 }
@@ -99,16 +94,16 @@ function initGame(n) {
 	players = new Playerhandler(n);
 	carpet = new Carpet(n, 0);
 
-	players.createPlayers(own.id);
-	players.setName(settings.name, own.id);
-	players.setMessage(getGreet(), own.id);
-	carpet.rotate_by_players(own.id);
+	players.createPlayers(ownid);
+	players.setName(settings.name, ownid);
+	players.setMessage(getGreet(), ownid);
+	carpet.rotate_by_players(ownid);
 }
 
 async function FUNC_GameSetting(setting) {
 	game = new Game(setting);
 	initGame(setting.num_players);
-	updateSetting();
+	setupInterface();
 }
 
 async function FUNC_GameState(data) {
@@ -137,15 +132,12 @@ async function FUNC_GameState(data) {
 	}
 
 	game.update_ruletype();
-	$("#startWindow").css("display", "none");
+	$("#startWindow").display(false);
 
 	players.setCurrent(game.current_player);
-	updateGameDetails();
-	updateRoundDetails();
-	updatePoints();
+	setupInterface();
 
-	console.log("HES");
-	if(state.current_player == own.id) {
+	if(state.current_player == ownid) {
 		if(!game.is_announced()) startAnnounce();
 		else handleOnTurn();
 	}
@@ -157,7 +149,7 @@ async function FUNC_SetAnnouncePlayer(plr) {
 
 	updateHand();
 	players.setCurrent(game.current_player);
-    if( plr == own.id ) startAnnounce();
+    if( plr == ownid ) startAnnounce();
 }
 
 async function FUNC_Announce(ann) {
@@ -175,13 +167,13 @@ async function FUNC_Announce(ann) {
 
 	players.setCurrent(game.current_player);
 	updateRoundDetails();
-	if( own.id == game.current_player ) handleOnTurn();
+	if( ownid == game.current_player ) handleOnTurn();
 }
 
 async function FUNC_Pass(u) {
 	gameMessage("Ich schiebe!", game.current_player);
 	game.pass();
-	if( own.id == game.current_player ) startAnnounce();
+	if( ownid == game.current_player ) startAnnounce();
 	players.setCurrent(game.current_player);
 	updateRoundDetails();
 }
@@ -226,13 +218,12 @@ async function FUNC_PlayCard(card){
 
 	// ---
 
-	$("#showButton").css("display", "none");
+	$("#showButton").display(false);
 	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
 		let plr = game.marriage['PlayedBoth'];
 		gameMessage("Stöck", plr);
 		said_marriage = true;
 	}
-
 
 	if(game.should_end() || game.cards_played == 36) {
 		hand.setIllegal();
@@ -243,7 +234,7 @@ async function FUNC_PlayCard(card){
 			game.start_new_round([]);
 		}, 2000);
 	} else {
-		if( game.current_player == own.id ) handleOnTurn();
+		if( game.current_player == ownid ) handleOnTurn();
 		else hand.setIllegal();
 		players.setCurrent(game.current_player);
 	}
@@ -317,7 +308,6 @@ async function FUNC_RtcStart(cid) {
 
 async function FUNC_RtcSignaling(data) {
 	let [jsonstr, signal, cid] = data;
-
 	let json = JSON.parse(jsonstr);
 
 	if(signal == "Offer") await comm.onOffer(json, cid);
@@ -397,7 +387,7 @@ function send( data ){
 
 	try {
         socket.send(JSON.stringify(data));
-    } catch(e){
+    } catch(e) {
         console.error("Error when sending data!", e);
     }
 }

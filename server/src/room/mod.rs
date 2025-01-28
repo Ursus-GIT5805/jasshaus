@@ -12,10 +12,10 @@ use std::collections::HashMap;
 
 #[derive(PartialEq, Eq)]
 pub enum RoomState {
-	ENTERING,
-	TEAMING,
-    PLAYING,
-    ENDING,
+	Entering,
+	Teaming,
+    Playing,
+    Ending,
 }
 
 pub struct Room {
@@ -36,7 +36,7 @@ impl Room {
             clients: HashMap::new(),
 
             game: Game::new( Setting::schieber() ),
-            state: RoomState::ENTERING,
+            state: RoomState::Entering,
 
 			num_votes: 0,
 			vote: None,
@@ -52,7 +52,7 @@ impl Room {
 		self.client_next = 0;
 		self.clients.clear();
 		self.game = Game::new( Setting::schieber() );
-		self.state = RoomState::ENTERING;
+		self.state = RoomState::Entering;
 		self.num_votes = 0;
 		self.vote = None;
 	}
@@ -87,7 +87,7 @@ impl Room {
         self.clients.insert(id, Client::new(plr_id, ws_tx));
         self.send_to(id, SocketMessage::PlayerID(plr_id)).await;
 
-		if self.state == RoomState::ENTERING {
+		if self.state == RoomState::Entering {
 			self.send_to(id, SocketMessage::GameSetting(self.game.setting.clone()))
 				.await;
 		} else {
@@ -101,9 +101,8 @@ impl Room {
 		self.send_to(id, SocketMessage::JoinedClients(joined_clients)).await;
         let num_connected = self.clients.len();
 
-
         if num_connected == self.game.players.len() {
-            if self.state == RoomState::ENTERING {
+            if self.state == RoomState::Entering {
 				self.quit_vote();
 				self.start_new_game(false).await;
             }
@@ -172,7 +171,7 @@ impl Room {
     async fn end_game(&mut self) {
         debug!("End game");
         self.start_vote(VotingType::Revanche).await;
-        self.state = RoomState::ENDING;
+        self.state = RoomState::Ending;
     }
 
     fn get_first_announceplayer(&self) -> usize {
@@ -223,7 +222,7 @@ impl Room {
     async fn start_new_game(&mut self, revanche: bool) {
         debug!("Start game!");
 		self.game = Game::new( Setting::schieber() );
-        self.state = RoomState::PLAYING;
+        self.state = RoomState::Playing;
 		self.quit_vote();
 
         self.start_round().await;
@@ -389,8 +388,9 @@ impl Room {
 		self.evaluate_vote().await;
 	}
 
+	// TODO Correctly handle team choosing
     async fn handle_team_choosing(&mut self) {
-        if self.state != RoomState::TEAMING { return; }
+        if self.state != RoomState::Teaming { return; }
 
 		let players = {
             let mut rng = rand::thread_rng();
@@ -414,7 +414,7 @@ impl Room {
 		let num_players = self.game.players.len();
 
 		match self.state {
-			RoomState::ENTERING => num_players == 0,
+			RoomState::Entering => num_players == 0,
 			_ => num_clients <= num_players - 2,
 		}
 	}

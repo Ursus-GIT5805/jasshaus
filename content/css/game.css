@@ -79,6 +79,7 @@ body {
 
 #roundSymbols {
 	display: flex;
+	visibility: hidden;
 
 	img {
 		width: 6rem;

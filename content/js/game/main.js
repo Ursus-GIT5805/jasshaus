@@ -5,10 +5,12 @@ var comm = null;
 var voting = null;
 var players = null;
 var carpet = null;
+var ownid = 0;
 
-var own = {
-	id: 0,
-};
+// Some QoL one-liners
+jQuery.fn.vis = function(v){ return this.css('visibility', ['hidden', 'visible'][+v]); }
+jQuery.fn.visible = function(){ return this.css('display') != "none"; }
+jQuery.fn.display = function(v){ return this.css('display', ['none', 'block'][+v]); }
 
 var hand = new Hand(
 	document.getElementById("cards"),
@@ -18,9 +20,8 @@ var hand = new Hand(
 		return img;
 	},
 	(card) => {
-		// Cancel when showWindow or announceWindow is active
-		if( $("#announceWindow").css("display") != 'none' ) return false;
-		if( $("#showWindow").css("display") != 'none' ) return false;
+		// Cancel if the announceWindow is active
+		if( $("#announceWindow").visible() ) return false;
 		send({
 			"PlayCard": {
 				"color": card.color,
@@ -52,31 +53,7 @@ function card_get_img_url(card) {
 	return "img/" + pref + "/" + card.color + card.number + ".png";
 }
 
-function initSettings() {
-	JasshausForm['name']['#disabled'] = true;
-	JasshausForm['card_lang']['#onchange'] = (lang) => {
-		settings.card_lang = lang;
-		hand.reloadContent();
-		updateRoundDetails();
-	};
-	JasshausForm['cardclicks']['#onchange'] = (c) => hand.enable_clicks = c;
-	form = createForm("Einstellungen", JasshausForm, settings);
-
-	$("#settings").append(form.ele);
-	$("#settingsButton").click((e) => {
-		let ele = $("#settingsWindow");
-		if( ele.css("display") == "none" ) ele.css("display", "flex");
-		else ele.css("display", "none");
-	});
-	$("#closeSettings").click(() => {
-		$("#settingsButton").click();
-		settings = form.get();
-	});
-}
-
-function afterModule() {
-	if(DEV_MODE) console.log("Loaded WASM module!");
-
+function setupSettings() {
 	settings = getSettings();
 	if(!settings) {
 		settings = getDefaultSettings();
@@ -84,29 +61,48 @@ function afterModule() {
 	}
 	settings = complementSettings(settings);
 
-	hand.enable_clicks = settings["cardclicks"];
+	JasshausForm['name']['#disabled'] = true;
+	JasshausForm['card_lang']['#onchange'] = (lang) => {
+		settings.card_lang = lang;
+		hand.reloadContent();
+		updateRoundDetails();
+	};
+	JasshausForm['cardclicks']['#onchange'] = (c) => hand.enable_clicks = c;
+
+	form = createForm("Einstellungen", JasshausForm, settings);
+	$("#settings").append(form.ele);
+
+	// Setup events and DOM elements
+	let button = $('<img class="ActionButton">')
+		.attr("src", "img/settings.svg")
+		.click(() => $("#settingsWindow").toggle());
+
+	$("#closeSettings").click(() => {
+		button.click();
+		settings = form.get();
+	});
+	$("#botleftbuttons").append(button);
+}
+
+function afterModule() {
+	if(DEV_MODE) console.log("Loaded WASM module!");
+
 	comm = new CommunicationHandler();
 	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
-	$("#botrightbuttons").append( comm.createChatbutton() )
-	initSettings();
 
+	setupSettings();
 	startWS();
 }
 
-$("#showButton").click(() => {
+$("#showButton").click(function () {
 	if(hand.selecting) {
 		let cards = hand.get_selected();
 		let show = parse_show(cards);
-		if(show) {
-			send({"PlayShow": show});
-			hand.setSelected(() => false);
-		} else {
-			players.setMessage("Dies ist kein Weis!", own.id, 2000);
-		}
-
-		$("#showButton").text("Weisen")
+		if(show) send({"PlayShow": show});
+		else players.setMessage("Dies ist kein Weis!", ownid, 2000);
+		this.text("Weisen");
 	} else {
-		$("#showButton").text("Fertig")
+		this.text("Fertig")
 	}
 
 	hand.setSelectMode();

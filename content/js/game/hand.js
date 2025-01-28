@@ -1,3 +1,4 @@
+// Helper struct containing the infos of a card
 class HandCard {
 	constructor(info) {
 		this.info = info;
@@ -7,6 +8,7 @@ class HandCard {
 	}
 }
 
+// The class containing all the HandCards
 class Hand {
 	constructor(container, contentHandler, onClick) {
 		this.cards = [];
@@ -23,7 +25,6 @@ class Hand {
 		this.contentHandler = contentHandler;
 
 		// Container events ---
-
 		this.container.ondragenter = (e) => {
 			e.preventDefault();
 			e.stopPropagation();
@@ -42,10 +43,10 @@ class Hand {
 		}
 	}
 
-	getCards() {
-		return this.cards.map(x => x.info);
-	}
+	/// Return all the cards info
+	getCards() { return this.cards.map(x => x.info); }
 
+	/// Append a new card
 	appendCard(info) {
 		let card = new HandCard(info, this.contentHandler);
 
@@ -79,6 +80,7 @@ class Hand {
 			if(this.selecting) return;
 			e.preventDefault();
 			ele.style['opacity'] = "100";
+
 			if(this.dragcounter == 0) {
 				if(this.onPlay(info)) {
 					this.cards = this.cards.filter(x => x.ele != ele);
@@ -96,11 +98,13 @@ class Hand {
 		this.container.appendChild(card.ele);
 	}
 
+	/// Clear the hand
 	clear() {
 		this.cards = [];
 		this.container.innerHTML = "";
 	}
 
+	/// Set the cards
 	setCards(cards) {
 		this.clear();
 		for(let card of cards) this.appendCard(card);
@@ -124,6 +128,7 @@ class Hand {
 		else ele.style['transform'] = "";
 	}
 
+	/// Reload the cards content
 	reloadContent() {
 		for(let card of this.cards) {
 			card.ele = this.contentHandler(this.card.info);
@@ -131,6 +136,7 @@ class Hand {
 		}
 	}
 
+	/// Handle which cards are legal to play
 	setLegality(legalityHandler) {
 		for(let card of this.cards) {
 			let legal = legalityHandler(card.info);
@@ -139,6 +145,7 @@ class Hand {
 		}
 	}
 
+	/// Handle which cards are selected
 	setSelected(selectHandler) {
 		for(let card of this.cards) {
 			let select = selectHandler(card.info);
@@ -147,6 +154,7 @@ class Hand {
 		}
 	}
 
+	/// Choose whether or not to start selecting cards instead of playing
 	setSelectMode(select) {
 		if(select == undefined) this.selecting = !this.selecting;
 		else this.selecting = select;
@@ -164,6 +172,7 @@ class Hand {
 		}
 	}
 
+	/// Get all currently selected cards
 	get_selected() {
 		return Array.from(this.cards
 						  .filter((card) => card.selected)

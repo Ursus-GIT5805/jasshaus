@@ -86,47 +86,6 @@
     background-color: #88888840;
 }
 
-
-#showWindow {
-	flex-direction: column;
-
-	text-align: center;
-
-	top: 40%;
-    max-width: 60%;
-    max-height: 60%;
-
-    border-radius: 1rem;
-    transition: 50ms;
-
-	opacity: 0.3;
-
-	div {
-		display: flex;
-		justify-content: space-evenly;
-	}
-}
-
-#showWindow:hover {
-	opacity: 1;
-}
-
-#showCards {
-	display: flex;
-
-	overflow-x: auto;
-	padding: 1rem;
-
-	img {
-		display: inline-block;
-		height: 15rem;
-	}
-}
-
-#showCancel {
-    background-color: #DD0000;
-}
-
 /* --- */
 
 #roundWindow {

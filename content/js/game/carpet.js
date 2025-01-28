@@ -1,3 +1,7 @@
+// ===== Carpet =====
+//
+// A class which handles how cards are display on the playmat.
+
 class Carpet {
 	constructor(n, rotation) {
 		this.total_player = n;
@@ -34,11 +38,7 @@ class Carpet {
 		this.rotate = Math.PI / 2.0 + (2*Math.PI / this.total_player * n);
 	}
 
-	clean() {
-		this.container.innerHTML = "";
-	}
-
-	get_num_cards() {
-		return this.container.children.length;
-	}
+	/// Utility functions
+	clean() { this.container.innerHTML = ""; }
+	get_num_cards() { return this.container.children.length; }
 }

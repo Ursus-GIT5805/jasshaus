@@ -111,7 +111,7 @@ impl Game {
 
 			passed: 0,
 
-            setting: Setting::schieber(),
+            setting: setting,
         }
     }
 
