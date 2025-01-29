@@ -6,6 +6,13 @@ if(DEV_MODE){
     else WS_URL = "ws://127.0.0.1:7999/ws";
 }
 
+function detectMobile() {
+	let regexp = /android|iphone|kindle|ipad/i;
+	return regexp.test(navigator.userAgent);
+}
+
+const IS_MOBILE = detectMobile();
+
 var settings = null;
 var form = null;
 var game = null;
@@ -70,6 +77,11 @@ function getGreet() {
 	return choices[index];
 }
 
+function toggleFullscreen() {
+	if(window.fullScreen) document.exitFullscreen();
+	else document.documentElement.requestFullscreen();
+}
+
 // ===== Setup =====
 
 // Websocket handling
@@ -87,6 +99,7 @@ function startWS () {
 	wshandler.onchatmessage = PlayerMSG_Text;
 
 	wshandler.onevent = (ev) => {
+		if(DEV_MODE) console.log(ev);
 		let head = Object.keys(ev)[0];
 		if(head == "0") head = ev;
 
@@ -99,7 +112,15 @@ function startWS () {
 
 	// Append Mic/Chat button upon load
 	let ctnr = $("#botrightbuttons")
-	wshandler.comm.onchatinit = () => ctnr.append( wshandler.comm.createChatbutton() );
+	if(!IS_MOBILE) {
+		wshandler.comm.onchatinit = () => ctnr.append( wshandler.comm.createChatbutton() );
+	} else {
+		let fullscreen = $("<img>")
+			.addClass("ActionButton")
+			.attr("src", "img/fullscreen.svg")
+			.click(toggleFullscreen);
+		ctnr.append( fullscreen );
+	}
 	wshandler.comm.onvoiceinit = () => ctnr.append( wshandler.comm.createMicbutton() );
 
 	if(DEV_MODE) console.log("Started WS");

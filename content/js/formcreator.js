@@ -266,6 +266,14 @@ function createForm(ident, entry, def=null) {
 	else if(Object.prototype.toString.call(entry) === '[object Array]')
 		input = createListed(ident, entry);
 
+	if(entry.hasOwnProperty('#description')) {
+		let div = $("<div>").append(input.ele);
+		let desc = $("<i>").text("(" + entry['#description'] + ")");
+		div.append(desc);
+
+		input.ele = div;
+	}
+
 	if(def) input.set(def);
 	if(!input) return NULL_FORM;
 	return input;

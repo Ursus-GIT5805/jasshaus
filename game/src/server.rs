@@ -106,8 +106,8 @@ impl JassRoom {
 
         self.game.play_card(card);
 
-		if self.game.get_turn() == 0 && self.game.setting.allow_shows {
-			if self.game.num_played_cards() == self.game.players.len()-1 {
+		if self.game.get_turn() == 1 && self.game.setting.allow_shows {
+			if self.game.num_played_cards() == 0 {
 				let shows: Vec<Vec<Show>> = self
 					.game
 					.players
@@ -183,9 +183,7 @@ impl ServerRoom<GameEvent> for JassRoom {
 	type Err = GameError;
 
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
-		self.game = Game::new( Setting::schieber() );
-
-        self.game.announce_player = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
+        let annplr = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
             self.get_first_announceplayer()
         } else {
             let mut rng = rand::thread_rng();
@@ -196,6 +194,9 @@ impl ServerRoom<GameEvent> for JassRoom {
 				.unwrap_or(&0)
 		};
 
+		self.game = Game::new( Setting::schieber() );
+
+		self.game.announce_player = annplr;
 		self.game.current_player = self.game.announce_player;
 
 		self.starts += 1;
@@ -223,6 +224,10 @@ impl ServerRoom<GameEvent> for JassRoom {
 	async fn on_event(&mut self, clients: &mut ClientHandler, event: GameEvent, plr_id: usize)
 				-> Result<(), Self::Err>
 	{
+		if self.starts == 0 {
+			return Ok(());
+		}
+
 		match event {
 			GameEvent::PlayCard(card) => self.play_card(clients, card, plr_id).await,
 			GameEvent::Announce(pt, misere) => self.announce(clients, pt, misere, plr_id).await,

@@ -304,6 +304,7 @@ function setupSettings() {
 	if(!settings) {
 		settings = getDefaultSettings();
 		settings.name = promptName();
+		localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(settings));
 	}
 	settings = complementSettings(settings);
 

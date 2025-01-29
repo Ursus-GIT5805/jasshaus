@@ -4,7 +4,7 @@
         <title>Jasshaus | Partie</title>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-		<metta http_equiv="cache-control" content="no-cache">
+		<meta http_equiv="cache-control" content="no-cache">
     </head>
 
     <link rel="stylesheet" href="css/game.css"/>
@@ -75,13 +75,19 @@
 
 		<div id="settingsWindow" class="Window">
 		  <div id="settings"></div>
-		  <div style="display: flex;">
+		  <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 			<div class="Button" id="closeSettings">Schliessen</div>
 			<a href="index.html"><div class="Button" style="background-color:red;" id="closeSettings">Partie Verlassen</div></a>
 		  </div>
 		</div>
 
 		<div id="showButton" class="Button">Weisen</div>
+
+		<noscript>
+		  <div class="Window" style="display: block;">
+			This website requires Javascript. You must enable it for it to work.
+		  </div>
+		</noscript>
 	</body>
 
 	<script type="module" src="js/loadwasm.js"></script>

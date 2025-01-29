@@ -10,6 +10,7 @@
 
 	color: #000000;
 	background-color: #FFFFFF;
+	z-index: 444;
 
 	* { margin: 1rem; }
 }

@@ -161,7 +161,6 @@ impl Setting {
 			show_gives_negative: false,
 
 			allow_misere: true,
-            allow_pass: true,
 
 			playtype: {
 				let mut v = vec![PlaytypeSetting {
@@ -187,12 +186,56 @@ impl Setting {
             marriage_points: 20,
             show_points_maximum: 300,
 
+			allow_pass: true,
             allow_back_pass: false,
             pass_to_same_team: true,
 
 			strict_undertrumpf: true,
 
             startcondition: StartingCondition::Card(Card::new(0, 4)),
+            apply_startcondition_on_revanche: false,
+        }
+	}
+
+	pub fn molotow() -> Self {
+        Setting {
+			num_players: 4,
+			team_choosing: TeamChoosing::None,
+			end_condition: EndCondition::Rounds(12),
+			less_points_win: true,
+            point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
+
+			allow_shows: false,
+			allow_table_shows: true,
+			show_gives_negative: false,
+
+			allow_misere: false,
+
+			playtype: {
+				let mut v = vec![PlaytypeSetting {
+					allow: false,
+					multiplier: 1,
+					passed_player_begins: false,
+				}; NUM_PLAYTYPES];
+				let mol_id = Playtype::Molotow.get_id().unwrap_or(0);
+				v[mol_id].allow = true;
+				v
+			},
+
+			allow_marriage: true,
+
+            match_points: 100,
+			last_points: 5,
+            marriage_points: -20,
+            show_points_maximum: 300,
+
+			allow_pass: false,
+            allow_back_pass: false,
+            pass_to_same_team: true,
+
+			strict_undertrumpf: false,
+
+            startcondition: StartingCondition::Random,
             apply_startcondition_on_revanche: false,
         }
 	}

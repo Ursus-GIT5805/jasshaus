@@ -84,7 +84,11 @@ function openSummary() {
 
 		let bef = team.points - team.won_points - team.show_points;
 		let plr_id = Array.from(game.get_players_of_team(team_id));
-		let plrs = plr_id.map((id) => names[id] || "???")
+		let plrs = plr_id.map((id) => {
+			if(!names[id]) return "???";
+			return names[id].substr(0,3);
+		});
+
 
 		let ele = $(`
 <div class="SummaryTeam">
