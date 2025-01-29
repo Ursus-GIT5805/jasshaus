@@ -43,7 +43,7 @@ use GameEvent::*;
 
 #[derive(Clone)]
 pub struct JassRoom {
-	started: bool,
+	starts: u32,
 	game: Game,
 }
 
@@ -51,7 +51,7 @@ impl Default for JassRoom {
 	fn default() -> Self {
 		let game = Game::new( Setting::schieber() );
 		Self {
-			started: false,
+			starts: 0,
 			game,
 		}
 	}
@@ -183,15 +183,23 @@ impl ServerRoom<GameEvent> for JassRoom {
 	type Err = GameError;
 
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
-		self.started = true;
 		self.game = Game::new( Setting::schieber() );
-        self.start_round(clients).await;
 
-        if self.game.setting.apply_startcondition_on_revanche {
-            self.game.announce_player = self.get_first_announceplayer();
-            self.game.current_player = self.game.announce_player;
-        }
-		// TODO change beginner player after Revanche
+        self.game.announce_player = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
+            self.get_first_announceplayer()
+        } else {
+            let mut rng = rand::thread_rng();
+			let worst_tid = *self.game.rank_teams().last().unwrap_or(&0);
+
+			*self.game.get_players_of_team(worst_tid)
+				.choose(&mut rng)
+				.unwrap_or(&0)
+		};
+
+		self.game.current_player = self.game.announce_player;
+
+		self.starts += 1;
+        self.start_round(clients).await;
 
         clients.ev_send_to_all(StartGame).await;
         clients.ev_send_to_all(SetAnnouncePlayer(self.game.announce_player))
@@ -201,7 +209,7 @@ impl ServerRoom<GameEvent> for JassRoom {
 	}
 
 	async fn on_enter(&mut self, clients: &mut ClientHandler, plr_id: usize) {
-		if self.started {
+		if self.starts > 0 {
 			let game = self.game.clone();
             let hand = self.game.players[plr_id].hand;
             clients.ev_send_to(plr_id, GameState(game, hand)).await;

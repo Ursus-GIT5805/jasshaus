@@ -49,13 +49,7 @@ class Hand {
 	/// Append a new card
 	appendCard(info) {
 		let card = new HandCard(info);
-		card.ele = this.createCardElement(info);
 
-		this.cards.push(card);
-		this.container.appendChild(card.ele);
-	}
-
-	createCardElement(info) {
 		let ele = this.contentHandler(info);
 
 		ele.draggable = true;
@@ -97,7 +91,10 @@ class Hand {
 			this.container.style['border-color'] = "#000000";
 		}
 
-		return ele;
+		card.ele = ele;
+
+		this.cards.push(card);
+		this.container.appendChild(card.ele);
 	}
 
 	/// Clear the hand
