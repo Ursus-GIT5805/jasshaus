@@ -642,9 +642,13 @@ impl Game {
                 if self.ruleset.is_card_stronger(bcrd, card) {
                     return true;
                 }
-                // Since this is not true, there must be a stronger trumpf on the board
-                // It's only legal to play if you can't play anything else
-                return hand.only_has_color(card.color) && !hand.has_stronger_trumpf(bcrd);
+
+				// We know it's a weaker trumpf
+				let nothing_else = hand.only_has_color(card.color) && !hand.has_stronger_trumpf(bcrd);
+				let can_hold = hand.has_color(turncolor);
+				let can_undertrumpf = !can_hold && !self.setting.strict_undertrumpf;
+
+				return nothing_else || can_undertrumpf;
             }
 
             // Rule: You are NEVER forced to play trumpf-boy

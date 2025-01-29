@@ -135,6 +135,10 @@ pub struct Setting {
 	#[Form("#description": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
     pub pass_to_same_team: bool,
 
+	#[Form("#title": "Striktes Untertrumpfen")]
+	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl hat)")]
+	pub strict_undertrumpf: bool,
+
 	#[Form("#title": "Beginnender Spieler")]
 	#[Form("#description": "Enstscheiden, wie der beginnende Spieler bestimmt wird.")]
     pub startcondition: StartingCondition,
@@ -185,6 +189,8 @@ impl Setting {
 
             allow_back_pass: false,
             pass_to_same_team: true,
+
+			strict_undertrumpf: true,
 
             startcondition: StartingCondition::Card(Card::new(0, 4)),
             apply_startcondition_on_revanche: false,
