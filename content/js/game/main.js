@@ -70,9 +70,6 @@ function getGreet() {
 	return choices[index];
 }
 
-
-//  ===== EventHandlers =====
-
 // ===== Setup =====
 
 // Websocket handling
@@ -84,6 +81,7 @@ function startWS () {
 		setupPlayerboxes(pid, num_players);
 
 		carpet = new Carpet(num_players, 0);
+		carpet.autoclean = num_players;
 		carpet.rotate_by_players(pid);
 	}
 	wshandler.onchatmessage = PlayerMSG_Text;

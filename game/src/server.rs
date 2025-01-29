@@ -104,7 +104,9 @@ impl JassRoom {
 		if self.game.current_player != plr_id { return; }
         if !self.game.is_legal_card(&self.game.players[plr_id].hand, card) { return; }
 
-        if self.game.get_turn() == 0 && self.game.setting.allow_shows {
+        self.game.play_card(card);
+
+		if self.game.get_turn() == 0 && self.game.setting.allow_shows {
 			if self.game.num_played_cards() == self.game.players.len()-1 {
 				let shows: Vec<Vec<Show>> = self
 					.game
@@ -117,14 +119,9 @@ impl JassRoom {
 			}
         }
 
-        self.game.play_card(card);
-
-        if self.game.should_end() {
-            // self.end().await;
-        } else if self.game.round_ended() {
+		if !self.game.should_end() && self.game.round_ended() {
             self.start_round(clients).await;
 		}
-
 		clients.ev_send_to_all(GameEvent::PlayCard(card)).await;
 
 		if let Playtype::Everything = self.game.ruleset.playtype {

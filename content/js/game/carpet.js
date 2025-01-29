@@ -1,6 +1,6 @@
 // ===== Carpet =====
 //
-// A class which handles how cards are display on the playmat.
+// A class which handles how cards are displayed on the playmat.
 
 class Carpet {
 	constructor(n, rotation) {
@@ -12,12 +12,19 @@ class Carpet {
 
 		this.radiusX = 100;
 		this.radiusY = 60;
+
+		this.autoclean = null;
 	}
 
 	/// Display that PLAYER played CARD
 	playCard(card, player, newbestcard) {
+		if(this.autoclean) {
+			if(this.autoclean <= this.container.childElementCount) this.clean();
+		}
+
 		let img = document.createElement('img');
 		img.src = card_get_img_url(card);
+		img.setAttribute("imgsrc", "card" + get_card_id(card));
 
 		let angle = this.rotate - (2*Math.PI / this.total_player * player);
 

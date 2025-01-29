@@ -14,6 +14,7 @@ var hand = new Hand(
 	document.getElementById("cards"), // Put the cards into #cards
 	(card) => { // ContentHandler
 		let img = document.createElement("img");
+		img.setAttribute("imgsrc", "card" + get_card_id(card));
 		img.src = card_get_img_url(card);
 		return img;
 	},
@@ -229,7 +230,6 @@ function PlayerMSG(ele, plr_id, delay=6000) {
 	if(delay > 0) setTimeout(() => div.remove(), delay);
 
 	let parent = $("#player" + plr_id);
-	console.log(parent);
 	if(parent.length == 0) $("body").append( div.css("bottom", "30%").addClass("CenterX") );
 	else parent.append(div);
 }
@@ -240,6 +240,35 @@ function updateCurrentPlayer(plr=null) {
 	if(curplr != null) $("#player" + curplr).css("border-style", "none");
 	if(plr != null) $("#player" + plr).css("border-style", "solid");
 	curplr = plr;
+}
+
+function updateCardskin() {
+	$('*[imgsrc^=card]').map((i, ele) => {
+		let att = ele.getAttribute("imgsrc");
+
+		let card_id = Number(att.substr(4));
+		let card = Card.from_id(card_id)
+
+		ele.setAttribute("src", card_get_img_url(card));
+	});
+}
+
+function updatePlaytypeSRC() {
+	$('*[imgsrc^=pt]').map((i, ele) => {
+		let att = ele.getAttribute("imgsrc");
+
+		let pt_id = Number(att.substr(2));
+		let pt = Playtype.from_id(pt_id);
+		ele.setAttribute("src", pt_img_url(pt));
+	});
+
+	$('*[text^=pt]').map((i, ele) => {
+		let att = ele.getAttribute("text");
+
+		let pt_id = Number(att.substr(2));
+		let pt = Playtype.from_id(pt_id);
+		ele.innerText = pt_name(pt);
+	});
 }
 
 /// Update the symbols in the top left corner
@@ -282,7 +311,9 @@ function setupSettings() {
 	JasshausForm['name']['#disabled'] = true;
 	JasshausForm['card_lang']['#onchange'] = (lang) => {
 		settings.card_lang = lang;
-		hand.reloadContent();
+
+		updateCardskin();
+		updatePlaytypeSRC();
 		updateRoundDetails();
 	};
 	JasshausForm['cardclicks']['#onchange'] = (c) => hand.enable_clicks = c;

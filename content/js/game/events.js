@@ -87,22 +87,17 @@ async function FUNC_Pass(u) {
 
 async function FUNC_PlayCard(card){
 	let curplr = game.current_player;
+	let isbest = game.would_card_beat(card);
 
 	let playedcards = Cardset.from_list(game.get_playedcards());
 	playedcards.insert(card);
 
 	game.play_card(card);
 
-	let isbest = false;
-	if(game.bestcard) {
-		if(objEquals(game.bestcard, card)) isbest = true;
-	} else {
-		if(game.current_player == curplr) isbest = true;
-	}
-
-	if(carpet.get_num_cards() == game.players.length) carpet.clean();
 	carpet.playCard(card, curplr, isbest);
-	if(carpet.get_num_cards() == game.players.length) {
+
+	let newturn = game.played_cards.length == 0;
+	if(newturn) {
 		if(game.setting.allow_table_shows) {
 			let shows = playedcards.get_shows();
 			let sum = 0;
@@ -113,16 +108,15 @@ async function FUNC_PlayCard(card){
 		updatePoints();
 	}
 
-	// ---
-
-	$("#showButton").display(false);
+	// Handle Marriage
 	if(game.marriage.hasOwnProperty('PlayedBoth') && !said_marriage) {
 		let plr = game.marriage['PlayedBoth'];
 		gameMessage("Stöck", plr);
 		said_marriage = true;
 	}
 
-	if(game.should_end() || game.cards_played == 36) {
+	// Check if round ended
+	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		setTimeout(() => {
 			openSummary();
@@ -131,9 +125,13 @@ async function FUNC_PlayCard(card){
 		}, 2000);
 	} else {
 		if( game.current_player == wshandler.own.pid ) handleOnTurn();
-		else hand.setIllegal();
+		else {
+			hand.setIllegal();
+			$("#showButton").display(false);
+		}
 		updateCurrentPlayer(game.current_player);
 	}
+
 	updateRoundDetails();
 }
 

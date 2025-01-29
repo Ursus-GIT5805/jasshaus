@@ -11,10 +11,10 @@ function startAnnounce(){
 	let pts = announceWindow.find("#announcePT").html("");
 	let cpts = announceWindow.find("#announcePTCol").html("");
 
-	let button = (text, src, click) => $("<div>")
+	let button = (text, src, click, atext=null, imgsrc=null) => $("<div>")
 		.click(click)
-		.append( $("<img>").attr("src", src) )
-		.append( $("<a>").text(text) );
+		.append( $("<img>").attr("src", src).attr("imgsrc", imgsrc) )
+		.append( $("<a>").text(text).attr("text", atext) );
 
 	// Display Playtypes
 	for(let id = 0 ; id < 14 ; id++) {
@@ -27,7 +27,8 @@ function startAnnounce(){
 		if(mult != 1) title += " (" + mult + "x)";
 
 		// Create Button
-		let but = button(title, pt_img_url(pt), () => announce(pt));
+		let ident = "pt" + id;
+		let but = button(title, pt_img_url(pt), () => announce(pt), ident, ident);
 
 		// Append it
 		if(pt.hasOwnProperty("Color")) cpts.append(but);
@@ -76,6 +77,11 @@ function openSummary() {
 	for(let team_id in game.teams) {
 		let team = game.teams[team_id];
 
+		let plr_mar = game.player_with_played_marriage();
+		let got_marriage = plr_mar && game.players[plr_mar].team_id == team_id;
+		let marriage_title = "";
+		if(got_marriage) marriage_title = " (Stöck)"
+
 		let bef = team.points - team.won_points - team.show_points;
 		let plr_id = Array.from(game.get_players_of_team(team_id));
 		let plrs = plr_id.map((id) => names[id] || "???")
@@ -86,7 +92,7 @@ function openSummary() {
   <div style="font-size: 2em;">` + plrs.join(" & ") + `</div>
   <div><a style="float: left;">Beginn</a> <a style="float: right;">` + bef + `</a></div>
   <div><a style="float: left;">Stich</a> <a style="float: right;">+` + team.won_points + `</a></div>
-  <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + `</a></div>
+  <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + marriage_title + `</a></div>
   <div>----------</div>
   <div style="font-size: 1.5em;">
    <a style="float: left;">Endstand</a> <a style="float: right;">` + team.points + `</a></div>
@@ -101,7 +107,9 @@ function openSummary() {
 			let div = $("<div>");
 			for(let number = 0 ; number < 9 ; number++){
 				let card = Card.new(color, number);
-				let img = $("<img>").attr("src", card_get_img_url(card));
+				let img = $("<img>")
+					.attr("src", card_get_img_url(card))
+					.attr("imgsrc", "card" + get_card_id(card));
 				if(!woncards.contains(card)) img.css("filter", "brightness(50%)");
 				div.append(img);
 			}
@@ -117,8 +125,9 @@ function openSummary() {
 
 $("#closeSummary").click((e) => {
 	$("#roundWindow").display(false);
-	$('*[text="game_rounds"]').text(game.round+1);
+	$("#roundSummary").html("")
 
+	$('*[text="game_rounds"]').text(game.round+1);
 	updatePoints();
 	updateRoundDetails();
 	updateHand();

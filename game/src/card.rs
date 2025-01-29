@@ -61,12 +61,10 @@ pub fn all_cards() -> Vec<Card> {
         .collect()
 }
 
-
-/*pub enum ShowType {
-Same { number: u8 },
-Marriage { color: u8 },
-Range { color: u8, number: u8, length: u8 },
-}*/
+#[wasm_bindgen]
+pub fn get_card_id(card: Card) -> u8 {
+	card.get_id()
+}
 
 /// Standard show
 /// Contains the starting point (color, number) and the type of the show

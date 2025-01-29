@@ -48,11 +48,17 @@ class Hand {
 
 	/// Append a new card
 	appendCard(info) {
-		let card = new HandCard(info, this.contentHandler);
+		let card = new HandCard(info);
+		card.ele = this.createCardElement(info);
 
+		this.cards.push(card);
+		this.container.appendChild(card.ele);
+	}
+
+	createCardElement(info) {
 		let ele = this.contentHandler(info);
-		ele.draggable = true;
 
+		ele.draggable = true;
 		ele.onclick = (ev) => {
 			if(this.selecting) {
 				card.selected = !card.selected;
@@ -91,11 +97,7 @@ class Hand {
 			this.container.style['border-color'] = "#000000";
 		}
 
-		ele.style["z-index"] = this.cards.length;
-		card.ele = ele;
-
-		this.cards.push(card);
-		this.container.appendChild(card.ele);
+		return ele;
 	}
 
 	/// Clear the hand
@@ -131,7 +133,10 @@ class Hand {
 	/// Reload the cards content
 	reloadContent() {
 		for(let card of this.cards) {
-			card.ele = this.contentHandler(this.card.info);
+			let parent = card.ele.parentNode;
+			let new_ele = this.createCardElement(card.info);
+			parent.replaceChild(new_ele, card.ele);
+			card.ele = new_ele;
 			this.handleLegalityEffect(card.ele, card.legal);
 		}
 	}

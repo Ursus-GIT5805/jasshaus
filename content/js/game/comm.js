@@ -235,11 +235,14 @@ class CommunicationHandler {
 			.css("border-color", "lime");
 
 		ele.click(() => {
-			if(this.micmuted) ele.css("border-style", "solid");
-			else ele.css("border-style", "none");
-			this.localstream.getAudioTracks()[0].enabled = this.micmuted;
-
 			this.micmuted = !this.micmuted;
+
+			this.localstream.getAudioTracks()[0].enabled = !this.micmuted;
+			if(this.micmuted) {
+				ele.css("border-style", "none").css("opacity", 0.6);
+			} else {
+				ele.css("border-style", "solid").css("opacity", 1.0);
+			}
 		});
 
 		return ele;

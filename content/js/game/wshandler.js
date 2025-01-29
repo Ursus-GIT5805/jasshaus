@@ -38,7 +38,6 @@ class GameClient {
 			if(head == "0") head = obj;
 
 			// Run the function related to the header
-			console.log(obj);
 			this["FUNC_" + String(head)]( obj[head] );
 		}
 

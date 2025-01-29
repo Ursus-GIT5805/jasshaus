@@ -113,7 +113,7 @@ impl Game {
 
 			passed: 0,
 
-            setting: setting,
+            setting,
         }
     }
 
@@ -180,7 +180,7 @@ impl Game {
 		hand.insert(king);
 	}
 
-	/// Returns the player who can still get the marriage
+	/// Returns the player who can still play the marriage
 	pub fn player_with_marriage(&self) -> Option<usize> {
 		let trumpf = match self.ruleset.playtype {
 			Playtype::Color(col) => col,
@@ -206,11 +206,17 @@ impl Game {
 		}
 	}
 
+	/// Returns the player who HAS played the marriage
+	pub fn player_with_played_marriage(&self) -> Option<usize> {
+		match self.marriage {
+			MarriageState::PlayedBoth(plr) => Some(plr),
+			_ => None,
+		}
+	}
+
 	/// Handles marriage
     pub fn handle_marriage(&mut self) {
-		if !self.setting.allow_marriage {
-			return;
-		}
+		if !self.setting.allow_marriage { return; }
 
 		let plr = match self.player_with_marriage() {
 			Some(c) => c,
@@ -274,6 +280,31 @@ impl Game {
         }
     }
 
+	// Handle events at the end of a round
+	fn end_round(&mut self) {
+		// The team which won the last turn
+		let last_team = self.players[self.current_player].team_id;
+		self.add_points(last_team, self.setting.last_points);
+
+		if let Playtype::Molotow = self.ruleset.playtype {
+			// It's important to add the points of eights if no trumpf has been decided
+			match self.ruleset.active {
+				Playtype::Color(_) => {},
+				_ => {
+					for tid in 0..self.teams.len() {
+						let num = self.teams[tid].won.count_number(2) as i32;
+						self.add_points(tid, num * 8);
+					}
+				}
+			}
+		}
+
+		// When this team won ALL cards: Extra points!
+		if self.teams[last_team].won.len() == self.cards_distributed() {
+			self.add_points(last_team, self.setting.match_points);
+		}
+	}
+
 	// Handle events at the end of a turn
     fn end_turn(&mut self) {
 		let points = self.played_cards
@@ -285,9 +316,12 @@ impl Game {
         self.current_player = self.best_player;
 		self.teams[best_team].won.merge(Cardset::from(self.played_cards.clone()));
 
+		// Also check here, this may be relevant for molotow (but rare)
+		if self.should_end() { return; }
+
         for rule in self.setting.point_recv_order.clone() {
             match rule {
-                PointRule::Play => self.add_points(best_team as usize, points),
+                PointRule::Play => self.add_points(best_team, points),
                 PointRule::Show => self.handle_shows(),
                 PointRule::Marriage => self.handle_marriage(),
                 PointRule::TableShow => self.handle_table_show(),
@@ -299,35 +333,8 @@ impl Game {
 		self.bestcard = None;
 		self.turncolor = None;
 
-		if self.round_ended() {
-			 // The team which won the last turn
-			let last_team = self.players[self.current_player].team_id;
-			// Last team gets extra points
-			self.add_points(last_team, self.setting.last_points);
-
-			// It's important to add the eights if no trumpf has been decided
-			if let Playtype::Molotow = self.ruleset.playtype {
-				match self.ruleset.active {
-					Playtype::Color(_) => {},
-					_ => {
-						for tid in 0..self.teams.len() {
-							// Count the number of eights
-							let num = self.teams[tid].won.count_number(2) as i32;
-							self.add_points(tid, num * 8);
-						}
-					}
-				}
-			}
-
-			// When this team won ALL cards: Extra points!
-			if self.teams[last_team].won.len() == self.cards_distributed() {
-				self.add_points(last_team, self.setting.match_points);
-			}
-		}
-
-        if !self.should_end() {
-			self.update_ruletype();
-		}
+		if self.round_ended() { self.end_round(); }
+        if !self.should_end() { self.update_ruletype(); }
     }
 
 	fn handle_molotow(&mut self, card: Card) {
@@ -336,10 +343,10 @@ impl Game {
 			None => return,
 		};
 
-		// Switch the active Playtype, only if it's the first color not held
+		// Switch the active Playtype, only if it's the first color not kept
 		if card.color == turncolor { return; }
-		let trumpf = card.color;
 
+		let trumpf = card.color;
 		for tid in 0..self.teams.len() {
 			// When a teams has the nine: extra (14-0) points
 			if self.teams[tid].won.contains(Card::new(trumpf, 3)) {
@@ -369,7 +376,6 @@ impl Game {
 
     // Action functions ------
 
-	/// Play a card
     pub fn play_card(&mut self, card: Card) {
 		if let Playtype::Molotow = self.ruleset.playtype {
 			match self.ruleset.active {
@@ -525,7 +531,7 @@ impl Game {
         &mut self.teams[self.players[plr_id].team_id]
     }
 
-    // Add points to a given team (or the other on misere)
+    /// Add points to a given team, automatically handling misere
     fn add_points(&mut self, team_id: usize, points: i32) {
         let real_team_id = if self.ruleset.misere {
             (team_id + 1) % self.teams.len()
@@ -544,16 +550,18 @@ impl Game {
         team.won_points += p;
     }
 
+	/// Returns the number of cards that got distributed
 	pub fn cards_distributed(&self) -> usize {
 		NUM_CARDS - (NUM_CARDS % self.players.len())
 	}
 
+	/// Returns true if the round ended
 	pub fn round_ended(&self) -> bool {
 		self.cards_played == self.cards_distributed()
 	}
 
-    // The game should end if any team has reached the number of points for winning
-    pub fn should_end(&self) -> bool {
+    /// Returns true if the round should end now
+	pub fn should_end(&self) -> bool {
 		match self.setting.end_condition {
 			EndCondition::Points(maxp) => self.teams
 				.iter()
@@ -608,7 +616,7 @@ impl Game {
 		}
     }
 
-    // True when the given card is playable
+    /// Returns true when the given card is legal to play
     pub fn is_legal_card(&self, hand: &Cardset, card: Card) -> bool {
         if !hand.contains(card) {
             return false;
@@ -649,6 +657,23 @@ impl Game {
         // Basic: You must hold the color if you can
         turncolor == card.color || !hand.has_color(turncolor)
     }
+
+	/// Returns true when the given card would beat the current best card
+	pub fn would_card_beat(&self, card: Card) -> bool {
+		let bcrd = match self.bestcard {
+			Some(c) => c,
+			None => return true,
+		};
+
+		// On Molotow, if updown is active, it could also be better
+		if self.ruleset.playtype == Playtype::Molotow && self.ruleset.active == Playtype::Updown {
+			if bcrd.color != card.color {
+				return true;
+			}
+		}
+
+		self.ruleset.is_card_stronger(bcrd, card)
+	}
 
 	/// Returns true when the given player can show
     pub fn can_show(&self, player_id: usize) -> bool {
@@ -697,6 +722,7 @@ impl Game {
             .expect("This should not happen...")
     }
 
+	/// Rank the teams from best to worst, starting with the best
 	pub fn rank_teams(&self) -> Vec<usize> {
 		let mut v: Vec<_> = self.teams
 			.iter()
