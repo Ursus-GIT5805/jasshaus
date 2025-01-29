@@ -8,6 +8,8 @@
 class HostData {
 	constructor(name) {
 		this.name = name;
+		this.allow_rtc = true;
+		this.mute_players = false;
 	}
 }
 
@@ -26,7 +28,7 @@ class GameClient {
 			let ICEHandler = (candidate, id) =>
 				this.send({ "RtcSignaling": [JSON.stringify(candidate), "ICECandidate", id] });
 
-			await this.comm.initVoiceChat(answerHandler, ICEHandler);
+			if(data.allow_rtc) await this.comm.initVoiceChat(answerHandler, ICEHandler);
 			this.send({ "RtcStart": 0 });
 
 			if(this.onvoiceinit) this.onvoiceinit();
@@ -50,6 +52,7 @@ class GameClient {
 		this.socket = socket;
 		this.voting = null;
 		this.comm = new CommunicationHandler();
+		this.comm.automute = this.own.mute_players;
 	}
 
 	send( data ){
@@ -90,7 +93,6 @@ class GameClient {
 		let [client_id, player_id] = data;
 		this.comm.newClient(client_id);
 		this.comm.clients[client_id].player_id = player_id;
-		// this.comm.clients[client_id].muted = settings.mute_players;
 
 		let def = "Unnamed" + client_id
 		this.comm.setName(def, client_id);

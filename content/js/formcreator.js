@@ -274,6 +274,8 @@ function createForm(ident, entry, def=null) {
 		input.ele = div;
 	}
 
+	if(entry.hasOwnProperty('#default')) input.set(entry['#default']);
+
 	if(def) input.set(def);
 	if(!input) return NULL_FORM;
 	return input;

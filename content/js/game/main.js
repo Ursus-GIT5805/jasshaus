@@ -87,6 +87,9 @@ function toggleFullscreen() {
 // Websocket handling
 function startWS () {
 	let host = new HostData(settings.name);
+	host.mute_players = settings.mute_players;
+	host.allow_rtc = settings.allow_rtc;
+
 	wshandler = new GameClient(WS_URL, host);
 
 	wshandler.oninit = (pid, num_players) => {
@@ -108,7 +111,6 @@ function startWS () {
 	}
 
 	wshandler.onplayergreet = (pid) => PlayerMSG_Text(getGreet(), pid);
-
 
 	// Append Mic/Chat button upon load
 	let ctnr = $("#botrightbuttons")

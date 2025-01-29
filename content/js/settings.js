@@ -13,6 +13,12 @@ var JasshausForm = {
 		"#type": "checkbox",
 		"#default": false,
 	},
+	"allow_rtc": {
+		"#title": "WebRTC aktivieren",
+		"#description": "WebRTC wird benötigt, um den VoiceChat zu benutzen.",
+		"#type": "checkbox",
+		"#default": true,
+	},
 	"card_lang": {
 		"#title": "Kartentyp",
 		"#option": true,
@@ -61,13 +67,13 @@ function promptName() {
 
 function getDefaultSettings() {
 	let out = {};
-	for(let key in JasshausForm) out[key] = JasshausForm[key].default;
+	for(let key in JasshausForm) out[key] = JasshausForm[key]['#default'];
 	return out;
 }
 
 function complementSettings(setting) {
 	for(let key in JasshausForm) {
-		if(!setting.hasOwnProperty(key)) setting[key] = JasshausForm[key].default;
+		if(!setting.hasOwnProperty(key)) setting[key] = JasshausForm[key]['#default'];
 	}
 	return setting;
 }

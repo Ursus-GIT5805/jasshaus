@@ -27,6 +27,8 @@ class CommunicationHandler {
 	constructor(seats) {
 		this.clients = {};
 		this.num_clients = 0;
+
+		this.automute = false;
 	}
 
 	/// Sets and update the UI for the given name
@@ -162,14 +164,20 @@ class CommunicationHandler {
 			entry.append( $("<h1>").attr("text", "clientName" + id) );
 
 			let mutediv = $('<div><a>Muted: </a></div>');
-			let box = $('<input type="checkbox"/>').click((e) => {
-				let mute = !this.clients[id].muted;
+			let box = $('<input type="checkbox"/>')
+			box.change((e) => {
+				let mute = box.is(":checked");
 				let name = this.clients[id].name;
 				this.clients[id].muted = mute;
 
 				if(mute) this.chatMessage(MessageType.System, "You have muted " + name);
 				else this.chatMessage(MessageType.System, "You have unmuted " + name);
 			});
+
+			if(this.automute) {
+				this.clients[id].muted = true;
+				box.attr("checked", true);
+			}
 			mutediv.append(box)
 			entry.append(mutediv);
 
