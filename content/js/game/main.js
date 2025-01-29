@@ -1,107 +1,115 @@
+const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
+
+let WS_URL = "wss://" + window.location.host + "/ws"
+if(DEV_MODE){
+    if(window.location.protocol == "http:") WS_URL = "ws://" + window.location.hostname + ":7999/ws";
+    else WS_URL = "ws://127.0.0.1:7999/ws";
+}
+
 var settings = null;
 var form = null;
 var game = null;
-var comm = null;
-var voting = null;
-var players = null;
-var carpet = null;
-var ownid = 0;
+var wshandler = null;
 
-// Some QoL one-liners
+//  ===== QoL functions =====
 jQuery.fn.vis = function(v){ return this.css('visibility', ['hidden', 'visible'][+v]); }
 jQuery.fn.visible = function(){ return this.css('display') != "none"; }
 jQuery.fn.display = function(v){ return this.css('display', ['none', 'block'][+v]); }
 
-var hand = new Hand(
-	document.getElementById("cards"),
-	(card) => {
-		let img = document.createElement("img");
-		img.src = card_get_img_url(card);
-		return img;
-	},
-	(card) => {
-		if( $("#announceWindow").visible() ) return false; // Cancel
-		ev_play_card(card);
-		return true;
-	}
-);
-
+/// Return true if two objects are equal in their properties
 function objEquals(a, b) {
 	if(typeof a !== typeof b) return false;
-
 	if(typeof a === 'object') {
 		if( Object.keys(a).length !== Object.keys(b).length ) return false;
 		for(let key in a) {
-			if(!b.hasOwnProperty(key) || a[key] !== b[key]) return false;
+			if(!b.hasOwnProperty(key) || !objEquals(a[key], b[key])) return false;
 		}
 	} else {
 		return a === b;
 	}
-
 	return true;
 }
 
-function card_get_img_url(card) {
-	let pref = "de";
-	if(settings.card_lang == "french") pref = "fr";
-	return "img/" + pref + "/" + card.color + card.number + ".png";
+// ===== Helpers for events =====
+
+/// Handler for when the host is on turn
+function handleOnTurn() {
+	if(game.should_end()) return;
+
+	let cardset = Cardset.from_list( hand.getCards() );
+	hand.setLegality((card) => game.is_legal_card(cardset, card));
+
+	let display_button = game.get_turn() == 0 && game.setting.allow_shows;
+	$("#showButton").display(display_button);
 }
 
-function setupSettings() {
-	settings = getSettings();
-	if(!settings) {
-		settings = getDefaultSettings();
-		settings.name = promptName();
+var handhash = null;
+/// Update the hand, if there are new cards to get
+function updateHand() {
+	if(handhash) {
+		let cards = new Cardset( BigInt(handhash) ).as_vec();
+		hand.setCards(cards);
+		hand.setIllegal()
+		handhash = null;
 	}
-	settings = complementSettings(settings);
+}
 
-	JasshausForm['name']['#disabled'] = true;
-	JasshausForm['card_lang']['#onchange'] = (lang) => {
-		settings.card_lang = lang;
-		hand.reloadContent();
-		updateRoundDetails();
-	};
-	JasshausForm['cardclicks']['#onchange'] = (c) => hand.enable_clicks = c;
+/// Display a gameplay message, as bubble and in chat
+function gameMessage(msg, plr) {
+	let name = wshandler.comm.getPlayerName(plr);
+	let chatmsg = "[" + name + "]: " + msg;
 
-	form = createForm("Einstellungen", JasshausForm, settings);
-	$("#settings").append(form.ele);
+	PlayerMSG_Text(msg, plr);
+	wshandler.comm.chatMessage(MessageType.Info, chatmsg);
+}
 
-	// Setup events and DOM elements
-	let button = $('<img class="ActionButton">')
-		.attr("src", "img/settings.svg")
-		.click(() => $("#settingsWindow").toggle());
+/// Get a random greet
+function getGreet() {
+	let choices = ["Grüezi", "Guten Tag", "Heyho", "Hallo"];
+	let index = Math.floor(Math.random() * choices.length);
+	return choices[index];
+}
 
-	$("#closeSettings").click(() => {
-		button.click();
-		settings = form.get();
-	});
-	$("#botleftbuttons").append(button);
+
+//  ===== EventHandlers =====
+
+// ===== Setup =====
+
+// Websocket handling
+function startWS () {
+	let host = new HostData(settings.name);
+	wshandler = new GameClient(WS_URL, host);
+
+	wshandler.oninit = (pid, num_players) => {
+		setupPlayerboxes(pid, num_players);
+
+		carpet = new Carpet(num_players, 0);
+		carpet.rotate_by_players(pid);
+	}
+	wshandler.onchatmessage = PlayerMSG_Text;
+
+	wshandler.onevent = (ev) => {
+		let head = Object.keys(ev)[0];
+		if(head == "0") head = ev;
+
+		// Run the corresponding event handler
+		window["FUNC_" + String(head)]( ev[head] );
+	}
+
+	wshandler.onplayergreet = (pid) => PlayerMSG_Text(getGreet(), pid);
+
+
+	// Append Mic/Chat button upon load
+	let ctnr = $("#botrightbuttons")
+	wshandler.comm.onchatinit = () => ctnr.append( wshandler.comm.createChatbutton() );
+	wshandler.comm.onvoiceinit = () => ctnr.append( wshandler.comm.createMicbutton() );
+
+	if(DEV_MODE) console.log("Started WS");
 }
 
 function afterModule() {
 	if(DEV_MODE) console.log("Loaded WASM module!");
 
-	comm = new CommunicationHandler();
-	comm.initChat((msg) => send({ "ChatMessage": [msg, 0] }));
-
-	setupShowButton();
 	setupSettings();
 	startWS();
-}
-
-function setupShowButton() {
-	let showButton = $("#showButton");
-	showButton.click(function () {
-		if(hand.selecting) {
-			let cards = hand.get_selected();
-			let show = parse_show(cards);
-			if(show) ev_play_show(show);
-			else players.setMessage("Dies ist kein Weis!", ownid, 2000);
-			showButton.text("Weisen");
-		} else {
-			showButton.text("Fertig")
-			}
-
-		hand.setSelectMode();
-	});
 }

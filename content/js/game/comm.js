@@ -17,6 +17,7 @@ class Client {
 	}
 
 	getShortName() {
+		if(this.name.length == 0) return "???";
 		return this.name.substr(0, 3);
 	}
 }
@@ -28,12 +29,43 @@ class CommunicationHandler {
 		this.num_clients = 0;
 	}
 
+	/// Sets and update the UI for the given name
 	setName(name, cid) {
 		if(cid in this.clients) {
 			this.clients[cid].name = name;
-			$('*[text="clientName' + cid + '"]')
-				.map((_,ele) => ele.innerText = name);
+			let pid = this.clients[cid].player_id;
+
+			$('*[text="clientName' + cid + '"]').text(name);
+			$('*[text="player' + pid + '"]').text(name);
+
+			let shortname = this.clients[cid].getShortName();
+			$('*[text="short_clientName' + cid + '"]').text(shortname);
+			$('*[text="short_player' + pid + '"]').text(shortname);
 		}
+	}
+
+	/// Update the UI for the player/client names
+	updateNames() {
+		for(let cid in this.clients) this.setName(this.clients[cid].name, cid);
+	}
+
+	/// Return the name of the client with the given player_id
+	getPlayerName(pid) {
+		for(let cid in this.clients) {
+			if(this.clients[cid].player_id == pid) {
+				return this.clients[cid].player_id;
+			}
+		}
+		return null;
+	}
+
+	/// Returns an object in the form obj[player_id] = name;
+	getPlayerNames() {
+		let out = {};
+		for(let cid in this.clients) {
+			out[this.clients[cid].player_id] = this.clients[cid].name;
+		}
+		return out;
 	}
 
 	initChat(onMessageCallback) {
@@ -71,6 +103,7 @@ class CommunicationHandler {
 		});
 
 		this.chatMessage(MessageType.System, "This is the chat. Be respectful!");
+		if(this.onchatinit) this.onchatinit();
 		this.chatInit = true;
 		$(document.body).append(chat);
 	}
@@ -105,6 +138,7 @@ class CommunicationHandler {
 		this.RTCanswerCallback = answerCallback;
 		this.ICEcandidateHandler = ICEcandidateCallback;
 		this.micmuted = false;
+		if(this.onvoiceinit) this.onvoiceinit();
 		this.voiceChatInit = true;
 	}
 
@@ -142,6 +176,7 @@ class CommunicationHandler {
 	}
 
 	removeClient(id) {
+		this.setName("", id);
 		this.num_clients -= 1;
 		$("#clientSettings" + id).remove();
 		delete this.clients[id];
@@ -149,8 +184,11 @@ class CommunicationHandler {
 
 	// Display a chatmessage
 	chatMessage(type, message) {
-		let div = $('<div>').addClass(type).text(message);
+		let div = message;
+		if(typeof message === 'string') div = $('<div>').addClass(type).text(message);
+
 		$("#chatHistory").append(div).scrollTop($("#chatHistory").height());
+		if(this.onchatmessage) this.onchatmessage(type, message);
 	}
 
 	// Toggle the chatWindow

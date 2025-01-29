@@ -88,7 +88,7 @@ where
 			.map(|(i,client)| (client.name.clone(), *i, client.player_id))
 			.collect();
 		let id = self.clients.register(plr_id, ws_tx);
-        self.clients.send_to(id, PlayerID::<E>(plr_id, self.game.get_num_players())).await;
+        self.clients.send_to(id, PlayerID::<E>(id, plr_id, self.game.get_num_players())).await;
         self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
             .await;
 

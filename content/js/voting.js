@@ -31,10 +31,12 @@ class Voting {
 			this.buttons.push(button);
 		}
 
-		$("body").append($("<div>")
-						 .attr("id", "voteWindow")
-						 .append( $("<h2>").text(text) )
-						 .append( ele ));
+		this.ele = $("<div>")
+			.attr("id", "voteWindow")
+			.append( $("<h2>").text(text) )
+			.append( ele );
+
+		$("body").append(this.ele);
 	}
 
 	agreeTo(option, cid=null) {

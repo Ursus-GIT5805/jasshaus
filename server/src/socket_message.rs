@@ -35,7 +35,7 @@ pub enum SocketMessage<T> {
 	ClientIntroduction(String,usize),
 	JoinedClients(Vec<(String,usize,usize)>),
 
-	PlayerID(usize, usize),
+	PlayerID(usize, usize, usize),
 	ChatMessage(String,usize),
 
     PlayerOrder(Vec<(usize,usize)>),

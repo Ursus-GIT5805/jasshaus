@@ -155,7 +155,7 @@ class Hand {
 	}
 
 	/// Choose whether or not to start selecting cards instead of playing
-	setSelectMode(select) {
+	toggleSelectMode(select) {
 		if(select == undefined) this.selecting = !this.selecting;
 		else this.selecting = select;
 
@@ -170,6 +170,8 @@ class Hand {
 				this.handleLegalityEffect(card.ele, card.legal);
 			}
 		}
+
+		return this.selecting;
 	}
 
 	/// Get all currently selected cards

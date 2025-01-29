@@ -48,7 +48,7 @@ function startAnnounce(){
 	}
 
 	// Display Pass Button
-	if(game.can_pass(ownid) && game.setting.allow_pass) {
+	if(game.can_pass(wshandler.own.pid) && game.setting.allow_pass) {
 		let but = button("Schieben", PASS_IMG, pass);
 		passmisere.append(but);
 	}
@@ -71,13 +71,14 @@ function pass() {
 // Round summary ---
 function openSummary() {
 	let roundSummary = $("#roundSummary").html("");
+	let names = wshandler.comm.getPlayerNames();
 
 	for(let team_id in game.teams) {
 		let team = game.teams[team_id];
 
 		let bef = team.points - team.won_points - team.show_points;
 		let plr_id = Array.from(game.get_players_of_team(team_id));
-		let plrs = plr_id.map((id) => players.getName(id))
+		let plrs = plr_id.map((id) => names[id] || "???")
 
 		let ele = $(`
 <div class="SummaryTeam">
@@ -124,18 +125,21 @@ $("#closeSummary").click((e) => {
 
 	if(game.should_end()) openEndwindow();
 	else {
-		players.setCurrent(game.current_player);
-		if(game.current_player == ownid) startAnnounce();
+		updateCurrentPlayer(game.current_player);
+		if(game.current_player == wshandler.own.pid) startAnnounce();
 	}
 });
 
 // Endresult window ---
 
 function openEndwindow() {
-	players.setCurrent(null);
+	updateCurrentPlayer(null);
 
 	let teams = game.rank_teams();
-	let container = $("#endTeams").html("");
+	let container = $("#endTeams");
+	let names = wshandler.comm.getPlayerNames();
+
+	container.html("");
 
 	for(let i = 0 ; i < teams.length ; i++) {
 		let tid = teams[i];
@@ -143,9 +147,11 @@ function openEndwindow() {
 
 		let place = i+1;
 		let plr_ids = Array.from( game.get_players_of_team(tid) );
-		if(plr_ids.includes(ownid)) $("#endResult").text("Du bist " + place + ". Platz!");
 
-		let name = plr_ids.map((pid) => players.getName(pid)).join(", ");
+		// Update the title
+		if(plr_ids.includes(wshandler.own.pid)) $("#endResult").text("Du bist " + place + ". Platz!");
+
+		let name = plr_ids.map((pid) => names[pid] || "???").join(", ");
 		let title = place + ". " + name + " (" + points + ")";
 
 		let ele = $("<h" + place + ">").text(title);
