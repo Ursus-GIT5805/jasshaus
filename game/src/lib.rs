@@ -404,9 +404,11 @@ impl Game {
 		self.cards_played += 1;
         self.players[self.current_player].hand.erase(card);
 
-        if let Playtype::Color(trumpf) = self.ruleset.playtype {
+        if let Playtype::Color(trumpf) = self.ruleset.active {
 			// If the given card is a trumpf queen or king, handle marriage
-			if card.color == trumpf && (card.number == 6 || card.number == 7) {
+			if card.color == trumpf && (card.number == 6 || card.number == 7) &&
+				Playtype::Everything != self.ruleset.playtype
+			{
 				let plr = self.current_player;
 
 				match self.marriage {
