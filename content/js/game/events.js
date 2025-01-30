@@ -11,7 +11,7 @@ async function FUNC_GameSetting(setting) {
 }
 
 async function FUNC_GameState(data) {
-	let [state, cardset] = data;
+	let [state, cardset, shows] = data;
 	game = new Game(state.setting);
 
 	handhash = cardset.list;
@@ -47,6 +47,12 @@ async function FUNC_GameState(data) {
 		if(!game.is_announced()) startAnnounce();
 		else handleOnTurn();
 	}
+
+	for(let show of shows) {
+		let row = showToFlexbox(show);
+		$("#showqueue").append(row);
+		shown.add(JSON.stringify(show));
+	}
 }
 
 async function FUNC_Announce(ann) {
@@ -59,6 +65,7 @@ async function FUNC_Announce(ann) {
 
 	gameMessage(pt_name(pt, misere), game.current_player);
 
+	shown = new Set();
 	said_marriage = false;
 	game.announce(pt, misere);
 
@@ -108,6 +115,7 @@ async function FUNC_PlayCard(card){
 
 	// Check if round ended
 	$("#showButton").display(false);
+	$("#turnindicator").display(false);
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		setTimeout(() => {
@@ -143,23 +151,9 @@ async function FUNC_ShowList(list) {
 
 		// Display each show on a new row
 		for(let show of shows) {
-			let cards = show_to_cards(show);
-
-			let row = $("<div>")
-				.css("display", "flex")
-				.css("flex-direction", "row")
-				.css("flex-wrap", "nowrap");
-
-			for(let card of cards) {
-				let img = $("<img>")
-					.attr("src", card_get_img_url(card))
-					.css("height", "3em");
-				row.append(img);
-			}
-
-			// Play the show!
 			game.play_show(show, pid);
 
+			let row = showToFlexbox(show);
 			rows.append(row);
 		}
 

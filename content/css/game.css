@@ -176,6 +176,35 @@ body {
 	color: #000000;
 }
 
+#turnindicator {
+	display: none;
+	position: absolute;
+
+	border-radius: 8px;
+    border-color: #DEA487;
+    border-width: 0.5rem;
+    border-style: solid;
+    color: #FFFFFF;
+    background-color: #000000;
+
+	text-align: center;
+	max-width: 12rem;
+	overflow: auto;
+
+	z-index: 42;
+
+	margin: 1rem;
+	padding: 1rem;
+
+	bottom: 22.5vh;
+    right: 0;
+}
+
+#showqueue {
+	display: flex;
+	flex-direction: column;
+}
+
 #pleft .PlayerMSG { left: 0; }
 #pup .PlayerMSG { left: 50%; transform: translateX(-50%); }
 #pright .PlayerMSG { right: 0; }

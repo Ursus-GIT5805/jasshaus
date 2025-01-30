@@ -144,6 +144,7 @@ function setupInterface() {
 	updatePoints();
 }
 
+var shown = new Set();
 /// Setup the button to show
 function setupShowButton() {
 	let showButton = $("#showButton");
@@ -152,8 +153,27 @@ function setupShowButton() {
 			let cards = hand.get_selected();
 			let show = parse_show(cards);
 
-			if(show) ev_play_show(show);
-			else PlayerMSG_Text("Dies ist kein Weis!", null, 2000);
+			if(!show) {
+				PlayerMSG_Text("Dies ist kein Weis!", null, 2000);
+			} else {
+				let string = JSON.stringify(show);
+				let hs = Cardset.from_list( hand.getCards() );
+
+				let has_show = true;
+				try { hs.has_show(show); }
+				catch(e) { has_show = false; }
+
+				if(shown.has(string)) {
+					PlayerMSG_Text("Schon gewiesen!", null, 2000);
+				} else if( !has_show ) {
+					PlayerMSG_Text("Du kannst noch mehr weisen ;)", null, 2000);
+				} else {
+					let row = showToFlexbox(show);
+					$("#showqueue").append(row);
+					shown.add(string);
+					ev_play_show(show);
+				}
+			}
 		}
 
 		if(hand.toggleSelectMode()) showButton.text("Fertig");

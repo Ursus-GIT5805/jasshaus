@@ -46,8 +46,12 @@ function handleOnTurn() {
 	let cardset = Cardset.from_list( hand.getCards() );
 	hand.setLegality((card) => game.is_legal_card(cardset, card));
 
-	let display_button = game.get_turn() == 0 && game.setting.allow_shows;
-	$("#showButton").display(display_button);
+	let can_show = game.get_turn() == 0 && game.setting.allow_shows;
+	if(can_show) {
+		$("#showqueue").html("");
+		$("#showButton").display(true);
+	}
+	$("#turnindicator").display(true);
 }
 
 var handhash = null;
@@ -59,6 +63,24 @@ function updateHand() {
 		hand.setIllegal()
 		handhash = null;
 	}
+}
+
+/// Create a flex container with all cards from the show
+function showToFlexbox(show) {
+	let row = $("<div>")
+		.css("display", "flex")
+		.css("flex-direction", "row")
+		.css("flex-wrap", "nowrap");
+
+	let cards = show_to_cards(show);
+	for(let card of cards) {
+		let img = $("<img>")
+			.attr("src", card_get_img_url(card))
+			.css("height", "3em");
+		row.append(img);
+	}
+
+	return row;
 }
 
 /// Display a gameplay message, as bubble and in chat

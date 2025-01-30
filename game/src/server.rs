@@ -30,12 +30,11 @@ pub enum GameEvent {
     ShowList(Vec<Vec<Show>>),
     HasMarriage(usize),
 
-    GameState(Game, Cardset),
+    GameState(Game, Cardset, Vec<Show>),
     GameSetting(Setting),
 	EverythingPlaytype(Playtype),
 
     NewCards(Cardset),
-
 	StartGame(usize),
 }
 use GameEvent::*;
@@ -210,7 +209,8 @@ impl ServerRoom<GameEvent> for JassRoom {
 		if self.starts > 0 {
 			let game = self.game.clone();
             let hand = self.game.players[plr_id].hand;
-            clients.ev_send_to(plr_id, GameState(game, hand)).await;
+            let shows = self.game.players[plr_id].shows.clone();
+            clients.ev_send_to(plr_id, GameState(game, hand, shows)).await;
 		} else {
 			let setting = self.game.setting.clone();
 			clients.ev_send_to(plr_id, GameEvent::GameSetting(setting)).await;
