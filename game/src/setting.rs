@@ -217,8 +217,12 @@ impl Setting {
 					multiplier: 1,
 					passed_player_begins: false,
 				}; NUM_PLAYTYPES];
-				let mol_id = Playtype::Molotow.get_id().unwrap_or(0);
-				v[mol_id].allow = true;
+
+				let pt_id = Playtype::Molotow.get_id().unwrap_or(0);
+				match v.get_mut(pt_id) {
+					Some(c) => c.allow = true,
+					None => {},
+				}
 				v
 			},
 

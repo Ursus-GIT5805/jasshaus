@@ -57,7 +57,7 @@ class CommunicationHandler {
 	getPlayerName(pid) {
 		for(let cid in this.clients) {
 			if(this.clients[cid].player_id == pid) {
-				return this.clients[cid].player_id;
+				return this.clients[cid].name;
 			}
 		}
 		return null;
@@ -73,8 +73,7 @@ class CommunicationHandler {
 	}
 
 	initChat(onMessageCallback) {
-		let chat = $(`
-                      <div id="chatWindow">
+		let chat = $(`<div id="chatWindow">
                        <div id="chatClose">Close</div>
                        <div id="chat">
                         <input id="chatInput" placeholder="Input"/>

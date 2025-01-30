@@ -30,14 +30,13 @@ pub enum GameEvent {
     ShowList(Vec<Vec<Show>>),
     HasMarriage(usize),
 
-    SetAnnouncePlayer(usize),
     GameState(Game, Cardset),
     GameSetting(Setting),
 	EverythingPlaytype(Playtype),
 
     NewCards(Cardset),
 
-	StartGame,
+	StartGame(usize),
 }
 use GameEvent::*;
 
@@ -66,7 +65,7 @@ impl JassRoom {
                 .unwrap_or(0),
             StartingCondition::Random => {
                 let mut rng = rand::thread_rng();
-                rng.gen::<usize>() % self.game.players.len()
+				rng.gen_range(0..self.game.players.len())
             }
         }
     }
@@ -183,29 +182,27 @@ impl ServerRoom<GameEvent> for JassRoom {
 	type Err = GameError;
 
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
-        let annplr = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
+		let ranking = self.game.rank_teams();
+		self.game = Game::new( Setting::schieber() );
+        self.start_round(clients).await;
+
+		let annplr = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
             self.get_first_announceplayer()
         } else {
             let mut rng = rand::thread_rng();
-			let worst_tid = *self.game.rank_teams().last().unwrap_or(&0);
+			let worst_tid = ranking.last().unwrap_or(&0);
 
-			*self.game.get_players_of_team(worst_tid)
+			*self.game.get_players_of_team(*worst_tid)
 				.choose(&mut rng)
 				.unwrap_or(&0)
 		};
-
-		self.game = Game::new( Setting::schieber() );
 
 		self.game.announce_player = annplr;
 		self.game.current_player = self.game.announce_player;
 
 		self.starts += 1;
-        self.start_round(clients).await;
 
-        clients.ev_send_to_all(StartGame).await;
-        clients.ev_send_to_all(SetAnnouncePlayer(self.game.announce_player))
-            .await;
-
+        clients.ev_send_to_all(StartGame(self.game.announce_player)).await;
 		Ok(())
 	}
 

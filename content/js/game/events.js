@@ -49,15 +49,6 @@ async function FUNC_GameState(data) {
 	}
 }
 
-async function FUNC_SetAnnouncePlayer(plr) {
-	game.announce_player = plr;
-	game.current_player = plr;
-
-	updateHand();
-	updateCurrentPlayer(game.current_player);
-    if( plr == wshandler.own.pid ) startAnnounce();
-}
-
 async function FUNC_Announce(ann) {
 	let [pt, misere] = ann;
 
@@ -183,9 +174,14 @@ async function FUNC_HasMarriage(plr) {
 	game.set_marriage(plr);
 }
 
-async function FUNC_StartGame() {
+async function FUNC_StartGame(data) {
+	let plr = data;
+
 	// Create a new game
 	game = new Game(game.setting);
+
+	game.announce_player = plr;
+	game.current_player = plr;
 
 	// Close all windows
 	$(".Window").display(false);
@@ -193,8 +189,11 @@ async function FUNC_StartGame() {
 	wshandler.quitVote();
 	carpet.clean();
 
+	updateHand();
 	updatePoints();
 	updateRoundDetails();
+	updateCurrentPlayer(game.current_player);
+    if( plr == wshandler.own.pid ) startAnnounce();
 }
 
 async function FUNC_EverythingPlaytype(pt) {
