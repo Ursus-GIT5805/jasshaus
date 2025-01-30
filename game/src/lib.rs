@@ -141,10 +141,6 @@ impl Game {
 		self.bestcard = None;
 		self.passed = 0;
 		self.marriage = MarriageState::None;
-
-		// Rotate to the next player who must announce
-		self.announce_player = (self.announce_player + 1) % self.players.len();
-        self.current_player = self.announce_player;
     }
 
 	/// Play the marriage for th given player
@@ -303,6 +299,10 @@ impl Game {
 		if self.teams[last_team].won.len() == self.cards_distributed() {
 			self.add_points(last_team, self.setting.match_points);
 		}
+
+		// Rotate to the next player who must announce
+		self.announce_player = (self.announce_player + 1) % self.players.len();
+        self.current_player = self.announce_player;
 	}
 
 	// Handle events at the end of a turn
@@ -313,28 +313,31 @@ impl Game {
             .sum();
 
         let best_team = self.players[self.best_player].team_id;
-        self.current_player = self.best_player;
+
+		self.current_player = self.best_player;
 		self.teams[best_team].won.merge(Cardset::from(self.played_cards.clone()));
 
-		// Also check here, this may be relevant for molotow (but rare)
-		if self.should_end() { return; }
-
         for rule in self.setting.point_recv_order.clone() {
+			if self.should_end() { break; }
             match rule {
                 PointRule::Play => self.add_points(best_team, points),
                 PointRule::Show => self.handle_shows(),
                 PointRule::Marriage => self.handle_marriage(),
                 PointRule::TableShow => self.handle_table_show(),
             }
-			if self.should_end() { return; }
         }
 
 		self.played_cards.clear();
 		self.bestcard = None;
 		self.turncolor = None;
 
-		if self.round_ended() { self.end_round(); }
-        if !self.should_end() { self.update_ruletype(); }
+        if !self.should_end() {
+			if self.round_ended() {
+				self.end_round();
+			} else {
+				self.update_ruletype();
+			}
+		}
     }
 
 	fn handle_molotow(&mut self, card: Card) {
@@ -558,6 +561,11 @@ impl Game {
 	/// Returns true if the round ended
 	pub fn round_ended(&self) -> bool {
 		self.cards_played == self.cards_distributed()
+	}
+
+	/// Returns true if a turn just started
+	pub fn fresh_turn(&self) -> bool {
+		self.turncolor.is_none()
 	}
 
     /// Returns true if the round should end now

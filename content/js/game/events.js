@@ -116,6 +116,7 @@ async function FUNC_PlayCard(card){
 	}
 
 	// Check if round ended
+	$("#showButton").display(false);
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		setTimeout(() => {
@@ -125,10 +126,7 @@ async function FUNC_PlayCard(card){
 		}, 2000);
 	} else {
 		if( game.current_player == wshandler.own.pid ) handleOnTurn();
-		else {
-			hand.setIllegal();
-			$("#showButton").display(false);
-		}
+		else hand.setIllegal();
 		updateCurrentPlayer(game.current_player);
 	}
 

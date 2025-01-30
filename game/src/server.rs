@@ -107,7 +107,7 @@ impl JassRoom {
         self.game.play_card(card);
 
 		if self.game.get_turn() == 1 && self.game.setting.allow_shows {
-			if self.game.num_played_cards() == 0 {
+			if self.game.fresh_turn() {
 				let shows: Vec<Vec<Show>> = self
 					.game
 					.players
