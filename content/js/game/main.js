@@ -54,10 +54,9 @@ function handleOnTurn() {
 	hand.setLegality((card) => game.is_legal_card(cardset, card));
 
 	let can_show = game.get_turn() == 0 && game.setting.allow_shows;
-	if(can_show) {
-		$("#showqueue").html("");
-		$("#showButton").display(true);
-	}
+
+	$("#showqueue").html("");
+	$("#showButton").display(can_show);
 	$("#turnindicator").display(true);
 }
 
@@ -83,6 +82,7 @@ function showToFlexbox(show) {
 	for(let card of cards) {
 		let img = $("<img>")
 			.attr("src", card_get_img_url(card))
+			.attr("imgsrc", "card" + get_card_id(card))
 			.css("height", "3em");
 		row.append(img);
 	}

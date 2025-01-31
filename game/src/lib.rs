@@ -31,6 +31,23 @@ pub struct Player {
     pub shows: Vec<Show>,
 }
 
+impl Player {
+	pub fn get_best_show(&self, ruleset: &RuleSet) -> Option<&Show> {
+		let mut show = match self.shows.first() {
+			Some(s) => s,
+			None => return None,
+		};
+
+		for s in self.shows.iter() {
+			if ruleset.is_show_stronger(*show, *s) {
+				show = s;
+			}
+		}
+
+		Some(show)
+	}
+}
+
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
@@ -238,28 +255,46 @@ impl Game {
 		val
 	}
 
+	/// Returns the player with the best show
+	pub fn get_plr_with_best_show(&self) -> Option<usize> {
+		let mut bestshow: Option<Show> = None;
+		let mut plr_id = 0;
+
+		let begplr = self.get_beginplayer();
+		for i in 0..self.players.len() {
+			// Begin with the player that began the turn
+			let idx = (begplr + i) % self.players.len();
+
+			let show = match self.players[idx].get_best_show(&self.ruleset) {
+				Some(s) => s,
+				None => continue,
+			};
+
+			let is_better = match bestshow {
+				Some(s) => self.ruleset.is_show_stronger(s, *show),
+				None => true,
+			};
+
+			if is_better {
+                bestshow = Some(*show);
+                plr_id = idx;
+            }
+        }
+
+		match bestshow {
+			Some(_) => Some(plr_id),
+			None => None,
+		}
+	}
+
 	/// Determines the best show and gives point to the respective team
     pub fn handle_shows(&mut self) {
 		if self.get_turn() > 1 { return; }
 
-		let mut bestshow: Option<Show> = None;
-        let mut team_id = 0;
-
-        // Get best show
-		let begplr = self.get_beginplayer();
-		for i in 0..self.players.len() {
-			let idx = (begplr + i) % self.players.len();
-
-            for show in self.players[idx].shows.iter() {
-                if bestshow.is_none() || self.ruleset.is_show_stronger(bestshow.unwrap(), *show) {
-                    bestshow = Some(*show);
-                    team_id = self.players[idx].team_id;
-                }
-            }
-        }
-        if bestshow.is_none() {
-            return;
-        }
+		let team_id = match self.get_plr_with_best_show() {
+			Some(plr) => self.players[plr].team_id,
+			None => return,
+		};
 
         // Handle shows
         for plr in 0..self.players.len() {
@@ -400,10 +435,12 @@ impl Game {
 			self.bestcard = Some(card);
 		}
 
+		// Play the card
         self.played_cards.push(card);
 		self.cards_played += 1;
         self.players[self.current_player].hand.erase(card);
 
+		// Rules regaring trumpf
         if let Playtype::Color(trumpf) = self.ruleset.active {
 			// If the given card is a trumpf queen or king, handle marriage
 			if card.color == trumpf && (card.number == 6 || card.number == 7) &&
@@ -437,6 +474,7 @@ impl Game {
 		}
     }
 
+	/// Updates the current active playtype (such as slalom)
     pub fn update_ruletype(&mut self) {
         self.ruleset.active = match self.ruleset.playtype {
             Playtype::SlalomUpdown => {
