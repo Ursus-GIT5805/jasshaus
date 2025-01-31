@@ -1,16 +1,10 @@
 #carpet {
-    position: absolute;
-
-    left: 50%;
-    top: 50%;
     width: min(50vw, 50vh);
     height: min(50vw, 50vh);
 
-    transform: translateX(-50%) translateY(-50%);
-
     background-color: #00BB00;
 
-    border-radius: 1rem;
+    border-radius: 8px;
     border-style: solid;
     border-color: #008100;
 
@@ -21,10 +15,9 @@
 		left: 50%;
 
 		height: 40%;
-		aspect-ratio: var(--card-aspect-ratio);
 
 		border-style: none;
-		border-radius: 0.75rem;
+		border-radius: 2px;
 		border-width: 0.25rem;
 		border-color: #FFFF00;
 

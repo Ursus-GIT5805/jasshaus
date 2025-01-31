@@ -11,6 +11,11 @@ function detectMobile() {
 	return regexp.test(navigator.userAgent);
 }
 
+function quitError(message) {
+	alert(message);
+	window.location.replace("index.html");
+}
+
 const IS_MOBILE = detectMobile();
 
 var settings = null;
@@ -19,6 +24,8 @@ var game = null;
 var wshandler = null;
 
 //  ===== QoL functions =====
+if(typeof jQuery === 'undefined') quitError("Could not load jQuery!");
+
 jQuery.fn.vis = function(v){ return this.css('visibility', ['hidden', 'visible'][+v]); }
 jQuery.fn.visible = function(){ return this.css('display') != "none"; }
 jQuery.fn.display = function(v){ return this.css('display', ['none', 'block'][+v]); }
@@ -112,7 +119,10 @@ function startWS () {
 	host.mute_players = settings.mute_players;
 	host.allow_rtc = settings.allow_rtc;
 
-	wshandler = new GameClient(WS_URL, host);
+	let goaway = () => {
+		if(!DEV_MODE) window.location.replace("index.html")
+	};
+	wshandler = new GameClient(WS_URL, host, null, goaway);
 
 	wshandler.oninit = (pid, num_players) => {
 		setupPlayerboxes(pid, num_players);

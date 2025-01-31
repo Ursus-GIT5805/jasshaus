@@ -1,7 +1,3 @@
-:root {
-	--hand_height: 22.5vh;
-}
-
 .Hand {
 	position: absolute;
 
@@ -21,8 +17,7 @@
 	margin: 0;
 	padding: 0;
 	max-width: 100%;
-    height: var(--hand_height);
-
+    height: var(--hand-height);
 }
 
 .Hand:empty {

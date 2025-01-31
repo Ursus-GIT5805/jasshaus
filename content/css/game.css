@@ -1,25 +1,31 @@
 :root {
     font-family: Roboto, sans-serif;
-    --card-aspect-ratio: 161 / 247;
+	--hand-height: 22.5vh;
 }
 
-img {
-	user-select: none;
-}
+img { user-select: none; }
 
+#background,
 body {
     position: absolute;
 
-    left: 0;
-    top: 0;
     width: 100%;
     height: 100%;
-
-    margin: 0%;
+	margin: 0;
 
     overflow: hidden;
+}
 
+.Window,
+.Board {
+    padding: 1rem;
+	color: #EEEEEE;
     background-color: #000000;
+
+	border-color: #DEA487;
+	border-width: 0.5rem;
+    border-radius: 0.5rem;
+    border-style: solid;
 }
 
 .CenterX {
@@ -32,28 +38,11 @@ body {
 	top: 50%;
 	transform: translateY(-50%);
 }
-
-#background {
-    position: absolute;
-
-    width: 100%;
-    height: 100%;
-}
-
-.Playedcard {
-    position: absolute;
-
-    display: none;
-
-	height: 40%;
-	aspect-ratio: var(--card-aspect-ratio);
-
-    border-style: none;
-    border-radius: 0.75rem;
-    border-width: 0.25rem;
-    border-color: #FFFF00;
-
-    animation-duration: 500ms;
+.CenterXY {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translateX(-50%) translateY(-50%);
 }
 
 #roundDetails {
@@ -65,16 +54,9 @@ body {
     left: 0;
 
     text-align: center;
-    font-size: 1rem;
 
-    color: #EEEEEE;
-    background-color: #000000;
-    padding: 0.8rem;
-
-    border-style: solid;
-    border-bottom-right-radius: 0.5rem;
+	border-radius: 0 0 0.5rem 0;
     border-width: 0 0.5rem 0.5rem 0;
-    border-color: #DEA487;
 }
 
 #roundSymbols {
@@ -86,7 +68,7 @@ body {
 		height: 6rem;
 	}
 
-	div {
+	> div {
 		display: flex;
 		flex-direction: column;
 
@@ -103,19 +85,13 @@ body {
     top: 0;
     right: 0;
 
-    color: #EEEEEE;
-    background-color: #000000;
-    padding: 0.8rem;
-
     font-size: 1.5rem;
 
     overflow: hidden;
     white-space: nowrap;
 
-    border-color: #DEA487;
-    border-style: solid;
-    border-bottom-left-radius: 0.5rem;
-    border-width: 0 0 0.5rem 0.5rem;
+	border-radius: 0 0 0 0.5rem;
+	border-width: 0 0 0.5rem 0.5rem;
 }
 
 #gameTeams {
@@ -142,50 +118,37 @@ body {
     background-color: #363636;
 }
 
-#botrightbuttons {
+#botrightbuttons,
+#botleftbuttons,
+.ActionButtonContainer {
 	display: flex;
 	flex-direction: column-reverse;
 
 	z-index: 420;
 	position: absolute;
+}
 
+#botrightbuttons {
 	right: 2px;
 	bottom: 2px;
 }
 
-
 #botleftbuttons {
-	display: flex;
-	flex-direction: column-reverse;
-
-	z-index: 420;
-	position: absolute;
-
 	left: 2px;
 	bottom: 2px;
 }
 
 #showButton {
 	position: absolute;
-
-	left: 0;
-	bottom: 23vh;
-
+	font-size: 2rem;
 	display: none;
-	background-color: #BBBBBB;
-	color: #000000;
+	left: 0;
+	bottom: var(--hand-height);
 }
 
 #turnindicator {
 	display: none;
 	position: absolute;
-
-	border-radius: 8px;
-    border-color: #DEA487;
-    border-width: 0.5rem;
-    border-style: solid;
-    color: #FFFFFF;
-    background-color: #000000;
 
 	text-align: center;
 	max-width: 12rem;
@@ -194,9 +157,8 @@ body {
 	z-index: 42;
 
 	margin: 1rem;
-	padding: 1rem;
 
-	bottom: 22.5vh;
+	bottom: var(--hand-height);
     right: 0;
 }
 
@@ -205,6 +167,79 @@ body {
 	flex-direction: column;
 }
 
-#pleft .PlayerMSG { left: 0; }
-#pup .PlayerMSG { left: 50%; transform: translateX(-50%); }
-#pright .PlayerMSG { right: 0; }
+#pleft, #pup, #pright {
+	display: flex;
+}
+
+#pright {
+	flex-direction: column;
+	right: 0;
+	.PlayerMSG { right: 0; }
+}
+#pleft {
+	flex-direction: column;
+	left: 0;
+	.PlayerMSG { left: 0; }
+}
+#pup {
+	top: 0;
+	.PlayerMSG { left: 50%; transform: translateX(-50%); }
+}
+
+.Player {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 400;
+	padding: 0.5rem;
+
+	min-width: 6rem;
+    max-width: 12rem;
+
+    border-radius: 0.2rem;
+	border-width: 0.2rem;
+	border-color: yellow;
+
+	overflow: hidden;
+    text-overflow: ellipsis;
+
+    background-color: #000000;
+    color: #FFFFFF;
+
+	box-sizing: border-box;
+}
+
+.Player:empty {
+	display: none;
+}
+
+.PlayerMSG {
+    position: absolute;
+
+    min-width: 10rem;
+	max-width: 20rem;
+
+	font-size: 2rem;
+
+    padding: 0.3rem;
+    border-radius: 0.3rem;
+
+    text-align: left;
+    text-overflow: ellipsis;
+
+    white-space: nowrap;
+    user-select: none;
+
+    overflow: hidden;
+
+	box-sizing: border-box;
+
+	cursor: pointer;
+    color: #000000;
+    background-color: #CCCCCC;
+}
+
+.PlayerMSG:hover {
+	max-width: 30rem;
+    height: max-content;
+    white-space: inherit;
+}
