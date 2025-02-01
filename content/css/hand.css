@@ -21,7 +21,6 @@
 
 	.Illegal {
 		filter: brightness(50%);
-		pointer-events: none;
 	}
 
 	.Selected {

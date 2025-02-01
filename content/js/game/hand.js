@@ -3,6 +3,7 @@ class HandCard {
 	constructor(info) {
 		this.info = info;
 		this.selected = false;
+		this.selectable = true;
 		this.legal = true;
 		this.ele = null;
 	}
@@ -18,8 +19,9 @@ class Hand {
 
 		this.enable_clicks = true;
 		this.onPlay = onClick;
-		this.selecting = false;
 		this.indicate_new = true;
+
+		this.selecting = false;
 
 		this.dragcounter = 0;
 
@@ -56,10 +58,12 @@ class Hand {
 		ele.draggable = true;
 		ele.onclick = (ev) => {
 			if(this.selecting) {
+				if(!card.selectable) return;
 				card.selected = !card.selected;
 				this.handleSelectedEffect(ele, card.selected);
 			} else {
 				if(!this.enable_clicks) return;
+				if(!card.legal) return;
 				if(this.onPlay(info)) {
 					this.cards = this.cards.filter(x => x.ele != ele);
 					ele.remove();
@@ -67,22 +71,26 @@ class Hand {
 			}
 		}
 		ele.ondragstart = (e) => {
-			if(this.selecting) return;
+			if(this.selecting || !card.legal) {
+				e.preventDefault();
+				return;
+			}
 			this.dragcounter = 0;
 
 			let node = ele.cloneNode();
+			node.style['opacity'] = 1;
 			e.dataTransfer.setData("text/plain", info);
 			e.dataTransfer.effectAllowed = "move";
 			e.dataTransfer.setDragImage(node, e.offsetX, e.offsetY);
 
-			ele.style['opacity'] = "0";
+			ele.style['opacity'] = 0;
  		}
 		ele.ondragend = (e) => {
 			if(this.selecting) return;
 			e.preventDefault();
-			ele.style['opacity'] = "100";
+			ele.style['opacity'] = "1";
 
-			if(this.dragcounter == 0) {
+			if(this.dragcounter == 0 && card.legal) {
 				if(this.onPlay(info)) {
 					this.cards = this.cards.filter(x => x.ele != ele);
 					ele.remove();
@@ -154,6 +162,7 @@ class Hand {
 		for(let card of this.cards) {
 			card.ele.draggable = !this.selecting;
 			card.selected = false;
+			this.handleLegalityEffect(card.ele, card.selectable);
 			this.handleSelectedEffect(card.ele, false);
 		}
 
