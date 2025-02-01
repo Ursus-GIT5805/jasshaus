@@ -14,13 +14,14 @@ class HostData {
 }
 
 class GameClient {
-	constructor(addr, data) {
+	constructor(addr, data, onopen=null, onclose=null) {
 		let socket = new WebSocket(addr);
 		this.own = data;
 
 		socket.onopen = async (e) => {
-			this.send({ "ClientIntroduction": [this.own.name, 0] })
+			if(onopen) onopen();
 
+			this.send({ "ClientIntroduction": [this.own.name, 0] });
 			this.comm.initChat((msg) => this.send({ "ChatMessage": [msg, 0] }));
 
 			let answerHandler = (answer, id) =>
@@ -43,10 +44,13 @@ class GameClient {
 			this["FUNC_" + String(head)]( obj[head] );
 		}
 
+		socket.onerror = async (e) => {
+			alert("Ein Fehler während der Verbindung des Servers ist aufgetreten!");
+		}
+
 		socket.onclose = (e) => {
-			openInfo("Meldung",
-					 'Die Verbindung zum Server wurde geschlossen! Die Seite wird mit "Okay" verlassen.',
-					 () => window.location.replace("index.html"));
+			alert("Die Verbindung zum Server wurde geschlossen!");
+			if(onclose) onclose();
 		}
 
 		this.socket = socket;

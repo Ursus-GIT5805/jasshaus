@@ -243,4 +243,10 @@ impl Setting {
             apply_startcondition_on_revanche: false,
         }
 	}
+
+	pub fn num_allowed(&self) -> usize {
+		self.playtype.iter()
+			.map(|p| p.allow as usize)
+			.sum()
+	}
 }

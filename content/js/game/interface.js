@@ -154,8 +154,9 @@ function setupShowButton() {
 			let cards = hand.get_selected();
 			let show = parse_show(cards);
 
+
 			if(!show) {
-				PlayerMSG_Text("Dies ist kein Weis!", null, 2000);
+				if(cards.length > 0) PlayerMSG_Text("Dies ist kein Weis!", null, 2000);
 			} else {
 				let string = JSON.stringify(show);
 				let hs = Cardset.from_list( hand.getCards() );

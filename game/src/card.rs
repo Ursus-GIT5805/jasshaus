@@ -107,6 +107,9 @@ impl TryFrom<Vec<Card>> for Show {
 
 		// Four different cards
 		if cards[1].color != col {
+			if cards.len() != NUM_COLORS {
+				return Err(());
+			}
 			for i in 0..cards.len()-1 {
 				if cards[i].number != cards[i+1].number || cards[i].color + 1 != cards[i+1].color {
 					return Err(());

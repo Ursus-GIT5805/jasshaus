@@ -48,10 +48,12 @@ async function FUNC_GameState(data) {
 		else handleOnTurn();
 	}
 
-	for(let show of shows) {
-		let row = showToFlexbox(show);
-		$("#showqueue").append(row);
-		shown.add(JSON.stringify(show));
+	if(game.get_turn() == 0) {
+		for(let show of shows) {
+			let row = showToFlexbox(show);
+			$("#showqueue").append(row);
+			shown.add(JSON.stringify(show));
+		}
 	}
 }
 

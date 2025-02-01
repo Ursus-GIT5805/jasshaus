@@ -17,10 +17,10 @@
     <body>
         <img src="img/background.jpg" id="background">
 
-        <div id="carpet"></div>
-		<div id="cards" class="Hand"></div>
+        <div class="CenterXY" id="carpet"></div>
+		<div class="Hand" id="cards"></div>
 
-        <div id="roundDetails">
+        <div class="Board" id="roundDetails">
             <div id="namePT"></div>
             <div id="roundSymbols">
                 <img src="img/misere.svg" id="roundMisere"/>
@@ -32,18 +32,19 @@
 			</div>
         </div>
 
-        <div id="gameDetails">
+        <div class="Board" id="gameDetails">
 		  <div>
-			<a><u id="gameTitle"></u></a>
+			<u id="gameTitle"></u>
 		  </div>
 		  <div id="gameTeams"></div>
         </div>
 
-		<div id="pright" class="CenterY" style="right:0; display: flex; flex-direction: column;"></div>
-		<div id="pup" class="CenterX" style="top:0; display: flex;"></div>
-		<div id="pleft" class="CenterY" style="left:0; display: flex; flex-direction: column;"></div>
+		<div id="pright" class="CenterY"></div>
+		<div id="pup" class="CenterX"></div>
+		<div id="pleft" class="CenterY"></div>
 
         <!-- Popup windows -->
+
         <div class="Window" id="announceWindow">
             <h1>Sage an!</h1>
 			<div id="announcePT" class="AnnounceRow"></div>
@@ -54,20 +55,12 @@
         <div class="Window" id="endWindow">
           <h1 id="endResult"></h1>
 		  <div id="endTeams"></div>
-		  <a href="index.html"><div class="Button" style="background-color:red;">Spiel verlassen</div></a>
+		  <a href="index.html"><div class="Button Important">Spiel verlassen</div></a>
         </div>
 
         <div id="roundWindow" class="Window">
 		  <div id="roundSummary"></div>
-          <div id="closeSummary">Weiter</div>
-        </div>
-
-		<div class="Window" id="startWindow">Bitte warten Sie auf weitere Spieler...</div>
-
-        <div class="Window" id="infoWindow">
-            <h2><u id="infoTitle">Info</u></h2>
-            <a id="infoText"></a>
-            <div id="infoButton" class="Button">Okay</div>
+          <div class="Button" id="closeSummary">Weiter</div>
         </div>
 
 		<div id="botrightbuttons"></div>
@@ -77,19 +70,21 @@
 		  <div id="settings"></div>
 		  <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 			<div class="Button" id="closeSettings">Schliessen</div>
-			<a href="index.html"><div class="Button" style="background-color:red;" id="closeSettings">Partie Verlassen</div></a>
+			<a href="index.html">
+			  <div class="Button Important" id="closeSettings">Partie Verlassen</div>
+			</a>
 		  </div>
 		</div>
 
-		<div id="showButton" class="Button">Weisen</div>
-		<div id="turnindicator">
+		<div id="showButton" class="Board Button">Weisen</div>
+		<div class="Board" id="turnindicator">
 		  <a>Dein Zug</a>
 		  <Div id="showqueue"></div>
 		</div>
 
 		<noscript>
 		  <div class="Window" style="display: block;">
-			This website requires Javascript. You must enable it for it to work.
+			This website requires Javascript.
 		  </div>
 		</noscript>
 	</body>

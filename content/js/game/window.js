@@ -173,12 +173,3 @@ function openEndwindow() {
 
 	$("#endWindow").css("display", "flex");
 }
-
-// Info window ---
-
-function openInfo(title, info, onConfirm){
-	$("#infoTitle").text(title);
-	$("#infoText").text(info);
-	$("#infoButton").click(onConfirm);
-	$("#infoWindow").css("display", "block");
-}

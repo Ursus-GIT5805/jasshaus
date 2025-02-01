@@ -1,7 +1,3 @@
-:root {
-	--hand_height: 22.5vh;
-}
-
 .Hand {
 	position: absolute;
 
@@ -43,7 +39,7 @@
 	visibility: hidden;
 }
 
-.Hand img {
+.Hand > img {
 	object-fit: cover;
 	object-position: 0 0;
 	overflow: hidden;

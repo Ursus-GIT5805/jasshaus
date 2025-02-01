@@ -102,6 +102,18 @@ impl JassRoom {
 		if self.game.current_player != plr_id { return; }
         if !self.game.is_legal_card(&self.game.players[plr_id].hand, card) { return; }
 
+		if self.game.get_turn() == 0 {
+			let shows = self.game.players[plr_id].shows.clone();
+			let points = shows.into_iter()
+				.map(|s| self.game.ruleset.get_show_value(s))
+				.max()
+				.unwrap_or(0);
+
+			if 0 < points {
+				clients.ev_send_to_all(GameEvent::ShowPoints(points, plr_id)).await;
+			}
+		}
+
         self.game.play_card(card);
 
 		if self.game.get_turn() == 1 && self.game.setting.allow_shows {
@@ -165,14 +177,12 @@ impl JassRoom {
 		}
 	}
 
-	async fn play_show(&mut self, clients: &mut ClientHandler, show: Show, plr_id: usize) {
+	async fn play_show(&mut self, _clients: &mut ClientHandler, show: Show, plr_id: usize) {
         if !self.game.can_show(plr_id) { return; }
         if let Err(_) = self.game.players[plr_id].hand.has_show(show) { return; }
         if self.game.players[plr_id].shows.iter().any(|s| *s == show) { return; }
 
 		self.game.play_show(show, plr_id);
-        let points = self.game.ruleset.get_show_value(show);
-        clients.ev_send_to_all(GameEvent::ShowPoints(points, plr_id)).await;
 	}
 }
 

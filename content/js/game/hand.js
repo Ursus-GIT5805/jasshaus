@@ -128,18 +128,6 @@ class Hand {
 		else ele.classList.remove("Selected");
 	}
 
-
-	/// Reload the cards content
-	reloadContent() {
-		for(let card of this.cards) {
-			let parent = card.ele.parentNode;
-			let new_ele = this.createCardElement(card.info);
-			parent.replaceChild(new_ele, card.ele);
-			card.ele = new_ele;
-			this.handleLegalityEffect(card.ele, card.legal);
-		}
-	}
-
 	/// Handle which cards are legal to play
 	setLegality(legalityHandler) {
 		for(let card of this.cards) {
