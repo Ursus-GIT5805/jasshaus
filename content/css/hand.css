@@ -23,6 +23,20 @@
 	max-width: 100%;
     height: var(--hand_height);
 
+	.Illegal {
+		filter: brightness(50%);
+		pointer-events: none;
+	}
+
+	.Selected {
+		transform: translateY(-2rem);
+	}
+
+	.NewCard {
+		border-style: solid;
+		border-width: 0.2rem;
+		border-color: #00FF00;
+	}
 }
 
 .Hand:empty {

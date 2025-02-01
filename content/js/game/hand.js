@@ -19,6 +19,7 @@ class Hand {
 		this.enable_clicks = true;
 		this.onPlay = onClick;
 		this.selecting = false;
+		this.indicate_new = true;
 
 		this.dragcounter = 0;
 
@@ -91,6 +92,14 @@ class Hand {
 			this.container.style['border-color'] = "#000000";
 		}
 
+		if(this.indicate_new) {
+			ele.classList.add("NewCard");
+			ele.onmouseleave = (e) => {
+				ele.classList.remove("NewCard");
+				ele.onmouseleave = () => {};
+			};
+		}
+
 		card.ele = ele;
 
 		this.cards.push(card);
@@ -110,22 +119,15 @@ class Hand {
 	}
 
 	handleLegalityEffect(ele, legal) {
-		if( legal ) {
-			ele.style['filter'] = "";
-			ele.style['pointer-events'] = "auto";
-		} else {
-			ele.style['filter'] = "brightness(50%)";
-			ele.style['pointer-events'] = "none";
-		}
+		if( legal ) ele.classList.remove("Illegal");
+		else ele.classList.add("Illegal");
 	}
 
 	handleSelectedEffect(ele, selected) {
-		ele.style['pointer-events'] = "auto";
-		ele.style['filter'] = "";
-
-		if( selected ) ele.style['transform'] = "translateY(-2rem)";
-		else ele.style['transform'] = "";
+		if( selected ) ele.classList.add("Selected");
+		else ele.classList.remove("Selected");
 	}
+
 
 	/// Reload the cards content
 	reloadContent() {

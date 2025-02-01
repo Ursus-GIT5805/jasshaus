@@ -24,6 +24,7 @@ var hand = new Hand(
 		return true;
 	}
 );
+hand.indicate_new = false;
 
 /// Helper functino to get the image-path of a Color Playtype
 function trumpf_img(col) {
