@@ -18,11 +18,14 @@ class Hand {
 		this.card_cnt = 0;
 
 		this.enable_clicks = true;
+		this.enable_reshuffling = true;
+
 		this.onPlay = onClick;
 		this.indicate_new = true;
 
 		this.selecting = false;
 
+		this.dragged = null;
 		this.dragcounter = 0;
 
 		this.contentHandler = contentHandler;
@@ -71,7 +74,7 @@ class Hand {
 			}
 		}
 		ele.ondragstart = (e) => {
-			if(this.selecting || !card.legal) {
+			if(this.selecting) {
 				e.preventDefault();
 				return;
 			}
@@ -79,16 +82,16 @@ class Hand {
 
 			let node = ele.cloneNode();
 			node.style['opacity'] = 1;
-			e.dataTransfer.setData("text/plain", info);
 			e.dataTransfer.effectAllowed = "move";
 			e.dataTransfer.setDragImage(node, e.offsetX, e.offsetY);
 
+			this.dragged = ele;
 			ele.style['opacity'] = 0;
- 		}
+		}
 		ele.ondragend = (e) => {
 			if(this.selecting) return;
 			e.preventDefault();
-			ele.style['opacity'] = "1";
+			ele.style['opacity'] = 1;
 
 			if(this.dragcounter == 0 && card.legal) {
 				if(this.onPlay(info)) {
@@ -97,7 +100,32 @@ class Hand {
 				}
 			}
 
+			this.dragged = null;
 			this.container.style['border-color'] = "#000000";
+		}
+
+		if(this.enable_reshuffling) {
+			ele.ondragover = (e) => {
+				let box = ele.getBoundingClientRect();
+				let on_left = e.offsetX < box.width / 2;
+
+				if(on_left) ele.style['margin'] = "0 0 0 1rem";
+				else ele.style['margin'] = "0 1rem 0 0";
+			}
+			ele.ondragleave = (e) => ele.style['margin'] = "0";
+
+			ele.ondrop = (e) => {
+				if(this.dragged != e.target) {
+					let box = ele.getBoundingClientRect();
+					let on_left = e.offsetX < box.width / 2;
+
+					if(on_left) this.container.insertBefore(this.dragged, ele);
+					else this.container.insertBefore(this.dragged, ele.nextSibling);
+				}
+
+				this.dragged.style['margin'] = "0";
+				ele.style['margin'] = "0";
+			}
 		}
 
 		if(this.indicate_new) {
