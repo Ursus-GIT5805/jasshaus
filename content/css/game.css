@@ -1,6 +1,5 @@
 :root {
     font-family: Roboto, sans-serif;
-	--hand-height: 22.5vh;
 }
 
 img { user-select: none; }
@@ -167,79 +166,9 @@ body {
 	flex-direction: column;
 }
 
-#pleft, #pup, #pright {
-	display: flex;
-}
+body > .PlayerMSG {
+	left: 50%;
+	bottom: var(--hand-height);
 
-#pright {
-	flex-direction: column;
-	right: 0;
-	.PlayerMSG { right: 0; }
-}
-#pleft {
-	flex-direction: column;
-	left: 0;
-	.PlayerMSG { left: 0; }
-}
-#pup {
-	top: 0;
-	.PlayerMSG { left: 50%; transform: translateX(-50%); }
-}
-
-.Player {
-    text-align: center;
-    font-size: 2rem;
-    font-weight: 400;
-	padding: 0.5rem;
-
-	min-width: 6rem;
-    max-width: 12rem;
-
-    border-radius: 0.2rem;
-	border-width: 0.2rem;
-	border-color: yellow;
-
-	overflow: hidden;
-    text-overflow: ellipsis;
-
-    background-color: #000000;
-    color: #FFFFFF;
-
-	box-sizing: border-box;
-}
-
-.Player:empty {
-	display: none;
-}
-
-.PlayerMSG {
-    position: absolute;
-
-    min-width: 10rem;
-	max-width: 20rem;
-
-	font-size: 2rem;
-
-    padding: 0.3rem;
-    border-radius: 0.3rem;
-
-    text-align: left;
-    text-overflow: ellipsis;
-
-    white-space: nowrap;
-    user-select: none;
-
-    overflow: hidden;
-
-	box-sizing: border-box;
-
-	cursor: pointer;
-    color: #000000;
-    background-color: #CCCCCC;
-}
-
-.PlayerMSG:hover {
-	max-width: 30rem;
-    height: max-content;
-    white-space: inherit;
+	transform: translateX(-50%);
 }

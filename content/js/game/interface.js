@@ -145,6 +145,10 @@ function setupInterface() {
 	updatePoints();
 }
 
+function infoMessage(text) {
+	players.setTextMessage(text, null, 2000);
+}
+
 var shown = new Set();
 /// Setup the button to show
 function setupShowButton() {
@@ -154,9 +158,8 @@ function setupShowButton() {
 			let cards = hand.get_selected();
 			let show = parse_show(cards);
 
-
 			if(!show) {
-				if(cards.length > 0) PlayerMSG_Text("Dies ist kein Weis!", null, 2000);
+				if(cards.length > 0) infoMessage("Dies ist kein Weis!");
 			} else {
 				let string = JSON.stringify(show);
 				let hs = Cardset.from_list( hand.getCards() );
@@ -166,9 +169,9 @@ function setupShowButton() {
 				catch(e) { has_show = false; }
 
 				if(shown.has(string)) {
-					PlayerMSG_Text("Schon gewiesen!", null, 2000);
+					infoMessage("Schon gewiesen!");
 				} else if( !has_show ) {
-					PlayerMSG_Text("Du kannst noch mehr weisen ;)", null, 2000);
+					infoMessage("Du kannst noch mehr weisen ;)!");
 				} else {
 					let row = showToFlexbox(show);
 					$("#showqueue").append(row);
@@ -227,41 +230,9 @@ function setupGamedetails() {
 	}
 }
 
-/// Setup the PlayerBoxes
-function setupPlayerboxes(shift, num_players) {
-	for(let i = 1 ; i < num_players ; ++i) {
-		let r = (shift + i) % num_players;
-		let ele = $('<div text="player' + r + '" id="player' + r + '" class="Player"></div>');
-
-		if(i < num_players / 3) $("#pright").append(ele);
-		else if(i < num_players / 3*2) $("#pup").append(ele);
-		else if(i < num_players) $("#pleft").append(ele);
-	}
-}
-
-/// Displays a message from the player (as text)
-function PlayerMSG_Text(msg, plr_id, delay=6000) {
-	let div = $('<a>').text(msg);
-	PlayerMSG( div, plr_id, delay );
-}
-
-/// Displays a message from the player (any element)
-function PlayerMSG(ele, plr_id, delay=6000) {
-	let div = $('<div class="PlayerMSG">').append(ele);
-	div.click(() => div.remove());
-	if(delay > 0) setTimeout(() => div.remove(), delay);
-
-	let parent = $("#player" + plr_id);
-	if(parent.length == 0) $("body").append( div.css("bottom", "30%").addClass("CenterX") );
-	else parent.append(div);
-}
-
-var curplr = null;
 /// Update the current active player
 function updateCurrentPlayer(plr=null) {
-	if(curplr != null) $("#player" + curplr).css("border-style", "none");
-	if(plr != null) $("#player" + plr).css("border-style", "solid");
-	curplr = plr;
+	players.updateCurrent(plr);
 }
 
 function updateCardskin() {

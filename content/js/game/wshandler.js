@@ -1,10 +1,3 @@
-// voting
-// comm
-
-// players
-
-// (carpet)
-
 class HostData {
 	constructor(name) {
 		this.name = name;
@@ -32,7 +25,7 @@ class GameClient {
 			if(data.allow_rtc) await this.comm.initVoiceChat(answerHandler, ICEHandler);
 			this.send({ "RtcStart": 0 });
 
-			if(this.onvoiceinit) this.onvoiceinit();
+			this.run_event("voicechat");
 		}
 
 		socket.onmessage = async (e) => {
@@ -57,6 +50,8 @@ class GameClient {
 		this.voting = null;
 		this.comm = new CommunicationHandler();
 		this.comm.automute = this.own.mute_players;
+
+		this.plugins = [];
 	}
 
 	send( data ){
@@ -70,11 +65,19 @@ class GameClient {
 		this.voting = null;
 	}
 
+	run_event(event, ...args) {
+		// Run the method name of itself and all the plugins (if exists)
+		let method = "on" + event;
+		for(let plugin of this.plugins) plugin[method]?.(...args);
+		this[method]?.(...args);
+	}
+
 	//  ===== Methods =====
 
 	async FUNC_PlayerID(data) {
 		let [client_id, player_id, num_players] = data;
-		if(this.oninit) this.oninit(player_id, num_players);
+		this.run_event("init", player_id, num_players);
+
 		this.own.cid = client_id;
 		this.own.pid = player_id;
 
@@ -88,6 +91,7 @@ class GameClient {
 		let obj = data[head];
 		if(head == "0") head = obj;
 
+		// This is reserved not to plugins
 		if(typeof this.onevent === 'function') this.onevent(data);
 	}
 
@@ -102,7 +106,7 @@ class GameClient {
 		this.comm.setName(def, client_id);
 
 		if(this.voting) this.voting.onClientJoin(client_id);
-		if(this.onplayerjoin) this.onplayerjoin(player_id);
+		this.run_event("playerjoin", player_id);
 	}
 
 	async FUNC_ClientDisconnected(client_id) {
@@ -113,7 +117,7 @@ class GameClient {
 		this.comm.chatMessage(MessageType.Info, name + " left the table.");
 
 		if(this.voting) this.voting.onClientQuit(client_id);
-		if(this.onplayerquit) this.onplayerquit(pid);
+		this.run_event("playerquit", pid);
 	}
 
 	async FUNC_ClientIntroduction(data) {
@@ -122,7 +126,7 @@ class GameClient {
 
 		this.comm.setName(name, cid);
 		this.comm.chatMessage(MessageType.Info, name + " joined the table.");
-		if(this.onplayergreet) this.onplayergreet(pid);
+		this.run_event("playergreet", pid);
 	}
 
 	async FUNC_JoinedClients(list) {
@@ -148,7 +152,7 @@ class GameClient {
 		let message = "[" + name + "]: " + msg;
 
 		this.comm.chatMessage(MessageType.Normal, message);
-		if(this.onchatmessage) this.onchatmessage(msg, plr_id);
+		this.run_event("chatmessage", message, player_id);
 	}
 
 

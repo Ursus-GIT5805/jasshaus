@@ -21,6 +21,7 @@ const IS_MOBILE = detectMobile();
 var settings = null;
 var form = null;
 var game = null;
+var players = new PlayerHandler();
 var wshandler = null;
 
 //  ===== QoL functions =====
@@ -95,15 +96,8 @@ function gameMessage(msg, plr) {
 	let name = wshandler.comm.getPlayerName(plr);
 	let chatmsg = "[" + name + "]: " + msg;
 
-	PlayerMSG_Text(msg, plr);
+	players.setTextMessage(msg, plr);
 	wshandler.comm.chatMessage(MessageType.Info, chatmsg);
-}
-
-/// Get a random greet
-function getGreet() {
-	let choices = ["Grüezi", "Guten Tag", "Heyho", "Hallo"];
-	let index = Math.floor(Math.random() * choices.length);
-	return choices[index];
 }
 
 function toggleFullscreen() {
@@ -123,15 +117,13 @@ function startWS () {
 		if(!DEV_MODE) window.location.replace("index.html")
 	};
 	wshandler = new GameClient(WS_URL, host, null, goaway);
+	wshandler.plugins.push(players);
 
 	wshandler.oninit = (pid, num_players) => {
-		setupPlayerboxes(pid, num_players);
-
 		carpet = new Carpet(num_players, 0);
 		carpet.autoclean = num_players;
 		carpet.rotate_by_players(pid);
 	}
-	wshandler.onchatmessage = PlayerMSG_Text;
 
 	wshandler.onevent = (ev) => {
 		if(DEV_MODE) console.log(ev);
@@ -141,8 +133,6 @@ function startWS () {
 		// Run the corresponding event handler
 		window["FUNC_" + String(head)]( ev[head] );
 	}
-
-	wshandler.onplayergreet = (pid) => PlayerMSG_Text(getGreet(), pid);
 
 	// Append Mic/Chat button upon load
 	let ctnr = $("#botrightbuttons")

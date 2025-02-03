@@ -160,7 +160,7 @@ async function FUNC_ShowList(list) {
 		}
 
 		// Display the shows as a message
-		PlayerMSG(rows, pid, 15000);
+		players.setMessage(rows, pid, 15000);
 	}
 
 	updatePoints();
