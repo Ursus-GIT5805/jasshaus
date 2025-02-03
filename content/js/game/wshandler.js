@@ -152,7 +152,7 @@ class GameClient {
 		let message = "[" + name + "]: " + msg;
 
 		this.comm.chatMessage(MessageType.Normal, message);
-		this.run_event("chatmessage", message, player_id);
+		this.run_event("chatmessage", msg, plr_id);
 	}
 
 
