@@ -17,7 +17,6 @@ class Client {
 	}
 
 	getShortName() {
-		if(this.name.length == 0) return "???";
 		return this.name.substr(0, 3);
 	}
 }
@@ -33,8 +32,6 @@ class CommunicationHandler {
 
 	/// Sets and update the UI for the given name
 	setName(name, cid) {
-		if(name.length == 0) name = "unnamed" + cid;
-
 		if(cid in this.clients) {
 			this.clients[cid].name = name;
 			let pid = this.clients[cid].player_id;

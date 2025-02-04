@@ -72,6 +72,11 @@ class GameClient {
 		this[method]?.(...args);
 	}
 
+	setName(name, client_id) {
+		if(!name) name = "unnamed" + client_id;
+		this.comm.setName(name, client_id);
+	}
+
 	//  ===== Methods =====
 
 	async FUNC_PlayerID(data) {
@@ -83,7 +88,7 @@ class GameClient {
 
 		this.comm.newClient(client_id);
 		this.comm.clients[client_id].player_id = player_id;
-		this.comm.setName(this.own.name, client_id);
+		this.setName(this.own.name, client_id);
 	}
 
 	async FUNC_Event(data) {
@@ -101,9 +106,6 @@ class GameClient {
 		let [client_id, player_id] = data;
 		this.comm.newClient(client_id);
 		this.comm.clients[client_id].player_id = player_id;
-
-		let def = "Unnamed" + client_id
-		this.comm.setName(def, client_id);
 
 		if(this.voting) this.voting.onClientJoin(client_id);
 		this.run_event("playerjoin", player_id);
@@ -124,7 +126,7 @@ class GameClient {
 		let [name, cid] = data;
 		let pid = this.comm.clients[cid].player_id;
 
-		this.comm.setName(name, cid);
+		this.setName(name, cid);
 		this.comm.chatMessage(MessageType.Info, name + " joined the table.");
 		this.run_event("playergreet", pid);
 	}
@@ -133,7 +135,7 @@ class GameClient {
 		for(let [name, client_id, player_id] of list) {
 			this.comm.newClient(client_id);
 			this.comm.clients[client_id].player_id = player_id;
-			this.comm.setName( name, client_id );
+			this.setName(name, client_id);
 		}
 	}
 
