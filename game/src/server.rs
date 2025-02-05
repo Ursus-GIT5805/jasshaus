@@ -55,7 +55,7 @@ pub struct JassRoom {
 
 impl Default for JassRoom {
 	fn default() -> Self {
-		let game = Game::new( Setting::schieber() );
+		let game = Game::new( Setting::molotow() );
 		Self {
 			starts: 0,
 			roundstate: RoundState::Starting,
@@ -244,7 +244,7 @@ impl ServerRoom<GameEvent> for JassRoom {
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
 
 		let ranking = self.game.rank_teams();
-		self.game = Game::new( Setting::schieber() );
+		self.game = Game::new( Setting::molotow() );
 
 		let annplr = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
             self.get_first_announceplayer()

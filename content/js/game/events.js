@@ -67,7 +67,6 @@ async function FUNC_Announce(ann) {
 	said_marriage = false;
 	game.announce(pt, misere);
 
-	carpet.clean();
 	updateCurrentPlayer(game.current_player);
 	updateRoundDetails();
 	if( wshandler.own.pid == game.current_player ) handleOnTurn();

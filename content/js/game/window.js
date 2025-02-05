@@ -87,7 +87,7 @@ function updateSummary() {
 		let plr_id = Array.from(game.get_players_of_team(team_id));
 		let plrs = plr_id.map((id) => {
 			if(!names[id]) return "???";
-			return names[id].substr(0,3);
+			return names[id].substr(0,3) + ".";
 		});
 
 		let ele = $(`
@@ -152,7 +152,11 @@ $("#closeSummary").click((e) => {
 	if(game.should_end()) openEndwindow();
 	else {
 		updateCurrentPlayer(game.current_player);
-		if(game.current_player == wshandler.own.pid) startAnnounce();
+		if(game.current_player == wshandler.own.pid &&
+		   game.setting.announce == "Choose")
+		{
+			startAnnounce();
+		}
 	}
 });
 

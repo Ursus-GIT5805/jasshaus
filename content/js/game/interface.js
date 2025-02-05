@@ -205,7 +205,7 @@ function setupGamedetails() {
 	if(end.hasOwnProperty('Points')) $("#gameTitle").text("Punkte " + end['Points']);
 	if(end.hasOwnProperty('Rounds')) {
 		$("#gameTitle")
-			.append( $("<a>").text("Round ") )
+			.append( $("<a>").text("Runde ") )
 			.append( $("<a>").attr('text', 'game_rounds').text(game.round+1) )
 			.append( $("<a>").text("/" + end['Rounds']) );
 	}
