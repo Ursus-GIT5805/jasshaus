@@ -173,10 +173,6 @@ impl JassRoom {
 			}
         }
 
-		if !self.game.should_end() && self.game.round_ended() {
-			self.game.update_round_results();
-			self.start_round(clients).await;
-		}
 		clients.ev_send_to_all(GameEvent::PlayCard(card)).await;
 
 		if let Playtype::Everything = self.game.ruleset.playtype {
@@ -198,6 +194,11 @@ impl JassRoom {
 				self.game.ruleset.active = ele;
 				clients.ev_send_to_all(GameEvent::EverythingPlaytype(ele)).await;
 			}
+		}
+
+		if !self.game.should_end() && self.game.round_ended() {
+			self.game.update_round_results();
+			self.start_round(clients).await;
 		}
 	}
 

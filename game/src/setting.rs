@@ -244,7 +244,7 @@ impl Setting {
 
 			allow_misere: false,
 
-			announce: AnnounceRule::Choose,
+			announce: AnnounceRule::Random,
 			playtype: {
 				let mut v = vec![PlaytypeSetting {
 					allow: false,
