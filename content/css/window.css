@@ -122,6 +122,12 @@
 	padding: 1em;
 }
 
+#mods {
+	display: flex;
+	flex-direction: column;
+	white-space: nowrap;
+}
+
 .SummaryCards {
 	display: flex;
 	flex-direction: column;

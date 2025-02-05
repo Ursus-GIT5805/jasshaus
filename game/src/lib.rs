@@ -55,7 +55,29 @@ pub struct Team {
     pub points: i32,
     pub won_points: i32,
     pub show_points: i32,
+	pub marriage_points: i32,
+	pub target: i32, // Used for Difference
 	pub won: Cardset,
+}
+
+impl Team {
+	#[inline]
+	pub fn gain_points(&self) -> i32 {
+		self.won_points + self.show_points + self.marriage_points
+	}
+
+	#[inline]
+	pub fn cur_points(&self) -> i32 {
+		self.points + self.gain_points()
+	}
+
+	pub fn clear_round_data(&mut self) {
+		self.won_points = 0;
+		self.show_points = 0;
+		self.marriage_points = 0;
+		self.target = 0;
+		self.won.clear();
+	}
 }
 
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Serialize, Deserialize)]
@@ -136,6 +158,44 @@ impl Game {
 
     // Events ------
 
+	/// Update results from the current round
+	pub fn update_round_results(&mut self) {
+		match self.setting.point_eval {
+			PointEval::Add => {
+				for team in self.teams.iter_mut() {
+					team.points += team.gain_points();
+				}
+			},
+			PointEval::Difference { include_shows, zero_diff_points, needs_win } => {
+				for team in self.teams.iter_mut() {
+					let points = if include_shows {
+						team.show_points + team.won_points
+					} else {
+						team.points += team.won_points;
+						team.won_points
+					};
+
+					let diff = (points - team.target).abs();
+
+					let has_win = team.won.len() > 0 || !needs_win;
+
+					let gain = if diff == 0 && has_win {
+						zero_diff_points
+					} else {
+						diff
+					};
+
+					team.points += gain;
+				}
+			}
+		}
+
+		// Rotate to the next player who must announce
+		self.round += 1;
+		self.announce_player = (self.announce_player + 1) % self.players.len();
+        self.current_player = self.announce_player;
+	}
+
     pub fn start_new_round(&mut self, cards: Vec<Cardset>) {
         for plr in self.players.iter_mut() {
             plr.shows.clear();
@@ -145,12 +205,9 @@ impl Game {
 		}
 
         for team in self.teams.iter_mut() {
-            team.won_points = 0;
-            team.show_points = 0;
-			team.won.clear();
+			team.clear_round_data();
         }
 
-		self.round += 1;
         self.ruleset = RuleSet::default();
 		self.cards_played = 0;
 		self.played_cards.clear();
@@ -164,16 +221,15 @@ impl Game {
     pub fn play_marriage(&mut self, plr: usize) {
         self.marriage = MarriageState::PlayedBoth(plr);
 
-        let gain = self.setting.marriage_points;
+		let gain = self.setting.marriage_points;
         let team = self.team_of(plr);
-        team.points += gain;
-        team.show_points += gain;
+        team.marriage_points += gain;
     }
 
 	/// Returns true if the given team would win with the marriage
 	pub fn marriage_would_win(&self, team_id: usize) -> bool {
 		match self.setting.end_condition {
-			EndCondition::Points(maxp) => maxp <= self.teams[team_id].points + self.setting.marriage_points,
+			EndCondition::Points(maxp) => maxp <= self.teams[team_id].cur_points() + self.setting.marriage_points,
 			_ => false,
 		}
 	}
@@ -305,7 +361,6 @@ impl Game {
 
             for show in self.players[plr].shows.iter() {
                 let sp = self.get_show_value(*show);
-                self.teams[team_id].points += sp;
                 self.teams[team_id].show_points += sp;
             }
         }
@@ -334,10 +389,6 @@ impl Game {
 		if self.teams[last_team].won.len() == self.cards_distributed() {
 			self.add_points(last_team, self.setting.match_points);
 		}
-
-		// Rotate to the next player who must announce
-		self.announce_player = (self.announce_player + 1) % self.players.len();
-        self.current_player = self.announce_player;
 	}
 
 	// Handle events at the end of a turn
@@ -376,6 +427,10 @@ impl Game {
     }
 
 	fn handle_molotow(&mut self, card: Card) {
+		if let Playtype::Color(_) = self.ruleset.active {
+			return;
+		}
+
 		let turncolor = match self.turncolor {
 			Some(c) => c,
 			None => return,
@@ -407,7 +462,6 @@ impl Game {
 		let tid = self.players[self.best_player].team_id;
 		for show in cards.get_shows() {
             let sp = self.get_show_value(show);
-            self.teams[tid].points += sp;
             self.teams[tid].show_points += sp;
 		}
 	}
@@ -416,10 +470,7 @@ impl Game {
 
     pub fn play_card(&mut self, card: Card) {
 		if let Playtype::Molotow = self.ruleset.playtype {
-			match self.ruleset.active {
-				Playtype::Color(_) => {},
-				_ => self.handle_molotow(card),
-			}
+			self.handle_molotow(card);
 		}
 
 		let newbest = match self.bestcard {
@@ -519,30 +570,21 @@ impl Game {
 					Playtype::Downup
 				}
 			},
-			// This Playtype has to be handled externally afterwards!
-			Playtype::Everything => Playtype::Updown,
+			// These playtypes are handled externally
+			Playtype::Everything |
 			Playtype::Molotow => self.ruleset.active,
             x => x,
         };
     }
 
 	pub fn pass(&mut self) {
-		if !self.setting.allow_pass { return; }
-
 		self.passed += 1;
 		self.current_player = self.get_announcing_player();
 	}
 
     pub fn announce(&mut self, pt: Playtype, misere: bool) {
-        if !self.setting.allow_misere && misere { return; }
-		if let Some(id) = pt.get_id() {
-			if !self.setting.playtype[id].allow { return; }
-		}
-
-		// Announce!
 		self.ruleset = RuleSet::new(pt, misere);
         self.current_player = self.get_startplayer();
-
 
 		if let Playtype::Molotow = pt {
 			self.ruleset.active = Playtype::Updown;
@@ -550,7 +592,23 @@ impl Game {
         self.update_ruletype();
     }
 
-    // Utility functions ---
+	/// Returns whether the given announcement is legal
+	pub fn legal_announcement(&self, pt: Playtype, misere: bool) -> bool {
+		if pt == Playtype::None {
+			return false;
+		}
+
+		match self.setting.announce {
+			AnnounceRule::Choose => {
+				if !self.setting.allow_misere && misere { return false; }
+				if let Some(id) = pt.get_id() {
+					if !self.setting.playtype[id].allow { return false; }
+				}
+				true
+			},
+			_ => false,
+		}
+	}
 
 	#[inline]
 	/// Return whether something is announced the current turn
@@ -589,7 +647,6 @@ impl Game {
 		} else {
 			points
 		};
-        team.points += p;
         team.won_points += p;
     }
 
@@ -613,7 +670,7 @@ impl Game {
 		match self.setting.end_condition {
 			EndCondition::Points(maxp) => self.teams
 				.iter()
-				.any(|team| maxp <= team.points),
+				.any(|team| maxp <= team.cur_points()),
 			EndCondition::Rounds(r) => r as usize <= self.round,
 		}
     }
@@ -736,6 +793,10 @@ impl Game {
 
 	/// Return whether the given player can pass
 	pub fn can_pass(&self, player_id: usize) -> bool {
+		if !self.setting.allow_pass {
+			return false;
+		}
+
 		if self.current_player != player_id || self.is_announced() {
 			return false;
 		}

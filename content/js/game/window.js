@@ -70,7 +70,7 @@ function pass() {
 }
 
 // Round summary ---
-function openSummary() {
+function updateSummary() {
 	let roundSummary = $("#roundSummary").html("");
 	let names = wshandler.comm.getPlayerNames();
 
@@ -79,30 +79,45 @@ function openSummary() {
 
 		let plr_mar = game.player_with_played_marriage();
 		let got_marriage = plr_mar && game.players[plr_mar].team_id == team_id;
-		let marriage_title = "";
-		if(got_marriage) marriage_title = " (Stöck)"
 
-		let bef = team.points - team.won_points - team.show_points;
+		let bef = team.points;
+		let gain = team.won_points + team.show_points + team.marriage_points;
+		let after = bef + gain;
+
 		let plr_id = Array.from(game.get_players_of_team(team_id));
 		let plrs = plr_id.map((id) => {
 			if(!names[id]) return "???";
 			return names[id].substr(0,3);
 		});
 
-
 		let ele = $(`
 <div class="SummaryTeam">
  <div class="SummaryStats">
-  <div style="font-size: 2em;">` + plrs.join(" & ") + `</div>
+  <div style="font-size: 2em;" id="names"></div>
   <div><a style="float: left;">Beginn</a> <a style="float: right;">` + bef + `</a></div>
-  <div><a style="float: left;">Stich</a> <a style="float: right;">+` + team.won_points + `</a></div>
-  <div><a style="float: left;">Weis</a> <a style="float: right;">+` + team.show_points + marriage_title + `</a></div>
+  <div id="mods"></div>
   <div>----------</div>
   <div style="font-size: 1.5em;">
-   <a style="float: left;">Endstand</a> <a style="float: right;">` + team.points + `</a></div>
+   <a style="float: left;">Endstand</a> <a style="float: right;">` + after + `</a></div>
   </div>
 </div>
 `);
+		ele.find("#names").text( plrs.join(" & ") );
+
+		let ele_gain = (title, points) => {
+			let title_a = $("<a>").css("float", "left").text(title);
+			let plus = ["", "+"][ +(points > 0) ];
+			let points_a = $("<a>").css("float", "right").text(plus + points);
+
+			return $('<div>')
+				.append(title_a)
+				.append(points_a);
+		};
+
+		let mods = ele.find("#mods");
+		if(team.won_points > 0) mods.append( ele_gain("Stich", team.won_points) );
+		if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
+		if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
 
 		let woncards = new Cardset(BigInt(team.won.list));
 		let cardlist = $("<div>").addClass("SummaryCards");
@@ -123,15 +138,13 @@ function openSummary() {
 
 		roundSummary.append(ele);
 	}
-
-	$("#roundWindow").display(true);
 }
 
 $("#closeSummary").click((e) => {
 	$("#roundWindow").display(false);
-	$("#roundSummary").html("")
 
-	$('*[text="game_rounds"]').text(game.round+1);
+	if(!game.should_end()) $('*[text="game_rounds"]').text(game.round+1);
+	carpet.clean();
 	updatePoints();
 	updateRoundDetails();
 	updateHand();
@@ -146,6 +159,7 @@ $("#closeSummary").click((e) => {
 // Endresult window ---
 
 function openEndwindow() {
+	hand.clear();
 	updateCurrentPlayer(null);
 
 	let teams = game.rank_teams();

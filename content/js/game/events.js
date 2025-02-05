@@ -2,6 +2,7 @@
 
 async function FUNC_NewCards(data) {
 	handhash = BigInt(data.list);
+	if(!game.is_announced()) updateHand();
 }
 
 async function FUNC_GameSetting(setting) {
@@ -60,17 +61,13 @@ async function FUNC_GameState(data) {
 async function FUNC_Announce(ann) {
 	let [pt, misere] = ann;
 
-	if( $("#roundWindow").visible() ) {
-		$("#closeSummary").click();
-		updateHand();
-	}
-
 	gameMessage(pt_name(pt, misere), game.current_player);
 
 	shown = new Set();
 	said_marriage = false;
 	game.announce(pt, misere);
 
+	carpet.clean();
 	updateCurrentPlayer(game.current_player);
 	updateRoundDetails();
 	if( wshandler.own.pid == game.current_player ) handleOnTurn();
@@ -104,8 +101,6 @@ async function FUNC_PlayCard(card){
 			for(let show of shows) sum += game.get_show_value(show);
 			if(sum != 0) gameMessage("Tischweis: " + sum, game.current_player);
 		}
-
-		updatePoints();
 	}
 
 	// Handle Marriage
@@ -120,10 +115,13 @@ async function FUNC_PlayCard(card){
 	$("#turnindicator").display(false);
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
+		updateSummary();
+
+		game.update_round_results();
+		game.start_new_round([]);
+
 		setTimeout(() => {
-			openSummary();
-			carpet.clean();
-			game.start_new_round([]);
+			$("#roundWindow").display(true);
 		}, 2000);
 	} else {
 		if( game.current_player == wshandler.own.pid ) handleOnTurn();
@@ -132,6 +130,7 @@ async function FUNC_PlayCard(card){
 	}
 
 	updateRoundDetails();
+	if(newturn) updatePoints();
 }
 
 async function FUNC_ShowPoints(data) {
@@ -189,7 +188,10 @@ async function FUNC_StartGame(data) {
 	updatePoints();
 	updateRoundDetails();
 	updateCurrentPlayer(game.current_player);
-    if( plr == wshandler.own.pid ) startAnnounce();
+
+	if( game.setting.announce == "Choose" ) {
+		if( plr == wshandler.own.pid ) startAnnounce();
+	}
 }
 
 async function FUNC_EverythingPlaytype(pt) {

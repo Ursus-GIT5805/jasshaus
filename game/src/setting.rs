@@ -71,6 +71,30 @@ pub enum EndCondition {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+pub enum PointEval {
+	Add,
+	Difference {
+		include_shows: bool,
+		needs_win: bool,
+		zero_diff_points: i32,
+	},
+}
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(HtmlForm)]
+pub enum AnnounceRule {
+	Choose,
+	Random,
+}
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(HtmlForm)]
 pub struct PlaytypeSetting {
 	#[Form("#title": "Erlauben")]
 	pub allow: bool,
@@ -94,6 +118,9 @@ pub struct Setting {
 	pub team_choosing: TeamChoosing,
 	#[Form("#title": "Ziel")]
 	pub end_condition: EndCondition,
+	#[Form("#title": "Punkteauswertung")]
+	#[Form("#description": "Wie werden die Punkte ausgewertet?")]
+	pub point_eval: PointEval,
 
 	#[Form("#title": "Weniger Punkte sind besser")]
 	pub less_points_win: bool,
@@ -114,7 +141,8 @@ pub struct Setting {
 	#[Form("#title": "Misère erlauben")]
 	pub allow_misere: bool,
 
-	#[Form("#title": "")]
+	#[Form("#title": "Ansage")]
+	pub announce: AnnounceRule,
 	pub playtype: Vec<PlaytypeSetting>,
 
 	#[Form("#title": "Stöck erlauben")]
@@ -153,6 +181,8 @@ impl Setting {
 			num_players: 4,
 			team_choosing: TeamChoosing::Periodic(2),
 			end_condition: EndCondition::Points(1000),
+			point_eval: PointEval::Add,
+
 			less_points_win: false,
             point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
 
@@ -162,6 +192,7 @@ impl Setting {
 
 			allow_misere: true,
 
+			announce: AnnounceRule::Random,
 			playtype: {
 				let mut v = vec![PlaytypeSetting {
 					allow: true,
@@ -202,6 +233,8 @@ impl Setting {
 			num_players: 4,
 			team_choosing: TeamChoosing::None,
 			end_condition: EndCondition::Rounds(12),
+			point_eval: PointEval::Add,
+
 			less_points_win: true,
             point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
 
@@ -211,6 +244,7 @@ impl Setting {
 
 			allow_misere: false,
 
+			announce: AnnounceRule::Random,
 			playtype: {
 				let mut v = vec![PlaytypeSetting {
 					allow: false,

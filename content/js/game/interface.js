@@ -171,7 +171,7 @@ function setupShowButton() {
 				if(shown.has(string)) {
 					infoMessage("Schon gewiesen!");
 				} else if( !has_show ) {
-					infoMessage("Du kannst noch mehr weisen ;)!");
+					infoMessage("Du kannst noch mehr weisen ;)");
 				} else {
 					let row = showToFlexbox(show);
 					$("#showqueue").append(row);
@@ -189,12 +189,12 @@ function setupShowButton() {
 /// Update the points in the top right corner
 function updatePoints() {
 	game.teams.map((team, idx) => {
-		let bef = team.points - team.won_points - team.show_points;
+		let gain = team.won_points + team.show_points + team.marriage_points;
 
-		$('*[text="points_team' + idx + '"]').text(bef);
+		$('*[text="points_team' + idx + '"]').text(team.points);
 		$('*[text="wonpoints_team' + idx + '"]').text(team.won_points);
 		$('*[text="showpoints_team' + idx + '"]').text(team.show_points);
-		$('*[text="wonshowpoints_team' + idx + '"]').text(team.won_points + team.show_points);
+		$('*[text="gainpoints_team' + idx + '"]').text(gain);
 	});
 }
 
@@ -223,7 +223,7 @@ function setupGamedetails() {
 		}
 
 		ele.append(
-			$('<a>: <a text="points_team{}">0</a> + <a text="wonshowpoints_team{}">0</a></a>'
+			$('<a>: <a text="points_team{}">0</a> | <a text="gainpoints_team{}">0</a></a>'
 			  .replaceAll("{}", team))
 		)
 		$("#gameTeams").append(ele);
