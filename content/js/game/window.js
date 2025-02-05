@@ -144,7 +144,6 @@ $("#closeSummary").click((e) => {
 	$("#roundWindow").display(false);
 
 	if(!game.should_end()) $('*[text="game_rounds"]').text(game.round+1);
-	carpet.clean();
 	updatePoints();
 	updateRoundDetails();
 	updateHand();
@@ -152,10 +151,14 @@ $("#closeSummary").click((e) => {
 	if(game.should_end()) openEndwindow();
 	else {
 		updateCurrentPlayer(game.current_player);
-		if(game.current_player == wshandler.own.pid &&
-		   game.setting.announce == "Choose")
-		{
-			startAnnounce();
+		if(game.is_announced()) {
+			if(game.current_player == wshandler.own.pid) handleOnTurn();
+		} else {
+			if(game.current_player == wshandler.own.pid &&
+			   game.setting.announce == "Choose")
+			{
+				startAnnounce();
+			}
 		}
 	}
 });

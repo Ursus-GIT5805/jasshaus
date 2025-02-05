@@ -1,8 +1,10 @@
 /// ===== Event Handlers =====
 
+var openingRoundWindow = false;
+
 async function FUNC_NewCards(data) {
 	handhash = BigInt(data.list);
-	if(!game.is_announced()) updateHand();
+	if(!openingRoundWindow) updateHand();
 }
 
 async function FUNC_GameSetting(setting) {
@@ -61,7 +63,7 @@ async function FUNC_GameState(data) {
 async function FUNC_Announce(ann) {
 	let [pt, misere] = ann;
 
-	gameMessage(pt_name(pt, misere), game.current_player);
+	if(!openingRoundWindow) gameMessage(pt_name(pt, misere), game.current_player);
 
 	shown = new Set();
 	said_marriage = false;
@@ -115,11 +117,14 @@ async function FUNC_PlayCard(card){
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		updateSummary();
+		openingRoundWindow = true;
 
 		game.update_round_results();
 		game.start_new_round([]);
 
 		setTimeout(() => {
+			carpet.clean()
+			openingRoundWindow = false;
 			$("#roundWindow").display(true);
 		}, 2000);
 	} else {
