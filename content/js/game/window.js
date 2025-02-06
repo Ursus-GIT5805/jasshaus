@@ -196,23 +196,25 @@ function openEndwindow() {
 
 // Bid window
 
-function openBidWindow(value=0, minimum=null, text="Bieten") {
+function openBidWindow(value=0, text="Bieten") {
 	let bidWindow = $("#bidWindow");
 
 	let title = bidWindow.find("#bidTitle");
 	title.text(text);
 
 	let input = bidWindow.find("#bidInput");
-	input.val(value)
-		.attr("min", minimum);
+	input.val(value);
 
 	bidWindow.display(true);
 }
 
 $("#bidButton").click(() => {
 	let val = Number($("#bidInput").val());
-	console.log(val);
 	if(isNaN(val)) return;
+
+	let team = game.players[ wshandler.own.pid ].team_id;
+	if(val < game.teams[team].target) return;
+	if(I32_MAX < val) return;
 
 	ev_bid(val);
 

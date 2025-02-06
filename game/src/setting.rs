@@ -303,3 +303,10 @@ impl Setting {
 			.sum()
 	}
 }
+
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn must_bid(setting: &Setting) -> bool {
+	setting.must_bid()
+}

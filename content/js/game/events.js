@@ -217,6 +217,7 @@ async function FUNC_Bid(bid) {
 	gameMessage("Ich biete: " + bid, game.current_player);
 	game.bid(bid);
 
+	updatePoints();
 	updateCurrentPlayer(game.current_player);
 	if( on_turn() ) handleOnTurn();
 }

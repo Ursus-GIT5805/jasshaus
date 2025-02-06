@@ -17,6 +17,8 @@ function quitError(message) {
 }
 
 const IS_MOBILE = detectMobile();
+const I32_MIN = -2147483648;
+const I32_MAX = 2147483647;
 
 var settings = null;
 var form = null;
@@ -57,7 +59,9 @@ function handleOnTurn() {
 		let team = game.players[plr].team_id;
 		let target = game.teams[team].target;
 
-		openBidWindow(target, target);
+		if(target == I32_MIN) target = 0;
+
+		openBidWindow(target);
 		return;
 	}
 

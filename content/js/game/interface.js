@@ -199,6 +199,10 @@ function updatePoints() {
 		$('*[text="wonpoints_team' + idx + '"]').text(team.won_points);
 		$('*[text="showpoints_team' + idx + '"]').text(team.show_points);
 		$('*[text="gainpoints_team' + idx + '"]').text(gain);
+
+		let target = team.target;
+		if(target == I32_MIN) target = 0;
+		$('*[text="target_team' + idx + '"]').text(target);
 	});
 }
 
@@ -226,10 +230,17 @@ function setupGamedetails() {
 			if(i+1 < plrs.length) ele.append( $("<a> + </a>") );
 		}
 
-		ele.append(
-			$('<a>: <a text="points_team{}">0</a> | <a text="gainpoints_team{}">0</a></a>'
-			  .replaceAll("{}", team))
-		)
+		ele.append( $('<a>: </a>') );
+		ele.append( $('<a>0</a>').attr("text", "points_team" + team) );
+
+		let gainpoints = $('<a> (<a text="gainpoints_team{}"></a>)</a>'.replaceAll("{}", team));
+		ele.append(gainpoints);
+
+		if( must_bid(game.setting) ) {
+			let bid = $('<a> [<a text="target_team{}"></a>]</a>'.replaceAll("{}", team));
+			ele.append( bid );
+		}
+
 		$("#gameTeams").append(ele);
 	}
 }

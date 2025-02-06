@@ -61,6 +61,7 @@ pub fn all_cards() -> Vec<Card> {
         .collect()
 }
 
+#[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 pub fn get_card_id(card: Card) -> u8 {
 	card.get_id()
