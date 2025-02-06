@@ -72,11 +72,20 @@ pub enum EndCondition {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum PointEval {
+	#[Form("#title": "Punkte Addieren")]
 	Add,
+	#[Form("#title": "Differenz nehmen")]
 	Difference {
+		#[Form("#title": "Weise berücksichtigen")]
 		include_shows: bool,
-		needs_win: bool,
+		#[Form("#title": "Stöck berücksichtigen")]
+		include_marriage: bool,
+
+		#[Form("#title": "Nulldifferenz Extrapunkte")]
 		zero_diff_points: i32,
+		#[Form("#title": "Stich benötigt")]
+		#[Form("#description": "Entscheiden, ob mindestens ein Stich für die Extrapunkte benötigt wird.")]
+		needs_win: bool,
 	},
 }
 
@@ -86,7 +95,9 @@ pub enum PointEval {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum AnnounceRule {
+	#[Form("#title": "Manuelles Ansage")]
 	Choose,
+	#[Form("#title": "Zufälliges")]
 	Random,
 }
 
@@ -163,7 +174,7 @@ pub struct Setting {
 	#[Form("#description": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
     pub pass_to_same_team: bool,
 
-	#[Form("#title": "Striktes Untertrumpfen")]
+	#[Form("#title": "Striktes Untertrumpfregel")]
 	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl hat)")]
 	pub strict_undertrumpf: bool,
 
@@ -181,6 +192,7 @@ impl Setting {
 			num_players: 4,
 			team_choosing: TeamChoosing::Periodic(2),
 			end_condition: EndCondition::Points(1000),
+
 			point_eval: PointEval::Add,
 
 			less_points_win: false,
@@ -276,6 +288,13 @@ impl Setting {
             startcondition: StartingCondition::Random,
             apply_startcondition_on_revanche: false,
         }
+	}
+
+	pub fn must_bid(&self) -> bool {
+		match self.point_eval {
+			PointEval::Difference { .. } => true,
+			_ => false,
+		}
 	}
 
 	pub fn num_allowed(&self) -> usize {

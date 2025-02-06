@@ -17,6 +17,7 @@ async function FUNC_GameState(data) {
 
 	handhash = cardset.list;
 	updateHand();
+	hand.setIllegal();
 
 	// Update the entire state
 	for(let key in state) {
@@ -212,6 +213,14 @@ async function FUNC_EverythingPlaytype(pt) {
 	updateRoundDetails();
 }
 
+async function FUNC_Bid(bid) {
+	gameMessage("Ich biete: " + bid, game.current_player);
+	game.bid(bid);
+
+	updateCurrentPlayer(game.current_player);
+	if( on_turn() ) handleOnTurn();
+}
+
 // Gameplay actions
 function ev_send(ele) { wshandler.send({ "Event": ele }); }
 
@@ -219,3 +228,4 @@ function ev_play_card(card) { ev_send({ "PlayCard": { "color": card.color, "numb
 function ev_announce(pt, misere) { ev_send({ "Announce": [pt, misere] }) }
 function ev_pass() { ev_send("Pass"); }
 function ev_play_show(show) { ev_send({ "PlayShow": show }); }
+function ev_bid(bid) { ev_send({ "Bid": bid }); }

@@ -50,6 +50,16 @@ function objEquals(a, b) {
 /// Handler for when the host is on turn
 function handleOnTurn() {
 	if(game.should_end()) return;
+	if(game.is_biding()) {
+		hand.setLegality(() => true);
+
+		let plr = wshandler.own.pid;
+		let team = game.players[plr].team_id;
+		let target = game.teams[team].target;
+
+		openBidWindow(target, target);
+		return;
+	}
 
 	let cardset = Cardset.from_list( hand.getCards() );
 	hand.setLegality((card) => game.is_legal_card(cardset, card));

@@ -36,6 +36,8 @@ pub enum GameEvent {
 
     NewCards(Cardset),
 	StartGame(usize),
+
+	Bid(i32),
 }
 use GameEvent::*;
 
@@ -142,6 +144,8 @@ impl JassRoom {
 			return;
 		}
 
+		// Check for basic cheating
+		if !self.game.is_playing() { return; }
 		if self.game.current_player != plr_id { return; }
         if !self.game.is_legal_card(&self.game.players[plr_id].hand, card) { return; }
 
@@ -236,6 +240,12 @@ impl JassRoom {
 
 		self.game.play_show(show, plr_id);
 	}
+
+	async fn bid(&mut self, clients: &mut ClientHandler, bid: i32, plr_id: usize) {
+		if !self.game.can_bid(plr_id) { return; }
+		self.game.bid(bid);
+		clients.ev_send_to_all(GameEvent::Bid(bid)).await;
+	}
 }
 
 #[async_trait]
@@ -292,6 +302,7 @@ impl ServerRoom<GameEvent> for JassRoom {
 			GameEvent::Announce(pt, misere) => self.announce(clients, pt, misere, plr_id).await,
 			GameEvent::Pass => self.pass(clients, plr_id).await,
 			GameEvent::PlayShow(show) => self.play_show(clients, show, plr_id).await,
+			GameEvent::Bid(bid) => self.bid(clients, bid, plr_id).await,
 			_ => {},
 		}
 		Ok(())

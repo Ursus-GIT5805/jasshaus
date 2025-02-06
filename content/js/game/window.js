@@ -193,3 +193,29 @@ function openEndwindow() {
 
 	$("#endWindow").css("display", "flex");
 }
+
+// Bid window
+
+function openBidWindow(value=0, minimum=null, text="Bieten") {
+	let bidWindow = $("#bidWindow");
+
+	let title = bidWindow.find("#bidTitle");
+	title.text(text);
+
+	let input = bidWindow.find("#bidInput");
+	input.val(value)
+		.attr("min", minimum);
+
+	bidWindow.display(true);
+}
+
+$("#bidButton").click(() => {
+	let val = Number($("#bidInput").val());
+	console.log(val);
+	if(isNaN(val)) return;
+
+	ev_bid(val);
+
+	hand.setIllegal();
+	$("#bidWindow").display(false);
+});

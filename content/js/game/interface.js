@@ -20,7 +20,8 @@ var hand = new Hand(
 		return img;
 	},
 	(card) => { // onPlay
-		if( $("#announceWindow").visible() ) return false; // Cancel
+		if( $("#announceWindow").visible() ) return false;
+		if( $("#bidWindow").visible() ) return false;
 		ev_play_card(card);
 		return true;
 	}

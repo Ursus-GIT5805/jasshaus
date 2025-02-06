@@ -75,7 +75,7 @@ impl Team {
 		self.won_points = 0;
 		self.show_points = 0;
 		self.marriage_points = 0;
-		self.target = 0;
+		self.target = i32::MIN;
 		self.won.clear();
 	}
 }
@@ -84,7 +84,7 @@ impl Team {
 #[wasm_bindgen(getter_with_clone)]
 pub struct Game {
     // History
-	pub round: usize,
+    pub passed: usize,
 	pub cards_played: usize,
 	pub played_cards: Vec<Card>,
 	pub best_player: usize,
@@ -93,6 +93,7 @@ pub struct Game {
     pub bestcard: Option<Card>,
 
 	pub marriage: MarriageState,
+	pub last_bid_player: Option<usize>,
 
     #[serde(skip)]
     pub players: Vec<Player>,
@@ -102,7 +103,7 @@ pub struct Game {
     pub announce_player: usize,
     pub current_player: usize,
 
-    pub passed: usize,
+	pub round: usize,
 
     pub setting: Setting,
 }
@@ -142,6 +143,7 @@ impl Game {
 			turncolor: None,
 			bestcard: None,
 			marriage: MarriageState::None,
+			last_bid_player: None,
 
             players: plrs,
             teams: vec![Team::default(); num_teams],
@@ -166,13 +168,24 @@ impl Game {
 					team.points += team.gain_points();
 				}
 			},
-			PointEval::Difference { include_shows, zero_diff_points, needs_win } => {
+			PointEval::Difference { include_shows, include_marriage, zero_diff_points, needs_win } => {
 				for team in self.teams.iter_mut() {
-					let points = if include_shows {
-						team.show_points + team.won_points
-					} else {
-						team.points += team.won_points;
-						team.won_points
+					let points = {
+						let mut p = team.won_points;
+
+						if include_shows {
+							p += team.show_points;
+						} else {
+							team.points += team.show_points;
+						}
+
+						if include_marriage {
+							p += team.marriage_points;
+						} else {
+							team.points += team.marriage_points;
+						}
+
+						p
 					};
 
 					let diff = (points - team.target).abs();
@@ -590,7 +603,76 @@ impl Game {
 			self.ruleset.active = Playtype::Updown;
 		}
         self.update_ruletype();
+
+		if self.setting.must_bid() {
+			let plr = self.get_startplayer();
+			self.last_bid_player = Some(plr);
+		}
     }
+
+	fn get_next_bid_player(&self) -> usize {
+		let team = self.players[self.current_player].team_id;
+		let plrs = self.get_players_of_team(team);
+
+		let idx = plrs.iter()
+			.position(|&x| x == self.current_player)
+			.unwrap_or(0);
+		let next_idx = (idx + 1) % plrs.len();
+
+		plrs[next_idx]
+	}
+
+	fn proceed_bid(&mut self) {
+		let team = self.players[self.current_player].team_id;
+		let next_team = (team+1) % self.teams.len();
+
+		let start_player = self.get_startplayer();
+
+		let mod_class = self.players.len();
+		let mod_sub = mod_class - start_player;
+
+		let next_player = {
+			let plrs = self.get_players_of_team(next_team);
+
+			let next = plrs.into_iter()
+				.map(|id| (id+mod_sub) % mod_class)
+				.min()
+				.unwrap_or(0);
+
+			let plr_id = (next + start_player) % mod_class;
+			plr_id
+		};
+
+		self.last_bid_player = if next_player != start_player {
+			self.current_player = next_player;
+			Some(next_player)
+		} else {
+			self.current_player = start_player;
+			None
+		};
+	}
+
+	pub fn bid(&mut self, bid: i32) {
+		if self.last_bid_player.is_none() { return; }
+
+		let team = self.players[self.current_player].team_id;
+		let is_same = self.teams[team].target == bid;
+		let next = self.get_next_bid_player();
+
+		if !is_same {
+			self.last_bid_player = Some(self.current_player);
+			self.teams[team].target = bid;
+			self.current_player = next;
+		}
+
+		let last_plr = self.last_bid_player.unwrap_or(0);
+
+		if last_plr == next {
+			self.proceed_bid();
+		} else {
+			self.current_player = next;
+		}
+	}
 
 	/// Returns whether the given announcement is legal
 	pub fn legal_announcement(&self, pt: Playtype, misere: bool) -> bool {
@@ -614,6 +696,16 @@ impl Game {
 	/// Return whether something is announced the current turn
 	pub fn is_announced(&self) -> bool {
 		self.ruleset.playtype != Playtype::None
+	}
+
+	#[inline]
+	pub fn is_biding(&self) -> bool {
+		self.last_bid_player.is_some()
+	}
+
+	#[inline]
+	pub fn is_playing(&self) -> bool {
+		self.is_announced() && !self.is_biding()
 	}
 
     #[inline]
@@ -668,9 +760,14 @@ impl Game {
     /// Returns true if the round should end now
 	pub fn should_end(&self) -> bool {
 		match self.setting.end_condition {
-			EndCondition::Points(maxp) => self.teams
-				.iter()
-				.any(|team| maxp <= team.cur_points()),
+			EndCondition::Points(maxp) => match self.setting.point_eval {
+				PointEval::Add => self.teams
+					.iter()
+					.any(|team| maxp <= team.cur_points()),
+				_ => self.teams
+					.iter()
+					.any(|team| maxp <= team.points)
+			},
 			EndCondition::Rounds(r) => r as usize <= self.round,
 		}
     }
@@ -788,8 +885,13 @@ impl Game {
     pub fn can_show(&self, player_id: usize) -> bool {
         self.current_player == player_id
             && self.get_turn() < 1
-            && self.is_announced()
+            && self.is_playing()
     }
+
+	/// Returns true when the given player can bid
+	pub fn can_bid(&self, player_id: usize) -> bool {
+		self.is_biding() && self.current_player == player_id
+	}
 
 	/// Return whether the given player can pass
 	pub fn can_pass(&self, player_id: usize) -> bool {
