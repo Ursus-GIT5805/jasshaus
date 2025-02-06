@@ -122,6 +122,8 @@ async function FUNC_PlayCard(card){
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		updateSummary();
+		updatePoints();
+
 		lock_interface_updates = true;
 
 		game.update_round_results();

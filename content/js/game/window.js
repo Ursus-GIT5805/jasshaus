@@ -81,13 +81,11 @@ function updateSummary() {
 		let got_marriage = plr_mar && game.players[plr_mar].team_id == team_id;
 
 		let bef = team.points;
-		let gain = team.won_points + team.show_points + team.marriage_points;
-		let after = bef + gain;
 
 		let plr_id = Array.from(game.get_players_of_team(team_id));
 		let plrs = plr_id.map((id) => {
 			if(!names[id]) return "???";
-			return names[id].substr(0,3) + ".";
+			return names[id].substr(0,5) + ".";
 		});
 
 		let ele = $(`
@@ -98,7 +96,7 @@ function updateSummary() {
   <div id="mods"></div>
   <div>----------</div>
   <div style="font-size: 1.5em;">
-   <a style="float: left;">Endstand</a> <a style="float: right;">` + after + `</a></div>
+   <a style="float: left;">Endstand</a> <a style="float: right;" id="result"></a></div>
   </div>
 </div>
 `);
@@ -114,10 +112,46 @@ function updateSummary() {
 				.append(points_a);
 		};
 
+		let evaltype = game.setting.point_eval;
+
 		let mods = ele.find("#mods");
-		if(team.won_points > 0) mods.append( ele_gain("Stich", team.won_points) );
-		if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
-		if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+		let result = ele.find("#result");
+
+		if(evaltype === "Add") {
+			if(team.won_points > 0) mods.append( ele_gain("Stich", team.won_points) );
+			if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
+			if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+			let after = team.points + team.won_points + team.show_points + team.marriage_points;
+			result.text(after);
+		} else if("Difference" in evaltype) {
+			let data = evaltype["Difference"];
+			let p = team.won_points;
+			let after = team.points;
+
+			if(!data.include_shows) {
+				after += team.show_points;
+				if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
+			} else { p += team.show_points; }
+
+			if(!data.include_marriage) {
+				after += team.marriage_points;
+				if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+			} else { p += team.marriage_points; }
+
+			let diff = Math.abs( p - team.target );
+			after += diff;
+
+			let text = "|" + p + "-" + team.target + "|";
+			text += " = " + diff;
+			mods.append( ele_gain("Differenz", text) );
+
+			let extra_win = diff == 0 && (team.won.list != 0 || !data.needs_win);
+			if(extra_win) {
+				mods.append( ele_gain("Extrapunkte", data.zero_diff_points) );
+				after += data.zero_diff_points;
+			}
+			result.text(after);
+		}
 
 		let woncards = new Cardset(BigInt(team.won.list));
 		let cardlist = $("<div>").addClass("SummaryCards");
