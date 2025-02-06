@@ -61,17 +61,6 @@ function handleOnTurn() {
 	$("#turnindicator").display(true);
 }
 
-var handhash = null;
-/// Update the hand, if there are new cards to get
-function updateHand() {
-	if(handhash) {
-		let cards = new Cardset( BigInt(handhash) ).as_vec();
-		hand.setCards(cards);
-		hand.setIllegal()
-		handhash = null;
-	}
-}
-
 /// Create a flex container with all cards from the show
 function showToFlexbox(show) {
 	let row = $("<div>")
@@ -91,8 +80,14 @@ function showToFlexbox(show) {
 	return row;
 }
 
+function on_turn() {
+	return game.current_player == wshandler.own.pid;
+}
+
 /// Display a gameplay message, as bubble and in chat
 function gameMessage(msg, plr) {
+	if(lock_interface_updates) return;
+
 	let name = wshandler.comm.getPlayerName(plr);
 	let chatmsg = "[" + name + "]: " + msg;
 

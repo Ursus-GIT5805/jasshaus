@@ -1,10 +1,8 @@
 /// ===== Event Handlers =====
 
-var openingRoundWindow = false;
-
 async function FUNC_NewCards(data) {
 	handhash = BigInt(data.list);
-	if(!openingRoundWindow) updateHand();
+	updateHand();
 }
 
 async function FUNC_GameSetting(setting) {
@@ -46,9 +44,15 @@ async function FUNC_GameState(data) {
 	wshandler.comm.updateNames();
 	updateCurrentPlayer(game.current_player);
 
-	if(state.current_player == wshandler.own.pid) {
-		if(!game.is_announced()) startAnnounce();
-		else handleOnTurn();
+	if(game.is_announced()) {
+		let pt = game.ruleset.playtype;
+		let misere = game.ruleset.misere;
+		console.log(pt_name(pt, misere));
+		gameMessage(pt_name(pt, misere), game.get_announcing_player());
+
+		if( on_turn() ) handleOnTurn();
+	} else {
+		if( on_turn() ) startAnnounce();
 	}
 
 	if(game.get_turn() == 0) {
@@ -63,7 +67,7 @@ async function FUNC_GameState(data) {
 async function FUNC_Announce(ann) {
 	let [pt, misere] = ann;
 
-	if(!openingRoundWindow) gameMessage(pt_name(pt, misere), game.current_player);
+	gameMessage(pt_name(pt, misere), game.current_player);
 
 	shown = new Set();
 	said_marriage = false;
@@ -71,7 +75,7 @@ async function FUNC_Announce(ann) {
 
 	updateCurrentPlayer(game.current_player);
 	updateRoundDetails();
-	if( wshandler.own.pid == game.current_player ) handleOnTurn();
+	if( on_turn() ) handleOnTurn();
 }
 
 async function FUNC_Pass(u) {
@@ -80,7 +84,7 @@ async function FUNC_Pass(u) {
 
 	updateCurrentPlayer(game.current_player);
 	updateRoundDetails();
-	if( wshandler.own.pid == game.current_player ) startAnnounce();
+	if( on_turn() ) startAnnounce();
 }
 
 async function FUNC_PlayCard(card){
@@ -117,18 +121,18 @@ async function FUNC_PlayCard(card){
 	if(game.should_end() || game.round_ended()) {
 		hand.setIllegal();
 		updateSummary();
-		openingRoundWindow = true;
+		lock_interface_updates = true;
 
 		game.update_round_results();
 		game.start_new_round([]);
 
 		setTimeout(() => {
 			carpet.clean()
-			openingRoundWindow = false;
+			lock_interface_updates = false;
 			$("#roundWindow").display(true);
 		}, 2000);
 	} else {
-		if( game.current_player == wshandler.own.pid ) handleOnTurn();
+		if( on_turn() ) handleOnTurn();
 		else hand.setIllegal();
 		updateCurrentPlayer(game.current_player);
 	}
@@ -194,12 +198,12 @@ async function FUNC_StartGame(data) {
 	updateCurrentPlayer(game.current_player);
 
 	if( game.setting.announce == "Choose" ) {
-		if( plr == wshandler.own.pid ) startAnnounce();
+		if( on_turn() ) startAnnounce();
 	}
 }
 
 async function FUNC_EverythingPlaytype(pt) {
-	gameMessage(pt_name(pt, game.misere), game.current_player);
+	gameMessage(pt_name(pt, game.ruleset.misere), game.current_player);
 
 	let ruleset = game.ruleset;
 	ruleset.active = pt;

@@ -92,7 +92,6 @@ where
         self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
             .await;
 
-		self.game.on_enter(&mut self.clients, plr_id).await;
 		self.clients.send_to(id, JoinedClients::<E>(joined_clients)).await;
 
 		if let Some(vote) = self.vote.clone() {
@@ -102,6 +101,8 @@ where
 				.collect();
 			self.clients.send_to(id, CurrentVote::<E>(vote, votes)).await;
 		}
+
+		self.game.on_enter(&mut self.clients, plr_id).await;
 
 		if self.state == RoomState::Entering {
 			let num_connected = self.clients.len();

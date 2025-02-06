@@ -192,7 +192,7 @@ impl Setting {
 
 			allow_misere: true,
 
-			announce: AnnounceRule::Random,
+			announce: AnnounceRule::Choose,
 			playtype: {
 				let mut v = vec![PlaytypeSetting {
 					allow: true,

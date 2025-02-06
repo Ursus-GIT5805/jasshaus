@@ -152,10 +152,9 @@ $("#closeSummary").click((e) => {
 	else {
 		updateCurrentPlayer(game.current_player);
 		if(game.is_announced()) {
-			if(game.current_player == wshandler.own.pid) handleOnTurn();
+			if( on_turn() ) handleOnTurn();
 		} else {
-			if(game.current_player == wshandler.own.pid &&
-			   game.setting.announce == "Choose")
+			if(on_turn() && game.setting.announce == "Choose")
 			{
 				startAnnounce();
 			}

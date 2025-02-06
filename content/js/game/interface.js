@@ -5,6 +5,7 @@
 
 var said_marriage = false;
 var carpet = null;
+var lock_interface_updates = false;
 
 const PASS_IMG = "img/pass.svg";
 const MISERE_IMG = "img/misere.svg";
@@ -188,6 +189,8 @@ function setupShowButton() {
 
 /// Update the points in the top right corner
 function updatePoints() {
+	if(lock_interface_updates) return;
+
 	game.teams.map((team, idx) => {
 		let gain = team.won_points + team.show_points + team.marriage_points;
 
@@ -232,6 +235,7 @@ function setupGamedetails() {
 
 /// Update the current active player
 function updateCurrentPlayer(plr=null) {
+	if(lock_interface_updates) return;
 	players.updateCurrent(plr);
 }
 
@@ -247,6 +251,8 @@ function updateCardskin() {
 }
 
 function updatePlaytypeSRC() {
+	if(lock_interface_updates) return;
+
 	$('*[imgsrc^=pt]').map((i, ele) => {
 		let att = ele.getAttribute("imgsrc");
 
@@ -266,6 +272,8 @@ function updatePlaytypeSRC() {
 
 /// Update the symbols in the top left corner
 function updateRoundDetails(){
+	if(lock_interface_updates) return;
+
 	let ruleset = game.ruleset;
 	let announced = game.is_announced();
 
@@ -325,4 +333,20 @@ function setupSettings() {
 		settings = form.get();
 	});
 	$("#botleftbuttons").append(button);
+}
+
+
+var handhash = null;
+/// Update the hand, if there are new cards to get
+function updateHand() {
+	if(lock_interface_updates) return;
+
+	if(handhash) {
+		let cards = new Cardset( BigInt(handhash) ).as_vec();
+		hand.setCards(cards);
+
+		let legal = on_turn();
+		hand.setLegality(() => legal);
+		handhash = null;
+	}
 }
