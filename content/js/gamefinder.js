@@ -1,7 +1,7 @@
 function get_fetch_url() {
 	let local = window.location.protocol == "file:" || window.location.protocol == "http:";
 	if(local) return "http://" + location.hostname + ":7999/rooms";
-	return location.host + "/rooms";
+	return location.origin + "/rooms";
 }
 
 const FETCH_URL = get_fetch_url();

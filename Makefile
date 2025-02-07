@@ -28,7 +28,7 @@ install:
 	mkdir -p build
 	mkdir -p build/content
 	cd $(server_pwd) && cargo build --release --target $(target)
-	cp $(server_pwd)/target/$(target)/release/jasshaus-server build/jasshaus-server
+	rsync -v $(server_pwd)/target/$(target)/release/jasshaus-server build/jasshaus-server
 	cd game && wasm-pack build --target web --release
 	rsync -av game/pkg content/
 	rsync -av content build
