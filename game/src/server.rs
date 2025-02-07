@@ -308,6 +308,9 @@ impl ServerRoom<GameEvent> for JassRoom {
 		Ok(())
 	}
 
-	fn get_num_players(&self) -> usize { self.game.players.len() }
+	fn get_player_bound(&self) -> (usize,usize) {
+		let n = self.game.setting.num_players;
+		(n, n)
+	}
 	fn should_end(&self) -> bool { self.game.should_end() }
 }

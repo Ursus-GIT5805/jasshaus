@@ -13,6 +13,7 @@ pub enum RTCSignal {
 #[non_exhaustive]
 pub enum VotingType {
 	Kick(usize),
+	StartGame,
 	Teaming,
 	Revanche,
 }
@@ -26,6 +27,7 @@ pub enum SocketMessage<T> {
     Vote(usize,usize),
     NewVote(VotingType),
 	CurrentVote(VotingType, Vec<(usize,usize)>),
+	QuitVote,
 
 	RtcStart(usize),
 	RtcSignaling(String, RTCSignal, usize),

@@ -19,7 +19,7 @@ pub trait ServerRoom<T> {
 	async fn on_leave(&mut self, clients: &mut ClientHandler, plr_id: usize);
 	async fn on_event(&mut self, clients: &mut ClientHandler, event: T, plr_id: usize) -> Result<(), Self::Err>;
 
-	fn get_num_players(&self) -> usize;
+	fn get_player_bound(&self) -> (usize, usize);
 	fn should_end(&self) -> bool;
 }
 
@@ -65,9 +65,10 @@ where
     }
 
 	pub async fn cleanup(&mut self) {
-		for (_, client) in self.clients.iter_mut() {
-			client.close().await;
-		}
+		let futures = self.clients.iter_mut()
+			.map(|(_, client)| client.close());
+
+		futures::future::join_all(futures).await;
 		self.clients.clear();
 	}
 
@@ -91,7 +92,9 @@ where
 
 	/// Returns a player ID, if one exists
     fn get_unused_player_id(&self) -> Option<usize> {
-        let mut mex = vec![true; self.game.get_num_players()];
+		let (_, num_players) = self.game.get_player_bound();
+
+        let mut mex = vec![true; num_players];
         for (_, client) in self.clients.iter() {
             mex[client.player_id] = false;
         }
@@ -114,8 +117,11 @@ where
 		let joined_clients = self.clients.iter()
 			.map(|(i,client)| (client.name.clone(), *i, client.player_id))
 			.collect();
+
 		let (conn, id) = self.clients.register(plr_id, ws_tx);
-        self.clients.send_to(id, PlayerID::<E>(id, plr_id, self.game.get_num_players())).await;
+		let (_, num_players) = self.game.get_player_bound();
+
+		self.clients.send_to(id, PlayerID::<E>(id, plr_id, num_players)).await;
         self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
             .await;
 
@@ -132,11 +138,15 @@ where
 		self.game.on_enter(&mut self.clients, plr_id).await;
 
 		if self.state == RoomState::Entering {
+			let (low, up) = self.game.get_player_bound();
 			let num_connected = self.clients.len();
-			if num_connected == self.game.get_num_players() {
-				self.quit_vote();
+
+			if num_connected == up {
+				self.quit_vote().await;
 				let _ = self.game.start(&mut self.clients).await;
 				self.state = RoomState::Playing;
+			} else if low <= num_connected {
+				self.start_vote(VotingType::StartGame).await;
 			}
 		}
 
@@ -180,7 +190,10 @@ where
     }
 
 	/// Quit the current vote
-	fn quit_vote(&mut self) {
+	async fn quit_vote(&mut self) {
+		if let Some(_) = self.vote {
+			self.clients.send_to_all(SocketMessage::<E>::QuitVote).await;
+		}
 		self.vote = None;
 	}
 
@@ -225,7 +238,7 @@ where
 			_ => todo!("Not implemented yet..."),
 		}
 
-		self.quit_vote();
+		self.quit_vote().await;
 	}
 
 	async fn handle_vote( &mut self, vote: usize, client_id: usize ) {
@@ -245,12 +258,13 @@ where
 
     async fn handle_team_choosing(&mut self) {
         if self.state != RoomState::Teaming { return; }
+		let (_, num_players) = self.game.get_player_bound();
 
 		// TODO Correctly handle team choosing
 		// TODO This is merely shuffling, actually handle the requests
 		let players = {
             let mut rng = rand::thread_rng();
-			let mut v: Vec<usize> = (0..self.game.get_num_players()).collect();
+			let mut v: Vec<usize> = (0..num_players).collect();
 			v.shuffle(&mut rng);
 			v
 		};

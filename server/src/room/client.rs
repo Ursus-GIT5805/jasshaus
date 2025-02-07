@@ -109,18 +109,20 @@ impl ClientHandler {
     pub async fn send_to_all_except<T>(&mut self, client_id: usize, data: T)
 	where T: Serialize + Clone
 	{
-        for (id, client) in self.clients.iter_mut() {
-            if *id == client_id { continue; }
-            client.send(data.clone()).await;
-        }
+		let futures = self.clients.iter_mut()
+			.filter(|(&id, _)| id != client_id)
+			.map(|(_, client)| client.send(data.clone()));
+
+		futures::future::join_all(futures).await;
     }
 
     pub async fn send_to_all<T>(&mut self, data: T)
 	where T: Serialize + Clone
 	{
-        for (_, client) in self.clients.iter_mut() {
-            client.send(data.clone()).await;
-        }
+		let futures = self.clients.iter_mut()
+			.map(|(_, client)| client.send(data.clone()));
+
+		futures::future::join_all(futures).await;
     }
 
 	// Event Sending
@@ -137,7 +139,7 @@ impl ClientHandler {
 	where T: Serialize + Clone
 	{
 		let ev = SocketMessage::<T>::Event(data);
-        for (_, client) in self.clients.iter_mut() {
+		for (_, client) in self.clients.iter_mut() {
             if client.player_id == plr_id {
 				client.send(ev.clone()).await;
 			}
@@ -149,10 +151,11 @@ impl ClientHandler {
 	where T: Serialize + Clone
 	{
 		let ev = SocketMessage::<T>::Event(data);
-        for (_, client) in self.clients.iter_mut() {
-            if client.player_id == plr_id { continue; }
-            client.send(ev.clone()).await;
-        }
+		let futures = self.clients.iter_mut()
+			.filter(|(_, client)| client.player_id != plr_id)
+			.map(|(_, client)| client.send(ev.clone()));
+
+		futures::future::join_all(futures).await;
     }
 }
 
