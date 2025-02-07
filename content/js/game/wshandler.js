@@ -197,4 +197,8 @@ class GameClient {
 		await this.FUNC_NewVote(votetype);
 		for(let vote of votes) await this.FUNC_Vote(vote);
 	}
+
+	async FUNC_Ping() {
+		this.send("Pong");
+	}
 }

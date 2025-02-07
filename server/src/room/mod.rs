@@ -71,6 +71,24 @@ where
 		self.clients.clear();
 	}
 
+	async fn check_active_clients(&mut self) {
+		let mut ids = Vec::<usize>::new();
+		let mut futures = vec![];
+
+		for (id, client) in self.clients.iter_mut() {
+			ids.push( *id );
+			futures.push( client.is_active() );
+		}
+
+		let results = futures::future::join_all(futures).await;
+
+		let iter = std::iter::zip(ids, results);
+		for (id, _) in iter.filter(|(_, active)| !active) {
+			debug!("Unregister {} due to inactivity.", id);
+			self.unregister(id).await;
+		}
+	}
+
 	/// Returns a player ID, if one exists
     fn get_unused_player_id(&self) -> Option<usize> {
         let mut mex = vec![true; self.game.get_num_players()];
@@ -81,13 +99,22 @@ where
     }
 
 	/// Register a new client given the SplitSink
-    pub async fn register(&mut self, ws_tx: WsWriter) -> Option<usize> {
-        let plr_id = self.get_unused_player_id()?;
+    pub async fn register(&mut self, ws_tx: WsWriter) -> Option<(ConnectionRef, usize)> {
+        let plr_id = match self.get_unused_player_id() {
+			Some(id) => id,
+			None => {
+				self.check_active_clients().await;
+				match self.get_unused_player_id() {
+					Some(id) => id,
+					None => return None,
+				}
+			}
+		};
 
 		let joined_clients = self.clients.iter()
 			.map(|(i,client)| (client.name.clone(), *i, client.player_id))
 			.collect();
-		let id = self.clients.register(plr_id, ws_tx);
+		let (conn, id) = self.clients.register(plr_id, ws_tx);
         self.clients.send_to(id, PlayerID::<E>(id, plr_id, self.game.get_num_players())).await;
         self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
             .await;
@@ -113,7 +140,7 @@ where
 			}
 		}
 
-        Some(id)
+        Some((conn, id))
     }
 
 	/// Unregister the client with the given id
@@ -127,7 +154,8 @@ where
 			}
 		}
 
-		let pid = if let Some(client) = self.clients.get(&client_id) {
+		let pid = if let Some(client) = self.clients.get_mut(&client_id) {
+			client.close().await;
 			Some(client.player_id)
 		} else {
 			None

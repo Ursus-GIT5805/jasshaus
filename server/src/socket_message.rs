@@ -42,4 +42,7 @@ pub enum SocketMessage<T> {
 
 	StartMating,
     Mate(usize),
+
+	Ping,
+	Pong,
 }

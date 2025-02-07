@@ -26,7 +26,7 @@ where
 	E: Clone + Serialize + for<'de> Deserialize<'de>,
 {
     let (ws_tx, mut ws_rx) = ws.split();
-    let client_id: usize = room
+    let (conn, client_id) = room
         .lock()
         .await
         .register(ws_tx)
@@ -47,6 +47,7 @@ where
 		match message {
 			Message::Text(string) => {
 				debug!("Client[{}]: {}", client_id, string);
+				conn.lock().await.last_response = tokio::time::Instant::now();
 
 				let msg = match serde_json::from_str(string.as_str()) {
 					Ok(msg) => msg,

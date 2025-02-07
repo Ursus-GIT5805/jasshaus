@@ -5,16 +5,35 @@ use serde::Serialize;
 
 use std::ops::{Deref, DerefMut};
 use std::collections::HashMap;
+use tokio::time::Instant;
 
 use crate::socket_message::*;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 pub type WsWriter = SplitSink<WebSocket, Message>;
+pub type ConnectionRef = Arc< Mutex<Connection> >;
+
+pub struct Connection {
+	pub ws: WsWriter,
+	pub last_response: Instant,
+}
+
+impl Connection {
+	pub fn new(ws_tx: WsWriter) -> Self {
+		Self {
+			ws: ws_tx,
+			last_response: Instant::now(),
+		}
+	}
+}
 
 pub struct Client {
     pub name: String,
     pub player_id: usize,
 	pub vote: Option<usize>,
-	pub ws: WsWriter,
+	pub connection: ConnectionRef,
 }
 
 impl Client {
@@ -23,7 +42,7 @@ impl Client {
             name: String::new(),
             player_id,
 			vote: None,
-            ws: ws_tx,
+            connection: Arc::from( Mutex::from( Connection::new(ws_tx) ) ),
         }
     }
 
@@ -31,15 +50,30 @@ impl Client {
         let jsonstr = serde_json::to_string(&data).unwrap();
         let msg = Message::Text(jsonstr.into());
 
-        if let Err(e) = self.ws.send(msg).await {
-            eprintln!("Error sending data: {:?}", e);
+		let mut conn = self.connection.lock().await;
+        if let Err(e) = conn.ws.send(msg).await {
+			error!("Error sending data socket: {}", e)
         }
     }
 
+	pub async fn is_active(&mut self) -> bool {
+		self.send(SocketMessage::<()>::Ping).await;
+
+		let wait = tokio::time::Duration::from_secs(1);
+		let duration = tokio::time::Duration::from_secs(2);
+		tokio::time::sleep( wait ).await;
+
+		let last = self.connection.lock().await.last_response;
+		last.elapsed() < duration
+	}
+
 	pub async fn close(&mut self) {
-		match self.ws.close().await {
+		let mut conn = self.connection.lock().await;
+		match conn.ws.close().await {
 			Ok(_) => {},
-			Err(e) => eprintln!("Could not close socket: {}", e),
+			Err(e) => {
+				error!("Could not close socket: {}", e)
+			},
 		}
 	}
 }
@@ -52,11 +86,14 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
-	pub fn register(&mut self, plr_id: usize, ws_tx: WsWriter) -> usize {
+	pub fn register(&mut self, plr_id: usize, ws_tx: WsWriter) -> (ConnectionRef, usize) {
 		let id = self.client_next;
 		self.client_next += 1;
-        self.clients.insert(id, Client::new(plr_id, ws_tx));
-		id
+
+		let client = Client::new(plr_id, ws_tx);
+		let conn = client.connection.clone();
+		self.clients.insert(id, client);
+		(conn, id)
 	}
 
 	// General Sending
