@@ -1,11 +1,11 @@
 use serde::*;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::marker::Send;
 
 use axum::{
-    extract::ws::{Message, WebSocket, WebSocketUpgrade},
-    routing::get,
-    Router,
+    extract::ws::{Message, WebSocket, WebSocketUpgrade}, http::{Response, StatusCode}, routing::{get, post}, Router,
+	extract::Path,
 };
 
 use futures:: StreamExt;
@@ -16,14 +16,38 @@ mod log;
 pub mod room;
 pub mod socket_message;
 
-use room::ServerRoom;
+use room::*;
 
-use room::Room;
+type RoomHandlerRef<S,E,G> = Arc<Mutex<RoomManager<S,E,G>>>;
 
-async fn handle_websocket<E,G>(ws: WebSocket, room: Arc<Mutex< Room<E,G> >>)
+async fn handle_ws_connection<S,E,G>(ws: WebSocket, id: String, rooms: RoomHandlerRef<S,E,G>)
 where
-	G: Default + ServerRoom<E> + std::marker::Send,
-	E: Clone + Serialize + for<'de> Deserialize<'de>,
+	S: Default + Clone + Send + 'static,
+	E: Clone + Send + Serialize + for<'de> Deserialize<'de>,
+	G: ServerRoom<E> + Send + TryFrom<S>,
+{
+	let room = {
+		let handler = rooms.lock().await;
+		match handler.get_room(&id) {
+			Some(c) => c,
+			None => {
+				error!("Room {} is not available!", id);
+				return;
+			},
+		}
+	};
+
+	handle_room(ws, room).await;
+
+	let mut handler = rooms.lock().await;
+	handler.maintain_room(&id).await;
+}
+
+async fn handle_room<Setting,Event,Game>(ws: WebSocket, room: RoomRef<Setting,Event,Game>)
+where
+	Setting: Default + Clone + Send + 'static,
+	Game: ServerRoom<Event> + Send + TryFrom<Setting>,
+	Event: Clone + Serialize + for<'de> Deserialize<'de>,
 {
     let (ws_tx, mut ws_rx) = ws.split();
     let (conn, client_id) = room
@@ -66,31 +90,89 @@ where
 		}
     }
 
-	let mut rlock = room.lock().await;
-    rlock.unregister(client_id).await;
-	if rlock.should_close() {
-		rlock.cleanup().await;
-		*rlock = Room::<E,G>::new();
-	}
+	room.lock()
+		.await
+		.unregister(client_id)
+		.await;
     debug!("Client[{}] disconnected!", client_id);
 }
 
-pub async fn run_server<E,G>(addr: &'static str)
+pub async fn run_server<S,E,G>(addr: &'static str)
 where
-	G: Default + ServerRoom<E> + std::marker::Send + 'static,
-	E: Clone + Serialize + for<'de> Deserialize<'de> + std::marker::Send + 'static,
+	S: Default + Clone + for<'de> Deserialize<'de> + Send + 'static,
+	E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
+	G: ServerRoom<E> + Send + 'static + TryFrom<S>,
 {
-	let room = Arc::new( Mutex::new( Room::<E,G>::new() ) );
+	let rooms = RoomManager::<S,E,G>::new();
+	let roomsref = Arc::from( Mutex::from(rooms) );
 
-    let app = Router::new().route(
-        "/ws",
-        get(|ws: WebSocketUpgrade| async move {
-            ws.on_upgrade(|ws: WebSocket| async move {
-				handle_websocket(ws, room.clone()).await;
-			})
-        }),
-    );
+	let post_binding = roomsref.clone();
+	let rooms_binding = roomsref.clone();
+	let ws_binding = roomsref.clone();
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-	axum::serve(listener, app).await.unwrap();
+    let app = Router::new()
+        .route("/rooms", post(|req: String| async move {
+			let mut rooms = post_binding.lock().await;
+
+			let setting: S = match serde_json::from_str(req.as_str()) {
+				Ok(msg) => msg,
+				Err(_) => return Response::builder()
+					.status(StatusCode::FORBIDDEN)
+					.body(String::from("Invalid game settings"))
+					.unwrap()
+			};
+			let res = rooms.create_room(RoomSetting {
+				game_setting: setting,
+				public: true,
+			});
+
+			match res {
+				Some((id, _)) => Response::builder()
+					.status(StatusCode::OK)
+					.body(id)
+					.unwrap(),
+				None =>	Response::builder()
+					.status(StatusCode::FORBIDDEN)
+					.body(String::from("Could not create room"))
+					.unwrap()
+			}
+		}))
+        .route("/rooms", get(|_: String| async move {
+			let index = {
+				let handler = rooms_binding.lock().await;
+				handler.index_rooms().await
+			};
+
+			let body = serde_json::to_string(&index).unwrap();
+
+			Response::builder()
+				.status(StatusCode::OK)
+				.body(body)
+				.unwrap()
+		}))
+        .route("/ws/{room_id}",
+			   get(|ws: WebSocketUpgrade, Path(room_id): Path<String>| async move {
+				   ws.on_upgrade(|ws: WebSocket| async move {
+					   handle_ws_connection(ws, room_id, ws_binding).await;
+				   })
+			   })
+		);
+
+	let maintenance = async move {
+		let duration = tokio::time::Duration::from_secs( 3600 );
+
+		loop {
+			tokio::time::sleep( duration ).await;
+			debug!("Room maintenance...");
+			roomsref.lock().await.maintain().await;
+		}
+	};
+
+	let server = async move {
+		let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+		axum::serve(listener, app).await
+			.expect("Could not start server!");
+	};
+
+	futures::future::join(maintenance, server).await;
 }

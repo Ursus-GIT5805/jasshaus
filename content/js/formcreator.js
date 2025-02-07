@@ -269,6 +269,7 @@ function createForm(ident, entry, def=null) {
 	if(entry.hasOwnProperty('#description')) {
 		let div = $("<div>").append(input.ele);
 		let desc = $("<i>").text("(" + entry['#description'] + ")");
+		div.addClass("Descriptionpair");
 		div.append(desc);
 
 		input.ele = div;

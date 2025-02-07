@@ -1,9 +1,9 @@
 const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
 
-let WS_URL = "wss://" + window.location.host + "/ws"
+let WS_URL = "wss://" + window.location.host + "/ws/"
 if(DEV_MODE){
-    if(window.location.protocol == "http:") WS_URL = "ws://" + window.location.hostname + ":7999/ws";
-    else WS_URL = "ws://127.0.0.1:7999/ws";
+    if(window.location.protocol == "http:") WS_URL = "ws://" + window.location.hostname + ":7999/ws/";
+    else WS_URL = "ws://127.0.0.1:7999/ws/";
 }
 
 function detectMobile() {
@@ -19,6 +19,10 @@ function quitError(message) {
 const IS_MOBILE = detectMobile();
 const I32_MIN = -2147483648;
 const I32_MAX = 2147483647;
+
+let params = new URLSearchParams(location.search);
+let room_id = params.get('room');
+WS_URL += room_id;
 
 var settings = null;
 var form = null;
@@ -164,4 +168,5 @@ function afterModule() {
 
 	setupSettings();
 	startWS();
+	$('*[text="room_id"]').text(room_id);
 }

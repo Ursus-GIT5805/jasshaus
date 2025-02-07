@@ -4,7 +4,17 @@
 
 	margin: 0.5rem;
 	padding: 0.5rem;
-	border: 1px solid black;
+	border: 1px solid;
+}
+
+.Descriptionpair {
+	padding: 0.5rem;
+	margin: 0.5rem;
+	border: 1px solid;
+
+	> .SettingGroup, .SettingList {
+		border: 1px none;
+	}
 }
 
 .SingleSetting {
@@ -18,7 +28,7 @@
 
 .SettingListEntry {
 	display: flex;
-	justify-content: space-evenly;
+	justify-content: center;
 	padding: 0.5rem;
 
 	.Buttons {

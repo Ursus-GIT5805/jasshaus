@@ -55,14 +55,21 @@ pub struct JassRoom {
 	game: Game,
 }
 
-impl Default for JassRoom {
-	fn default() -> Self {
-		let game = Game::new( Setting::schieber() );
-		Self {
+impl TryFrom<Setting> for JassRoom {
+	type Error = ();
+
+	fn try_from(item: Setting) -> Result<Self,Self::Error> {
+		if !legal_setting(&item) {
+			return Err(());
+		}
+
+		let res = Self {
 			starts: 0,
 			roundstate: RoundState::Starting,
-			game,
-		}
+			game: Game::new(item),
+		};
+
+		Ok(res)
 	}
 }
 
@@ -255,7 +262,7 @@ impl ServerRoom<GameEvent> for JassRoom {
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
 
 		let ranking = self.game.rank_teams();
-		self.game = Game::new( Setting::schieber() );
+		self.game = Game::new( self.game.setting.clone() );
 
 		let annplr = if self.starts == 0 || self.game.setting.apply_startcondition_on_revanche {
             self.get_first_announceplayer()

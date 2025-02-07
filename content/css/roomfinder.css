@@ -1,0 +1,14 @@
+#rooms {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-around;
+}
+
+.Room {
+	width: 12rem;
+	margin: 1rem;
+	padding: 0.5rem;
+
+	border-radius: 4px;
+	border: 1px solid black;
+}

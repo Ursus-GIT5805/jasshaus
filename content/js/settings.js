@@ -37,6 +37,7 @@ var JasshausForm = {
 
 function createGameSettingForm() {
 	let formdata = JSON.parse(get_gamesettingform());
+	formdata['#title'] = "Spieleinstellungen";
 	formdata['playtype']['#type']['#movable'] = false;
 	formdata['playtype']['#type']['#resizable'] = false;
 	formdata['playtype']['#type']['#id'] = "playtypes";
@@ -79,3 +80,14 @@ function complementSettings(setting) {
 }
 
 let getSettings = () => JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY));
+
+function setupSettings() {
+	let def = getSettings();
+	let form = createForm("Einstellungen", JasshausForm, def);
+	$("#settings").append( form.ele );
+
+	window['saveSettings'] = () => {
+		let string = JSON.stringify(form.get());
+		localStorage.setItem(LOCALSTORAGE_KEY, string);
+	}
+}

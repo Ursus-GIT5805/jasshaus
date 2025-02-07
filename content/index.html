@@ -1,19 +1,47 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Jasshaus | Start</title>
+    <title>Jasshaus</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="stylesheet" href="css/main.css">
   </head>
 
-  <img src="img/background.jpg" id="background"/>
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/settings.css"/>
+  <link rel="stylesheet" href="css/roomfinder.css"/>
+
   <body>
-	<div>
+	<img src="img/background.jpg" id="background"/>
+
+	<div id="settings">
 	  <h1>Jasshaus</h1>
 	  <h2>Willkommen zum Jasshaus!</h2>
-	  <a href="game.html"><div class="Button">Einer Partie beitreten.</div></a>
-	  <a href="settings.html"><div class="Button">Einstellungen</div></a>
+	  <noscript>This website uses Javascript.</noscript>
+	</div>
+	<div>
+	  <h1>Offene Partien</h1>
+	  <div id="rooms"></div>
+	</div>
+	<div>
+	  <h1>Partie beitreten</h1>
+	  <p>
+		<label>Partie Code: </label><input id="roomInput" type="text">
+	  </p>
+	  <button id="manualRoomEnter">Der eingegebenen Partie beitreten</button>
+	</div>
+	<div>
+	  <h1>Partie Erstellen</h1>
+	  <noscript>This website uses Javascript.</noscript>
+	  <div id="gameSettings"></div>
+	  <div id="settingInfo"></div>
+	  <div class="Button" id="createRoom">Partie erstellen</div>
 	</div>
   </body>
+
+  <script type="module" src="js/loadwasm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+  <script src="js/utility.js"></script>
+  <script src="js/formcreator.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/gamefinder.js"></script>
 </html>

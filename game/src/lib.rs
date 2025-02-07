@@ -127,12 +127,12 @@ impl Game {
 				}
 				std::cmp::min(n, setting.num_players)
 			}
-			TeamChoosing::Blocks(n) => {
-				for (id, plr) in plrs.iter_mut().enumerate() {
-					plr.team_id = id / n;
-				}
-				(n as f32 / setting.num_players as f32).ceil() as usize
-			}
+			// TeamChoosing::Blocks(n) => {
+				// for (id, plr) in plrs.iter_mut().enumerate() {
+					// plr.team_id = id / n;
+				// }
+				// (n as f32 / setting.num_players as f32).ceil() as usize
+			// }
 		};
 
         Game {
@@ -311,19 +311,6 @@ impl Game {
 		}
 	}
 
-	/// Return the value of the given show (taking additional game setting into account)
-	pub fn get_show_value(&self, show: Show) -> i32 {
-		let mut val = std::cmp::min(
-			self.ruleset.get_show_value(show),
-			self.setting.show_points_maximum,
-		);
-
-		if self.setting.show_gives_negative {
-			val = -val;
-		}
-		val
-	}
-
 	/// Returns the player with the best show
 	pub fn get_plr_with_best_show(&self) -> Option<usize> {
 		let mut bestshow: Option<Show> = None;
@@ -373,7 +360,18 @@ impl Game {
             }
 
             for show in self.players[plr].shows.iter() {
-                let sp = self.get_show_value(*show);
+                let sp = {
+					let mut val = std::cmp::min(
+						self.ruleset.get_show_value(*show),
+						self.setting.show_points_maximum,
+					);
+
+					if self.setting.show_gives_negative {
+						val = -val;
+					}
+					val
+				};
+
                 self.teams[team_id].show_points += sp;
             }
         }
@@ -474,8 +472,19 @@ impl Game {
 		let cards = Cardset::from(self.played_cards.clone());
 		let tid = self.players[self.best_player].team_id;
 		for show in cards.get_shows() {
-            let sp = self.get_show_value(show);
-            self.teams[tid].show_points += sp;
+			let sp = {
+				let mut val = std::cmp::min(
+					self.ruleset.get_show_value(show),
+					self.setting.show_points_maximum,
+				);
+
+				if self.setting.table_show_gives_negative {
+					val = -val;
+				}
+				val
+			};
+
+			self.teams[tid].show_points += sp;
 		}
 	}
 

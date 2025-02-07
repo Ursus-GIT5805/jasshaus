@@ -8,6 +8,7 @@
     </head>
 
     <link rel="stylesheet" href="css/players.css"/>
+    <link rel="stylesheet" href="css/settings.css"/>
     <link rel="stylesheet" href="css/game.css"/>
     <link rel="stylesheet" href="css/voting.css"/>
     <link rel="stylesheet" href="css/carpet.css"/>
@@ -36,6 +37,7 @@
         <div class="Board" id="gameDetails">
 		  <div>
 			<u id="gameTitle"></u>
+			<a> (<a text="room_id"></a>)</a>
 		  </div>
 		  <div id="gameTeams"></div>
         </div>
@@ -64,6 +66,7 @@
 		<div id="botleftbuttons"></div>
 
 		<div id="settingsWindow" class="Window">
+		  <h1>Partie Code: <a text="room_id"></a></h1>
 		  <div id="settings"></div>
 		  <div style="display: flex; flex-wrap: wrap; justify-content: center;">
 			<div class="Button" id="closeSettings">Schliessen</div>
@@ -94,6 +97,7 @@
 
 	<script type="module" src="js/loadwasm.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="js/utility.js"></script>
     <script src="js/formcreator.js"></script>
     <script src="js/settings.js"></script>
 

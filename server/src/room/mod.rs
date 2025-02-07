@@ -1,9 +1,11 @@
 pub mod client;
 
+use std::{ops::Deref, sync::Arc};
+use tokio::sync::Mutex;
 use rand::prelude::SliceRandom;
 
 use async_trait::async_trait;
-use std::marker::PhantomData;
+use std::{collections::HashMap, marker::PhantomData};
 
 use serde::*;
 use client::*;
@@ -32,13 +34,21 @@ pub enum RoomState {
     Ending,
 }
 
-pub struct Room<E, G>
+pub struct RoomSetting<Game> {
+	pub public: bool,
+	pub game_setting: Game,
+}
+
+pub struct Room<S, E, G>
 where
-	G: ServerRoom<E>, E: Clone,
+	S: Clone,
+	E: Clone,
+	G: ServerRoom<E> + TryFrom<S>,
 {
     _marker: PhantomData<E>,
     pub clients: ClientHandler,
 
+	pub setting: RoomSetting<S>,
 	pub game: G,
     pub state: RoomState,
 
@@ -46,22 +56,32 @@ where
 	pub vote: Option<VotingType>,
 }
 
-impl<E,G> Room<E,G>
+pub type RoomRef<S,E,G> = Arc< Mutex< Room<S,E,G> > >;
+
+impl<S,E,G> Room<S,E,G>
 where
-	G: Default + ServerRoom<E> + Send,
+	S: Clone,
 	E: Clone + Serialize,
+	G: ServerRoom<E> + Send + TryFrom<S>,
 {
-    pub fn new() -> Self {
-        Room {
+    pub fn try_new(setting: RoomSetting<S>) -> Result<Self, ()> {
+		let game = G::try_from(setting.game_setting.clone())
+			.map_err(|_| ())?;
+
+
+		let res = Room {
 			_marker: PhantomData,
             clients: ClientHandler::default(),
 
-            game: G::default(),
+            game,
+			setting,
             state: RoomState::Entering,
 
 			num_votes: 0,
 			vote: None,
-        }
+        };
+
+		Ok(res)
     }
 
 	pub async fn cleanup(&mut self) {
@@ -279,6 +299,10 @@ where
 		let _ = self.game.start(&mut self.clients).await;
     }
 
+	pub fn is_full(&self) -> bool {
+		self.clients.len() == self.game.get_player_bound().1
+	}
+
 	pub fn should_close(&self) -> bool {
 		self.clients.is_empty()
 	}
@@ -307,8 +331,13 @@ where
             ClientIntroduction(name, _) => {
                 if let Some(client) = self.clients.get_mut(&client_id) {
                     if client.name.is_empty() {
-                        client.name = name.clone();
-                        self.clients.send_to_all_except(
+                        client.name = if name.is_empty() {
+							format!("unnamed{}", client_id)
+						} else {
+							name.clone()
+						};
+
+						self.clients.send_to_all_except(
                             client_id,
                             ClientIntroduction::<E>(name, client_id),
                         )
@@ -322,4 +351,172 @@ where
             }
         }
     }
+}
+
+pub type RoomID = String;
+
+pub struct RoomManager<S,E,G>
+where
+	S: Clone + Send,
+	E: Clone + Send,
+	G: ServerRoom<E> + TryFrom<S> + Send,
+{
+	room_next: u32,
+	rooms: HashMap<RoomID, RoomRef<S,E,G> >,
+}
+
+#[derive(Serialize)]
+#[derive(Clone)]
+pub struct RoomIndex {
+	pub players: Vec<String>,
+	pub id: RoomID,
+	pub max_players: usize,
+}
+
+impl RoomIndex
+{
+	fn new<S,E,G>(id: RoomID, item: &Room<S,E,G>) -> Self
+	where
+		S: Clone,
+		E: Clone,
+		G: ServerRoom<E> + TryFrom<S>,
+	{
+		let names: Vec<_> = item.clients.iter()
+			.map(|(_,client)| client.name.clone())
+			.collect();
+
+		Self {
+			id,
+			players: names,
+			max_players: item.game.get_player_bound().1,
+		}
+	}
+}
+
+impl<S,E,G> RoomManager<S,E,G>
+where
+	S: Clone + Send,
+	E: Clone + Serialize + Send,
+	G: ServerRoom<E> + TryFrom<S> + Send,
+{
+	pub fn new() -> Self {
+		Self {
+			room_next: 0u32,
+			rooms: HashMap::new(),
+		}
+	}
+
+	pub fn create_room(&mut self, setting: RoomSetting<S>)
+		-> Option<(String, RoomRef<S,E,G>)> {
+
+		// TODO create a decent room id generator
+		let id: RoomID = {
+			let number = {
+				const ORDER: [usize; 32] = [8, 19, 2, 13, 1, 17, 7, 0, 4, 11, 12, 9, 15, 18, 16, 5, 14, 3, 6, 10, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+
+				let mut x: u32 = 0;
+				for (i, &j) in ORDER.iter().enumerate() {
+					x |= ((self.room_next >> j) & 1) << i;
+				}
+				x
+			};
+
+			// custom base 32 encoding
+			let encode = {
+				const BASE: &[u8] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef".as_bytes();
+
+				let bytes: Vec<_> = (0..4)
+					.map(|x| {
+						let idx = (number >> 5*x) & 0x1F;
+						BASE[idx as usize]
+					})
+					.collect();
+
+				RoomID::from_utf8_lossy(&bytes).into()
+			};
+
+			self.room_next += 1;
+			encode
+		};
+
+		// Handle if rooms are
+		let room = match Room::<S,E,G>::try_new(setting) {
+			Ok(r) => r,
+			Err(_) => return None,
+		};
+
+		let roomref = Arc::from( Mutex::from(room) );
+
+		if self.rooms.contains_key(&id) { return None; }
+		self.rooms.insert(id.clone(), roomref.clone());
+
+		debug!("Create room {}", id);
+		Some((id, roomref))
+	}
+
+	pub async fn maintain_room(&mut self, id: &RoomID) {
+		let close = match self.rooms.get(id) {
+			Some(room) => {
+				let mut rlock = room.lock().await;
+				if rlock.should_close() {
+					rlock.cleanup().await;
+					true
+				} else {
+					false
+				}
+			},
+			None => false
+		};
+
+		debug!("Close room {}", id);
+		if close {
+			self.rooms.remove(id);
+		}
+	}
+
+	pub async fn maintain(&mut self) {
+		let rooms_futures = self.rooms.iter()
+			.map(|(id, room)| async move {
+				let mut rlock = room.lock().await;
+				if rlock.should_close() {
+					rlock.cleanup().await;
+					Some(id.clone())
+				} else {
+					None
+				}
+			});
+
+		let rooms = futures::future::join_all(rooms_futures).await;
+
+		let to_close = rooms.into_iter()
+			.filter(|c| c.is_some())
+			.map(|c| c.unwrap());
+
+		for id in to_close {
+			self.rooms.remove(&id);
+		}
+
+	}
+
+	pub async fn index_rooms(&self) -> Vec<RoomIndex> {
+		let mut v = vec![];
+		for (id, room) in self.rooms.iter() {
+			let rlock = room.lock().await;
+			if !rlock.is_full() {
+				v.push( RoomIndex::new( id.clone(), rlock.deref() ) );
+
+				if v.len() >= 32 {
+					break;
+				}
+			}
+		}
+		v
+	}
+
+	pub fn get_room(&self, id: &RoomID) -> Option< RoomRef<S,E,G> > {
+		match self.rooms.get(id) {
+			Some(c) => Some(c.clone()),
+			None => None,
+		}
+	}
 }

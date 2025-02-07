@@ -47,11 +47,11 @@ pub enum TeamChoosing {
 	#[Form("#title": "Keine Teams")]
     None, // There are no teams, everyone vs everyone
 	#[Form("#title": "Periodisch")]
-	#[Form("#description": "Personen werden gegenuhrzeiger Sinn bis n nummeriert.")]
+	#[Form("#description": "Personen werden im gegenuhrzeigersinn bis n periodisch nummeriert.")]
 	Periodic(usize), // Creates n teams, where player_id=(pid) has team (pid%n)
-	#[Form("#title": "Block")]
-	#[Form("#description": "Immer n spieler nacheinander werden gruppiert.")]
-    Blocks(usize), // Creates blocks of n players each
+	// #[Form("#title": "Block")]
+	// #[Form("#description": "Immer n spieler nacheinander werden gruppiert.")]
+    // Blocks(usize), // Creates blocks of n players each
 }
 
 #[derive(Tsify)]
@@ -95,9 +95,9 @@ pub enum PointEval {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum AnnounceRule {
-	#[Form("#title": "Manuelles Ansage")]
+	#[Form("#title": "Manuelle Ansage")]
 	Choose,
-	#[Form("#title": "Zufälliges")]
+	#[Form("#title": "Zufällig")]
 	Random,
 }
 
@@ -133,33 +133,42 @@ pub struct Setting {
 	#[Form("#description": "Wie werden die Punkte ausgewertet?")]
 	pub point_eval: PointEval,
 
-	#[Form("#title": "Weniger Punkte sind besser")]
+	#[Form("#title": "Wenig Punkte")]
+	#[Form("#description": "Entscheiden, ob das Ziel ist, möglichst wenig Punkte zu erzielen.")]
 	pub less_points_win: bool,
 	#[Form("#title": "Punkteregelung")]
-	#[Form("#description": "In welcher Reihenfolge die Punkte verechnet werden.")]
+	#[Form("#description": "Reihenfolge der Punkteverrechnung. Zuoberst wird zuerst verrechnet.")]
     pub point_recv_order: Vec<PointRule>,
 
 
 	#[Form("#title": "Weise erlauben")]
 	pub allow_shows: bool,
+	#[Form("#title": "Weise geben Negativpunkte")]
+	pub show_gives_negative: bool,
+
 	#[Form("#title": "Tischweise erlauben")]
 	pub allow_table_shows: bool,
-	#[Form("#title": "Weise zählen negativ")]
-	pub show_gives_negative: bool,
+	#[Form("#title": "Tischweise geben Negativpunkte")]
+	pub table_show_gives_negative: bool,
+
 	#[Form("#title": "Maximale Weispunkte")]
     pub show_points_maximum: i32,
-
-	#[Form("#title": "Misère erlauben")]
-	pub allow_misere: bool,
-
-	#[Form("#title": "Ansage")]
-	pub announce: AnnounceRule,
-	pub playtype: Vec<PlaytypeSetting>,
 
 	#[Form("#title": "Stöck erlauben")]
 	pub allow_marriage: bool,
 	#[Form("#title": "Stöckpunkte")]
     pub marriage_points: i32,
+
+	#[Form("#title": "Ansage")]
+	pub announce: AnnounceRule,
+	#[Form("#title": "Trumpfeinstellungen")]
+	pub playtype: Vec<PlaytypeSetting>,
+
+	#[Form("#title": "Striktes Untertrumpfregel")]
+	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl hat)")]
+	pub strict_undertrumpf: bool,
+	#[Form("#title": "Misère erlauben")]
+	pub allow_misere: bool,
 
 	#[Form("#title": "Matchpunkte")]
 	pub match_points: i32,
@@ -174,14 +183,10 @@ pub struct Setting {
 	#[Form("#description": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
     pub pass_to_same_team: bool,
 
-	#[Form("#title": "Striktes Untertrumpfregel")]
-	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl hat)")]
-	pub strict_undertrumpf: bool,
-
 	#[Form("#title": "Beginnender Spieler")]
 	#[Form("#description": "Enstscheiden, wie der beginnende Spieler bestimmt wird.")]
     pub startcondition: StartingCondition,
-	#[Form("#title": "Diese Regel bei Revanche anwenden.")]
+	#[Form("#title": "Diese Regel bei Revanche anwenden")]
     pub apply_startcondition_on_revanche: bool,
 }
 
@@ -201,6 +206,7 @@ impl Setting {
 			allow_shows: true,
 			allow_table_shows: false,
 			show_gives_negative: false,
+			table_show_gives_negative: false,
 
 			allow_misere: true,
 
@@ -253,6 +259,7 @@ impl Setting {
 			allow_shows: false,
 			allow_table_shows: true,
 			show_gives_negative: false,
+			table_show_gives_negative: false,
 
 			allow_misere: false,
 
@@ -304,6 +311,33 @@ impl Setting {
 	}
 }
 
+impl Default for Setting {
+	fn default() -> Self {
+		Self::schieber()
+	}
+}
+
+#[wasm_bindgen]
+/// Return true if it's a legal setting else, not
+pub fn legal_setting(setting: &Setting) -> bool {
+	// Some conditions which are illegal
+	let donts = vec![
+		setting.num_allowed() == 0,
+		setting.num_players > NUM_CARDS,
+	];
+
+	match setting.startcondition {
+		StartingCondition::Card(c) => {
+			if c.color as usize >= NUM_COLORS ||
+				c.number as usize >= NUM_NUMBERS {
+				return false;
+			}
+		}
+		_ => {},
+	}
+
+	!donts.into_iter().any(|x| x)
+}
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
