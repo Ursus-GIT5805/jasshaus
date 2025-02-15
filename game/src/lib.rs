@@ -593,7 +593,7 @@ impl Game {
 				}
 			},
 			// These playtypes are handled externally
-			Playtype::Everything |
+			Playtype::Everything => Playtype::Updown,
 			Playtype::Molotow => self.ruleset.active,
             x => x,
         };
