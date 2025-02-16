@@ -1,6 +1,3 @@
-const TURNusername=""; // TODO
-const TURNpassword=""; // TODO
-
 const MessageType = Object.freeze({
 	System: "msg_system",
 	Info: "msg_info",
@@ -108,7 +105,7 @@ class CommunicationHandler {
 		$(document.body).append(chat);
 	}
 
-	async initVoiceChat(answerCallback, ICEcandidateCallback) {
+	async initVoiceChat(answerCallback, ICEcandidateCallback, turnName="", turnPass="") {
 		const VCconfig = {
 			iceServers: [
 				{
@@ -116,18 +113,18 @@ class CommunicationHandler {
 				},
 				{
 					urls: "turn:a.relay.metered.ca:80",
-					username: TURNusername,
-					credential: TURNpassword,
+					username: turnName,
+					credential: turnPass,
 				},
 				{
 					urls: "turn:a.relay.metered.ca:443",
-					username: TURNusername,
-					credential: TURNpassword,
+					username: turnName,
+					credential: turnPass,
 				},
 				{
 					urls: "turn:a.relay.metered.ca:443?transport=tcp",
-					username: TURNusername,
-					credential: TURNpassword,
+					username: turnName,
+					credential: turnPass,
 				}
 			]
 		};

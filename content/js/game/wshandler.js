@@ -22,10 +22,20 @@ class GameClient {
 			let ICEHandler = (candidate, id) =>
 				this.send({ "RtcSignaling": [JSON.stringify(candidate), "ICECandidate", id] });
 
-			if(data.allow_rtc) await this.comm.initVoiceChat(answerHandler, ICEHandler);
-			this.send({ "RtcStart": 0 });
+			if(data.allow_rtc) {
+				console.log("Init RTC");
 
-			this.run_event("voicechat");
+				let cred = await fetch("turn_credentials.json")
+					.then((rsp) => rsp.json())
+					.catch(err => console.error(err));
+
+				let user = cred?.username;
+				let pass = cred?.password;
+				await this.comm.initVoiceChat(answerHandler, ICEHandler, user, pass);
+
+				this.send({ "RtcStart": 0 });
+				this.run_event("voicechat");
+			}
 		}
 
 		socket.onmessage = async (e) => {

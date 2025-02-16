@@ -6,3 +6,4 @@ server/__pycache__
 server/Cargo.lock
 game/**Cargo.lock
 htmlform/**Cargo.lock
+content/turn_credentials.json
