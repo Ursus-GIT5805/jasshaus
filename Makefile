@@ -8,7 +8,7 @@ b:
 
 run:
 	make b
-	bash make/run.sh
+	(trap 'kill 0' SIGINT; make cont & make serv)
 
 cont:
 	python3 -m http.server -d content
