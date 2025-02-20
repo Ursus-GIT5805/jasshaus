@@ -1,6 +1,6 @@
 // Helper struct containing the infos of a card
 class HandCard {
-	constructor(info) {
+	constructor(id, info) {
 		this.info = info;
 		this.selected = false;
 		this.selectable = true;
@@ -12,7 +12,7 @@ class HandCard {
 // The class containing all the HandCards
 class Hand {
 	constructor(container, contentHandler, onClick) {
-		this.cards = [];
+		this.cards = {};
 		this.container = container;
 
 		this.card_cnt = 0;
@@ -24,6 +24,8 @@ class Hand {
 		this.indicate_new = true;
 
 		this.selecting = false;
+		this.max_selected = -1;
+		this.select_queue = [];
 
 		this.dragged = null;
 		this.dragcounter = 0;
@@ -50,34 +52,52 @@ class Hand {
 	}
 
 	/// Return all the cards info
-	getCards() { return this.cards.map(x => x.info); }
+	getCards() { return Object.values(this.cards).map(x => x.info); }
+
+	selectCard(id) {
+		let card = this.cards[id];
+
+		card.selected = !card.selected;
+		this.handleSelectedEffect(card.ele, card.selected);
+
+		if(card.selected) {
+			while(this.max_selected == this.select_queue.length) {
+				let pop = this.select_queue.splice(0,1)[0];
+				if(pop != undefined) {
+					this.cards[pop].selected = false;
+					this.handleSelectedEffect(this.cards[pop].ele, false);
+				}
+			}
+
+			this.select_queue.push(id);
+		} else {
+			let idx = this.select_queue.indexOf(id);
+			if(0 <= idx) this.select_queue.splice(idx, 1);
+		}
+	}
 
 	/// Append a new card
 	appendCard(info) {
-		let card = new HandCard(info);
+		let id = this.card_cnt;
+		this.card_cnt += 1;
 
+		let card = new HandCard(id, info);
 		let ele = this.contentHandler(info);
 
 		ele.draggable = true;
 		ele.onclick = (ev) => {
 			if(this.selecting) {
-				if(!card.selectable) return;
-				card.selected = !card.selected;
-				this.handleSelectedEffect(ele, card.selected);
+				if(card.selectable) this.selectCard(id);
 			} else {
 				if(!this.enable_clicks) return;
 				if(!card.legal) return;
 				if(this.onPlay(info)) {
-					this.cards = this.cards.filter(x => x.ele != ele);
+					delete this.cards[id];
 					ele.remove();
 				}
 			}
 		}
 		ele.ondragstart = (e) => {
-			if(this.selecting) {
-				e.preventDefault();
-				return;
-			}
 			this.dragcounter = 0;
 
 			let node = ele.cloneNode();
@@ -89,13 +109,12 @@ class Hand {
 			ele.style['opacity'] = 0;
 		}
 		ele.ondragend = (e) => {
-			if(this.selecting) return;
 			e.preventDefault();
 			ele.style['opacity'] = 1;
 
 			if(this.dragcounter == 0 && card.legal) {
 				if(this.onPlay(info)) {
-					this.cards = this.cards.filter(x => x.ele != ele);
+					delete this.cards[id];
 					ele.remove();
 				}
 			}
@@ -138,7 +157,7 @@ class Hand {
 
 		card.ele = ele;
 
-		this.cards.push(card);
+		this.cards[id] = card;
 		this.container.appendChild(card.ele);
 	}
 
@@ -166,7 +185,7 @@ class Hand {
 
 	/// Handle which cards are legal to play
 	setLegality(legalityHandler) {
-		for(let card of this.cards) {
+		for(let card of Object.values(this.cards)) {
 			let legal = legalityHandler(card.info);
 			card.legal = legal;
 			this.handleLegalityEffect(card.ele, legal);
@@ -175,7 +194,7 @@ class Hand {
 
 	/// Handle which cards are selected
 	setSelected(selectHandler) {
-		for(let card of this.cards) {
+		for(let card of Object.values(this.cards)) {
 			let select = selectHandler(card.info);
 			card.selected = select;
 			this.handleSelectedEffect(card.ele, select);
@@ -187,25 +206,25 @@ class Hand {
 		if(select == undefined) this.selecting = !this.selecting;
 		else this.selecting = select;
 
-		for(let card of this.cards) {
-			card.ele.draggable = !this.selecting;
+		for(let card of Object.values(this.cards)) {
 			card.selected = false;
 			this.handleLegalityEffect(card.ele, card.selectable);
 			this.handleSelectedEffect(card.ele, false);
 		}
 
 		if(!this.selecting) {
-			for(let card of this.cards) {
+			for(let card of Object.values(this.cards)) {
 				this.handleLegalityEffect(card.ele, card.legal);
 			}
 		}
 
+		this.select_queue = [];
 		return this.selecting;
 	}
 
 	/// Get all currently selected cards
 	get_selected() {
-		return Array.from(this.cards
+		return Array.from(Object.values(this.cards)
 						  .filter((card) => card.selected)
 						  .map((card) => card.info));
 	}
