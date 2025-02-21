@@ -165,7 +165,7 @@ pub struct Setting {
 	pub playtype: Vec<PlaytypeSetting>,
 
 	#[Form("#title": "Striktes Untertrumpfregel")]
-	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl hat)")]
+	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl)")]
 	pub strict_undertrumpf: bool,
 	#[Form("#title": "Misère erlauben")]
 	pub allow_misere: bool,
@@ -184,7 +184,7 @@ pub struct Setting {
     pub pass_to_same_team: bool,
 
 	#[Form("#title": "Beginnender Spieler")]
-	#[Form("#description": "Enstscheiden, wie der beginnende Spieler bestimmt wird.")]
+	#[Form("#description": "Entscheiden, wie der beginnende Spieler bestimmt wird.")]
     pub startcondition: StartingCondition,
 	#[Form("#title": "Diese Regel bei Revanche anwenden")]
     pub apply_startcondition_on_revanche: bool,
