@@ -165,7 +165,7 @@ pub struct Setting {
 	pub playtype: Vec<PlaytypeSetting>,
 
 	#[Form("#title": "Striktes Untertrumpfregel")]
-	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahl)")]
+	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahll)")]
 	pub strict_undertrumpf: bool,
 	#[Form("#title": "Misère erlauben")]
 	pub allow_misere: bool,

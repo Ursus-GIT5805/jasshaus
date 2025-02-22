@@ -64,6 +64,8 @@ class Hand {
 			while(this.max_selected == this.select_queue.length) {
 				let pop = this.select_queue.splice(0,1)[0];
 				if(pop != undefined) {
+					if(!this.cards[pop]) break;
+
 					this.cards[pop].selected = false;
 					this.handleSelectedEffect(this.cards[pop].ele, false);
 				}
@@ -161,6 +163,19 @@ class Hand {
 		this.container.appendChild(card.ele);
 	}
 
+	removeCard(info) {
+		for(let id in this.cards) {
+			if(this.cards[id].info == info) {
+				if(this.cards[id].selected) {
+					let idx = this.select_queue.indexOf(id);
+					if(0 <= idx) this.select_queue.splice(idx, 1);
+				}
+				this.cards[id].ele.remove();
+				delete this.cards[id];
+			}
+		}
+	}
+
 	/// Clear the hand
 	clear() {
 		this.cards = [];
@@ -194,9 +209,13 @@ class Hand {
 
 	/// Handle which cards are selected
 	setSelected(selectHandler) {
-		for(let card of Object.values(this.cards)) {
+		this.select_queue = [];
+
+		for(let id in this.cards) {
+			let card = this.cards[id];
 			let select = selectHandler(card.info);
 			card.selected = select;
+			if(select) this.select_queue.push(id);
 			this.handleSelectedEffect(card.ele, select);
 		}
 	}

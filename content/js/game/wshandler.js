@@ -1,3 +1,6 @@
+const BIG_IND = "!XX!"
+BigInt.prototype.toJSON = function() { return BIG_IND + this.toString() + BIG_IND  }
+
 class HostData {
 	constructor(name) {
 		this.name = name;
@@ -65,7 +68,14 @@ class GameClient {
 	}
 
 	send( data ){
-		try { this.socket.send(JSON.stringify(data)); }
+		let string = JSON.stringify(data);
+
+		let pref = "\"" + BIG_IND;
+		let suff = BIG_IND + "\"";
+		string = string.replaceAll(pref, "");
+		string = string.replaceAll(suff, "");
+
+		try { this.socket.send(string); }
 		catch(e) { console.error("Error when sending data!", e); }
 	}
 
