@@ -31,6 +31,8 @@ pub const DRAGON: Card = Card::new(SPECIAL_COLOR, 1);
 pub const PHOENIX: Card = Card::new(SPECIAL_COLOR, 2);
 pub const DOG: Card = Card::new(SPECIAL_COLOR, 3);
 
+/// The special cards in the game
+/// They all have SPECIAL_COLOR as their color.
 pub const SPECIAL_CARDS: [Card; NUM_SPECIAL_CARDS] = [
 	ONE, DRAGON, PHOENIX, DOG
 ];
@@ -78,6 +80,8 @@ pub fn get_card_id(card: Card) -> u8 {
 	card.get_id()
 }
 
+/// A Playtype is a type of how you can play the cards
+/// (Fullhouse, Triples, Bombs etc.)
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
@@ -97,6 +101,10 @@ pub enum Playtype {
 	StreetBomb(u8),
 }
 
+/// A trick is a uniquely identifiable type of move.
+///
+/// You can recover the original cards which are produced
+/// with `Trick::try_from(cards)`
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
@@ -536,6 +544,8 @@ impl Playtype {
 }
 
 #[wasm_bindgen]
+/// Tries to create a trick given the list of cards.
+/// If no trick corresponds to the given cards, None is returned.
 pub fn parse_trick(cards: Vec<Card>) -> Option<Trick> {
 	let cset = Cardset::from(cards);
 
@@ -545,6 +555,9 @@ pub fn parse_trick(cards: Vec<Card>) -> Option<Trick> {
 	}
 }
 
+/// A play is a "simplified Trick"
+/// You cannot deduce the original cards, but
+/// you can compare which Plays can beat another
 #[wasm_bindgen]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
 #[derive(PartialOrd, Ord)]
@@ -580,38 +593,42 @@ pub struct Cardset {
 
 #[wasm_bindgen]
 impl Cardset {
+	/// Creates an empty Cardset
     pub fn new() -> Self {
 		Cardset { list: 0 }
     }
 
+	/// Creates an Cardset with all cards
 	pub fn full() -> Self {
 		Self::from_list(all_cards())
 	}
 
-    pub fn insert_ref(&mut self, card: &Card) {
-        self.list |= 1u64 << card.get_id();
-    }
-
+	/// Inserts the card (does nothing if the card is already in the set)
     pub fn insert(&mut self, card: Card) {
         self.list |= 1u64 << card.get_id();
     }
 
+	/// Merges the current set with another one
 	pub fn merge(&mut self, set: Cardset) {
 		self.list |= set.list;
 	}
 
+	/// Erase a card from the set (does nothing if the card isn't in the set)
     pub fn erase(&mut self, card: Card) {
         self.list &= !(1u64 << card.get_id() as u64);
     }
 
+	/// Erase all cards which are in this set AND in the given set
     pub fn erase_set(&mut self, cards: Cardset) {
 		self.list &= !(cards.list);
     }
 
+	/// Clears all cards
     pub fn clear(&mut self) {
         self.list = 0;
     }
 
+	/// Returns the number of cards in the set
 	pub fn len(&self) -> usize {
 		self.list.count_ones() as usize
 	}
@@ -624,7 +641,9 @@ impl Cardset {
         self.list & (1 << card.get_id()) != 0
     }
 
+	/// Count the points in this cardset
 	pub fn count_points(&self) -> i32 {
+		// TODO You also have to count the dragon/pheonix!
 		(self.count_number(3) as i32)*5
 			+ (self.count_number(8) as i32 + self.count_number(11) as i32)*10
 	}
@@ -647,6 +666,8 @@ impl Cardset {
         (self.list & hash).count_ones()
 	}
 
+	/// Get one card in this set which has the given number
+	/// Return None if no such card exists
 	pub fn get_card_of_number(&self, number: u8) -> Option<Card> {
 		let hash = 0x40010004001 << number;
 		let new = self.list & hash;
@@ -659,6 +680,8 @@ impl Cardset {
 	}
 
 	#[cfg(feature = "server")]
+	/// Returns a cardset which are k cards chosen at random from this cardset.
+	/// If k is bigger than the number of elements, the entire set is returned instead.
 	pub fn choose_k(&self, k: usize) -> Cardset {
 		let active: Vec<usize> = (0..64)
 			.filter(|i| ((self.list >> i) & 1) == 1)

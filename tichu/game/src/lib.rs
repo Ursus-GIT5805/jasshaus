@@ -145,6 +145,8 @@ impl Game {
 		}
 	}
 
+	/// Start a new round.
+	/// This does evaluate the results from the current round (see `end_round`).
 	pub fn start_new_round(&mut self) {
 		for plr in self.players.iter_mut() {
 			plr.clear_round_data();
@@ -155,15 +157,18 @@ impl Game {
 		self.first_finished = None;
 	}
 
+	/// Start exchanging cards
 	pub fn start_exchange(&mut self) {
 		self.phase = Phase::Exchange;
 	}
 
+	/// Returns true when it's time to start exchanging
 	pub fn should_start_exchange(&self) -> bool {
 		self.phase == Phase::Distributing &&
 			!self.players.iter().any(|p| p.cards.len() != self.cards_per_player())
 	}
 
+	/// Returns true when it's time to evaluate the exchange
 	pub fn should_end_exchange(&self) -> bool {
 		self.phase == Phase::Exchange &&
 			!self.players.iter().any(|p| p.exchange.is_empty())
@@ -226,6 +231,8 @@ impl Game {
 		plrs[(idx+1) % plrs.len()]
 	}
 
+	/// Takes the current cards and gives them to the `last_player`
+	/// (i.e. give the cards to the player on whose cards wasn't played)
 	fn take_cards(&mut self) {
 		let plr = &mut self.players[self.current_player];
 		plr.won_cards.merge(self.played_cards);
@@ -234,7 +241,7 @@ impl Game {
 		self.best_play = None;
 	}
 
-	/// Proceed to the next player that will act
+	/// Proceed to the next player that will act next
 	fn proceed_to_next_player(&mut self) {
 		let num_players = self.players.len();
 		let end = self.last_player;
@@ -247,6 +254,8 @@ impl Game {
 		self.current_player = cur;
 	}
 
+	/// Play the trick
+	/// This will not check if the trick is legal to play!
 	pub fn play_trick(&mut self, trick: Trick, plr_id: usize) {
 		let cards: Cardset = trick.clone().into();
 		let play = Play::from(trick);
@@ -280,10 +289,14 @@ impl Game {
 		self.proceed_to_next_player();
 	}
 
+	/// Wish for a number
+	/// This will not check for legality!
 	pub fn wish(&mut self, wish: u8) {
 		self.wished_number = Some(wish);
 	}
 
+	/// Make the current player pass
+	/// This will not check for legality!
 	pub fn pass(&mut self) {
 		self.proceed_to_next_player();
 
@@ -296,10 +309,12 @@ impl Game {
 		}
 	}
 
+	/// Returns true when the given player can pass
 	pub fn can_pass(&self, plr_id: usize) -> bool {
 		self.phase == Phase::Playing && self.current_player == plr_id
 	}
 
+	/// Start playing
 	pub fn start_playing(&mut self) {
 		self.phase = Phase::Playing;
 		for plr in self.players.iter_mut() {
@@ -329,28 +344,34 @@ impl Game {
 		}
 	}
 
+
+	/// Announce a Tichu (GT or normal)
+	/// This will not check if it's a legal move!
 	pub fn announce(&mut self, tichu: TichuState, plr_id: usize) {
 		self.players[plr_id].tichu = tichu;
 	}
 
+	/// Sets the exchanging cards of a player
+	/// This will not check if it's a legal move!
 	pub fn exchange(&mut self, cards: Vec<Card>, plr_id: usize) {
 		if cards.len() == self.players.len() - 1 {
 			self.players[plr_id].exchange = cards;
 		}
 	}
 
-	pub fn legal_to_play(&self, trick: Trick, wish: Option<u8>, plr: usize) -> bool {
+	/// Checks whether the given Trick (and wish) is legally playable by the plr
+	pub fn legal_to_play(&self, trick: Trick, wish: Option<u8>, plr_id: usize) -> bool {
 		let cards: Cardset = trick.clone().into();
 
-		if self.players[plr].state != PlayerState::Playing {
+		if self.players[plr_id].state != PlayerState::Playing {
 			println!("Player is not in the correct state!");
 			return false;
 		}
-		if !self.players[plr].cards.contains_set(cards) {
+		if !self.players[plr_id].cards.contains_set(cards) {
 			println!("Player doesn't not have the cards!");
 			return false;
 		}
-		if wish.is_some() && !self.players[plr].cards.contains(ONE) {
+		if wish.is_some() && !self.players[plr_id].cards.contains(ONE) {
 			println!("Player cannot wish without the ONE");
 			return false;
 		}
@@ -388,19 +409,22 @@ impl Game {
 		ty_beats || power_beats
 	}
 
-	pub fn can_exchange(&self, vec: Vec<Card>, plr: usize) -> bool {
-		let is_time = self.phase == Phase::Exchange && self.players[plr].exchange.is_empty();
-		let has_cards = self.players[plr].cards.contains_set(vec);
+	/// Checks whether the given player can legally exchange the given cards
+	pub fn can_exchange(&self, vec: Vec<Card>, plr_id: usize) -> bool {
+		let is_time = self.phase == Phase::Exchange && self.players[plr_id].exchange.is_empty();
+		let has_cards = self.players[plr_id].cards.contains_set(vec);
 		is_time && has_cards
 	}
 
-	pub fn can_announce(&self, plr: usize) -> bool {
-		let p = &self.players[plr];
+	/// Checks whether the given player can announce Tichu
+	pub fn can_announce(&self, plr_id: usize) -> bool {
+		let p = &self.players[plr_id];
 		self.phase == Phase::Playing &&
 			p.tichu == TichuState::None &&
 			p.cards.len() == self.cards_per_player()
 	}
 
+	/// Returns the player IDs of the given team ID.
 	pub fn get_players_of_team(&self, team_id: usize) -> Vec<usize> {
 		self.players.iter()
 			.enumerate()
@@ -409,12 +433,21 @@ impl Game {
 			.collect()
 	}
 
+	/// Returns the number of finished players
 	pub fn num_finished_players(&self) -> usize {
 		self.players.iter()
 			.filter(|plr| plr.finished())
 			.count()
 	}
 
+	/// Returns the number of unfinished players
+	pub fn num_unfinished_players(&self) -> usize {
+		self.players.iter()
+			.filter(|plr| !plr.finished())
+			.count()
+	}
+
+	/// Returns the number of unfinished teams
 	pub fn num_unfinished_teams(&self) -> usize {
 		let mut finished = vec![true; self.teams.len()];
 
@@ -427,21 +460,17 @@ impl Game {
 			.count()
 	}
 
-	pub fn num_unfinished_players(&self) -> usize {
-		self.players.iter()
-			.filter(|plr| !plr.finished())
-			.count()
-	}
-
 	/// Returns the player who finished first
 	pub fn get_first_finished_player(&self) -> Option<usize> {
 		self.first_finished
 	}
 
+	/// Returns true if the round should end
 	pub fn should_round_end(&self) -> bool {
 		self.num_unfinished_teams() <= 1
 	}
 
+	/// Returns true if the game should end
 	pub fn should_game_end(&self) -> bool {
 		// TODO: check if multiple teams have the same number of points
 		match self.setting.end_condition {
@@ -452,9 +481,10 @@ impl Game {
 
 	/// Returns how many cards a player receives
 	pub fn cards_per_player(&self) -> usize {
-		14
+		14 // TODO actually calculate depending on deck size
 	}
 
+	/// Parses the game state from the given Javascript Object (WASM only)
 	#[cfg(target_family = "wasm")]
 	pub fn from_object(obj: JsValue) -> Option<Self> {
 		match serde_wasm_bindgen::from_value(obj) {
@@ -465,7 +495,7 @@ impl Game {
 }
 
 impl Game {
-	/// Return a 2D vector with v[i][j] = the card player i gives to player j
+	/// Return a 2D vector with v{i,j} = the card player i gives to player j
 	pub fn get_exchange_matrix(&self) -> Vec< Vec<Card> > {
 		let num_players = self.players.len();
 		let mut cards = vec![vec![Card::new(5,5); num_players]; num_players];
