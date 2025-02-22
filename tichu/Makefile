@@ -15,3 +15,9 @@ cont:
 
 serv:
 	cd $(server_pwd) && cargo run
+
+browser=xdg-open
+
+doc:
+	cd game && cargo doc
+	$(browser) "game/target/doc/tichu_game/index.html"
