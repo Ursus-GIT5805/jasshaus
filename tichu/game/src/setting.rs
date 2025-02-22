@@ -17,9 +17,13 @@ pub enum EndCondition {
 #[derive(PartialEq, Eq)]
 #[derive(Serialize, Deserialize)]
 pub struct Setting {
+	// Number of players in the game (usually 4)
 	pub num_players: usize,
+
+	// How does the game end?
 	pub end_condition: EndCondition,
 
+	// Number of cards a player has to decide GT
 	pub num_cards_gt: usize,
 }
 
