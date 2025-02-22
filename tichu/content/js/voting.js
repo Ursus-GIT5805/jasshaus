@@ -1,0 +1,1 @@
+../../../content/js/voting.js

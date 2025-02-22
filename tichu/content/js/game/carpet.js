@@ -1,0 +1,1 @@
+../../../../content/js/game/carpet.js

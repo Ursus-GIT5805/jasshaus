@@ -1,0 +1,210 @@
+#background,
+body {
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+}
+
+#background {
+	pointer-events: none;
+}
+
+.CenterX, .CenterY, .CenterXY {
+	position: absolute;
+}
+
+.CenterX {
+	left: 50%;
+	transform: translateX(-50%);
+}
+.CenterY {
+	top 50%;
+	transform: translateY(-50%);
+}
+.CenterXY {
+	left: 50%;
+	top: 50%;
+	transform: translateX(-50%) translateY(-50%);
+}
+
+.Board {
+	background-color: #ECE16F;
+	color: black;
+
+	padding: 1em;
+
+	border-width: 0.5em;
+	border-radius: 0.5em;
+	border-color: #DA614C;
+	border-style: solid;
+}
+
+#points {
+	position: absolute;
+
+	top: 0;
+	right: 0;
+
+	border-width: 0 0 0.5em 0.5em;
+	border-radius: 0 0 0 0.5em;
+
+	font-size: 1.5rem;
+}
+
+
+.ActionButton {
+    width: 1.6cm;
+    height: 1.6cm;
+
+	z-index: 420;
+
+	border-radius: 0.1cm;
+    margin: 0.2cm;
+	padding: 0.2cm;
+
+    background-color: #000000;
+    cursor: pointer;
+	box-sizing: border-box;
+}
+
+.ActionButton:hover {
+    background-color: #363636;
+}
+
+.Button {
+	background-color: #4685B0;
+	color: #ffffff;
+
+	text-align: center;
+
+	padding: 0.4em;
+	margin: 0.1em;
+	border-radius: 0.2em;
+}
+
+.Button:hover {
+	filter: brightness(120%);
+	cursor: pointer;
+}
+
+.Button:disabled {
+	pointer-events: none;
+	background-color: gray;
+}
+
+#buttonRow {
+	position: absolute;
+	display: flex;
+
+	left: 10vw;
+	bottom: var(--hand-height);
+
+	font-size: 1.5rem;
+
+	> * { display: none; }
+}
+
+.Card {
+	font-size: 2rem;
+	background-color: white;
+	color: black;
+	border-color: black;
+	border-width: 2px;
+	border-style: solid;
+}
+
+
+#botrightbuttons,
+#botleftbuttons,
+.ActionButtonContainer {
+	display: flex;
+	flex-direction: column-reverse;
+
+	z-index: 420;
+	position: absolute;
+}
+
+#botrightbuttons {
+	right: 2px;
+	bottom: 2px;
+}
+
+#botleftbuttons {
+	left: 2px;
+	bottom: 2px;
+}
+
+/* ---- */
+
+.Window {
+	position: absolute;
+
+	left: 50%;
+	top: 50%;
+	transform: translateX(-50%) translateY(-50%);
+}
+
+#exchangeWindow {
+	display: none;
+
+	max-width: 60%;
+	max-height: 50%;
+
+	overflow: auto;
+}
+
+#exchangeHolder {
+	display: flex;
+	flex-direction: row-reverse;
+	justify-content: space-evenly;
+
+	> div {
+		position: relative;
+
+		width: 5em;
+		height: 8em;
+
+		margin: 0.5em;
+		padding: 1em;
+		border-radius: 1em;
+
+		background-color: #660000;
+
+		> {
+			width: 100%;
+			height: 100%;
+			box-sizing: border-box;
+		}
+	}
+}
+
+/* --- */
+
+.Trick {
+	display: flex;
+	flex-direction: row;
+
+	max-width: 50%;
+	overflow: auto;
+}
+
+#carpet {
+    width: min(50vw, 50vh);
+    height: min(50vw, 50vh);
+
+    background-color: #00BB00;
+
+    border-radius: 8px;
+    border-style: solid;
+    border-color: #008100;
+
+	.Trick {
+		position: absolute;
+
+		left: 50%;
+		top: 50%;
+		transform: translateX(-50%) translateY(-50%);
+	}
+}
