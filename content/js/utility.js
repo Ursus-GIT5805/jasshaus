@@ -86,6 +86,10 @@ const PlayTypes = [
 		name: "Alles",
 		img: "img/de/everything.svg",
 	},
+	{
+		name: "Mezzo",
+		img: "img/mezzo.svg",
+	},
 ];
 
 /// Returns the name of the given playtype
