@@ -3,15 +3,19 @@ server_pwd="server/jasshaus_server"
 target="aarch64-unknown-linux-gnu"
 
 b:
-	cd game && wasm-pack build --target web
+	cd game && wasm-pack build --target web --dev
 	rsync -av game/pkg content/
 
 run:
 	make b
+	make build_serv
 	(trap 'kill 0' SIGINT; make cont & make serv)
 
 cont:
 	python3 -m http.server -d content
+
+build_serv:
+	cd $(server_pwd) && cargo build
 
 serv:
 	cd $(server_pwd) && cargo run
