@@ -1,28 +1,28 @@
-const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
-
-let WS_URL = "wss://" + window.location.host + "/ws/"
-if(DEV_MODE){
-    if(window.location.protocol == "http:") WS_URL = "ws://" + window.location.hostname + ":7999/ws/";
-    else WS_URL = "ws://127.0.0.1:7999/ws/";
+function getRoomID() {
+	let params = new URLSearchParams(location.search);
+	return params.get('room');
 }
+const room_id = getRoomID();
 
-function detectMobile() {
-	let regexp = /android|iphone|kindle|ipad/i;
-	return regexp.test(navigator.userAgent);
+function getWsURL() {
+	if(DEV_MODE){
+		const PORT = 7999;
+
+		if(location.protocol == "http:") return "ws://" + location.hostname + ":" + PORT + "/ws/";
+		return WS_URL = "ws://127.0.0.1:" + PORT + "/ws/";
+	}
+	return "wss://" + location.host + "/ws/";
 }
+const WS_URL = getWsURL() + room_id;
 
 function quitError(message) {
 	alert(message);
 	window.location.replace("index.html");
 }
 
-const IS_MOBILE = detectMobile();
 const I32_MIN = -2147483648;
-const I32_MAX = 2147483647;
 
-let params = new URLSearchParams(location.search);
-let room_id = params.get('room');
-WS_URL += room_id;
+// -----
 
 var settings = null;
 var form = null;
@@ -36,20 +36,6 @@ if(typeof jQuery === 'undefined') quitError("Could not load jQuery!");
 jQuery.fn.vis = function(v){ return this.css('visibility', ['hidden', 'visible'][+v]); }
 jQuery.fn.visible = function(){ return this.css('display') != "none"; }
 jQuery.fn.display = function(v){ return this.css('display', ['none', 'block'][+v]); }
-
-/// Return true if two objects are equal in their properties
-function objEquals(a, b) {
-	if(typeof a !== typeof b) return false;
-	if(typeof a === 'object') {
-		if( Object.keys(a).length !== Object.keys(b).length ) return false;
-		for(let key in a) {
-			if(!b.hasOwnProperty(key) || !objEquals(a[key], b[key])) return false;
-		}
-	} else {
-		return a === b;
-	}
-	return true;
-}
 
 // ===== Helpers for events =====
 
