@@ -22,12 +22,13 @@ pub enum Playtype {
 	BigSlalomDownup,
 	Molotow,
 	Everything,
+	Mezzo,
+
 	#[default]
     None = 255,
 }
 
-// #[wasm_bindgen]
-pub const NUM_PLAYTYPES: usize = 14;
+pub const NUM_PLAYTYPES: usize = 15;
 
 #[wasm_bindgen]
 impl Playtype {
@@ -47,6 +48,7 @@ impl Playtype {
 			11 => Playtype::BigSlalomDownup,
 			12 => Playtype::Molotow,
 			13 => Playtype::Everything,
+			14 => Playtype::Mezzo,
 			_ => return None,
 		};
 		Some(res)
@@ -73,6 +75,7 @@ impl Playtype {
 			Playtype::BigSlalomDownup => 11,
 			Playtype::Molotow => 12,
 			Playtype::Everything => 13,
+			Playtype::Mezzo => 14,
 			_ => return None,
 		};
 		Some(res)
@@ -147,7 +150,15 @@ impl RuleSet {
                     let order: [u8; 9] = [0, 1, 2, 7, 3, 8, 4, 5, 6];
                     order[current.number as usize] < order[new.number as usize] // Basic, but with trumpf order!
                 }
-            }
+            },
+			Playtype::Mezzo => {
+				let mid = 4; // Midddle card is the best (this value corresponds to the 10)
+				let cur_centric = (mid as i32 - current.number as i32).abs();
+				let new_centric = (mid as i32 - new.number as i32).abs();
+
+				// It has to be more centric than the current one
+				new_centric < cur_centric
+			},
             _ => false, // No rules
         }
     }
@@ -157,6 +168,7 @@ impl RuleSet {
     pub fn get_card_value(&self, card: Card) -> i32 {
         match self.playtype {
 			Playtype::Everything |
+			Playtype::Mezzo |
             Playtype::Updown | Playtype::SlalomUpdown |
 			Playtype::Guschti  | Playtype::BigSlalomUpdown => {
                 let values: [i32; 9] = [0, 0, 8, 0, 10, 2, 3, 4, 11];
@@ -229,4 +241,10 @@ impl RuleSet {
             x => 50 * (x as i32 - 3),
         }
     }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn get_num_playtypes() -> usize {
+	NUM_PLAYTYPES
 }

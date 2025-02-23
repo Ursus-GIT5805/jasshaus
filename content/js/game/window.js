@@ -17,7 +17,7 @@ function startAnnounce(){
 		.append( $("<a>").text(text).attr("text", atext) );
 
 	// Display Playtypes
-	for(let id = 0 ; id < 14 ; id++) {
+	for(let id = 0 ; id < get_num_playtypes() ; id++) {
 		if(!game.setting.playtype[id].allow) continue;
 
 		let pt = Playtype.from_id(id);
