@@ -157,7 +157,7 @@ impl RuleSet {
 				let new_centric = (mid as i32 - new.number as i32).abs();
 
 				// It has to be more centric than the current one
-				new_centric < cur_centric
+				current.color == new.color && new_centric < cur_centric
 			},
             _ => false, // No rules
         }
