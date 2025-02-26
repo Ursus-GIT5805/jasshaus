@@ -881,7 +881,13 @@ impl Game {
                 }
 
 				// We know it's a weaker trumpf
-				let nothing_else = hand.only_has_color(card.color) && !hand.has_stronger_trumpf(bcrd);
+				let num_stronger_trumpf: usize = hand.as_vec()
+					.into_iter()
+					.filter(|c| c.color == trumpf)
+					.filter(|&c| self.ruleset.is_card_stronger(bcrd, c))
+					.count();
+
+				let nothing_else = hand.only_has_color(card.color) && num_stronger_trumpf > 0;
 				let can_hold = hand.has_color(turncolor);
 				let can_undertrumpf = !can_hold && !self.setting.strict_undertrumpf;
 

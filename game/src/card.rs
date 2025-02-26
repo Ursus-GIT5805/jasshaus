@@ -199,25 +199,6 @@ impl Cardset {
         (self.list & (0x0008040201 << number)).count_ones()
 	}
 
-    pub fn has_stronger_trumpf(&self, card: Card) -> bool {
-        // Make a bitmask where each card with higher number is marked with 1
-        let mask = match card.number {
-            0 => 0b111111110,
-            1 => 0b111111100,
-            2 => 0b111111000,
-            3 => 0b000100000,
-            4 => 0b111101000,
-            5 => 0,
-            6 => 0b110101000,
-            7 => 0b100101000,
-            8 => 0b000101000,
-            _ => 0,
-        } << card.color * NUM_NUMBERS as u8;
-
-        // If the list contains something of the mask, there is a better trumpf
-        self.list & mask != 0
-    }
-
     pub fn has_show(&self, show: Show) -> Result<(), ShowError> {
         // Rows that do not exist are not legal
         if show.row < 1 || 9 < show.row || show.row == 2 {
