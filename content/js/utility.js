@@ -2,10 +2,14 @@ const PASS_IMG = "img/pass.svg";
 const MISERE_IMG = "img/misere.svg";
 
 /// Helper functino to get the image-path of a Color Playtype
-function trumpf_img(col) {
+function trumpf_img(col, updown=true) {
 	let pref = "de";
+	let pref2 = "";
+
 	if(settings.card_lang == "french") pref = "fr";
-	return "img/" + pref + "/trumpf" + col + ".svg";
+	if(!updown) pref2 = "down";
+
+	return "img/" + pref + "/" + pref2 + "trumpf" + col + ".svg";
 }
 
 /// Returns the path to the card image, given the card
@@ -89,6 +93,34 @@ const PlayTypes = [
 	{
 		name: "Mezzo",
 		img: "img/mezzo.svg",
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Undeufe Schaufeln";
+			return "Trumpf Undeufe Schilten";
+		},
+		img: () => trumpf_img(0, false),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Undeufe Kreuz";
+			return "Trumpf Undeufe Eichle";
+		},
+		img: () => trumpf_img(1, false),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Undeufe Herz";
+			return "Trumpf Undeufe Rose";
+		},
+		img: () => trumpf_img(2, false),
+	},
+	{
+		name: () => {
+			if(settings.card_lang == "french") return "Trumpf Undeufe Ecken";
+			return "Trumpf Undeufe Schellen";
+		},
+		img: () => trumpf_img(3, false),
 	},
 ];
 

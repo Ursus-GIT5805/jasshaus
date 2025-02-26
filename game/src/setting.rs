@@ -41,6 +41,8 @@ pub fn get_gamesettingform() -> String {
 }
 
 /// Rules of how teams are chosen
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 #[derive(HtmlForm)]
 pub enum TeamChoosing {

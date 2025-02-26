@@ -14,6 +14,32 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Clone)]
+#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum Event {
+    PlayCard(Card),
+	PlayShow(Show),
+
+	Announce(Playtype, bool),
+	Pass,
+
+	ShowPoints(i32,usize),
+    ShowList(Vec<Vec<Show>>),
+    HasMarriage(usize),
+
+    GameState(Game, Cardset, Vec<Show>),
+    GameSetting(Setting),
+	EverythingPlaytype(Playtype),
+
+    NewCards(Cardset),
+	StartGame(usize),
+
+	Bid(i32),
+}
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 pub enum MarriageState {
     #[default]
@@ -249,8 +275,8 @@ impl Game {
 
 	/// Set a player to have the marriage
 	pub fn set_marriage(&mut self, plr: usize) {
-		let trumpf = match self.ruleset.playtype {
-			Playtype::Color(col) => col,
+		let trumpf = match self.ruleset.get_trumpf_color() {
+			Some(col) => col,
 			_ => return,
 		};
 
@@ -264,9 +290,9 @@ impl Game {
 
 	/// Returns the player who can still play the marriage
 	pub fn player_with_marriage(&self) -> Option<usize> {
-		let trumpf = match self.ruleset.playtype {
-			Playtype::Color(col) => col,
-			_ => return None,
+		let trumpf = match self.ruleset.get_trumpf_color() {
+			Some(col) => col,
+			None => return None,
 		};
 
 		let queen = Card::new(trumpf, 6);
@@ -385,8 +411,8 @@ impl Game {
 
 		if let Playtype::Molotow = self.ruleset.playtype {
 			// It's important to add the points of eights if no trumpf has been decided
-			match self.ruleset.active {
-				Playtype::Color(_) => {},
+			match self.ruleset.get_active_trumpf_color() {
+				Some(_) => {},
 				_ => {
 					for tid in 0..self.teams.len() {
 						let num = self.teams[tid].won.count_number(2) as i32;
@@ -438,7 +464,7 @@ impl Game {
     }
 
 	fn handle_molotow(&mut self, card: Card) {
-		if let Playtype::Color(_) = self.ruleset.active {
+		if let Some(_) = self.ruleset.get_active_trumpf_color() {
 			return;
 		}
 
@@ -514,7 +540,7 @@ impl Game {
         self.players[self.current_player].hand.erase(card);
 
 		// Rules regaring trumpf
-        if let Playtype::Color(trumpf) = self.ruleset.active {
+        if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
 			// If the given card is a trumpf queen or king, handle marriage
 			if card.color == trumpf && (card.number == 6 || card.number == 7) &&
 				Playtype::Everything != self.ruleset.playtype
@@ -842,7 +868,7 @@ impl Game {
 		};
 
         // First, check all additional rules from trumpf
-        if let Playtype::Color(trumpf) = self.ruleset.active {
+        if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
             let trumpf_first = turncolor == trumpf;
             let trumpf_card = card.color == trumpf;
 

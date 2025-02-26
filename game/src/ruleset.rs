@@ -23,16 +23,25 @@ pub enum Playtype {
 	Molotow,
 	Everything,
 	Mezzo,
+	ColorDownup(u8),
 
 	#[default]
     None = 255,
 }
 
-pub const NUM_PLAYTYPES: usize = 15;
+const fn determine_num_playtypes() -> usize {
+	let mut i = 0;
+	loop {
+		if Playtype::const_from_id(i).is_none() { break; }
+		i += 1;
+	}
+	i
+}
 
-#[wasm_bindgen]
+pub const NUM_PLAYTYPES: usize = determine_num_playtypes();
+
 impl Playtype {
-	pub fn from_id(id: usize) -> Option<Self> {
+	pub const fn const_from_id(id: usize) -> Option<Self> {
 		let res = match id {
 			0 => Playtype::Updown,
 			1 => Playtype::Downup,
@@ -49,9 +58,20 @@ impl Playtype {
 			12 => Playtype::Molotow,
 			13 => Playtype::Everything,
 			14 => Playtype::Mezzo,
+			15 => Playtype::ColorDownup(0),
+			16 => Playtype::ColorDownup(1),
+			17 => Playtype::ColorDownup(2),
+			18 => Playtype::ColorDownup(3),
 			_ => return None,
 		};
 		Some(res)
+	}
+}
+
+#[wasm_bindgen]
+impl Playtype {
+	pub fn from_id(id: usize) -> Option<Self> {
+		Self::const_from_id(id)
 	}
 
 	/// Returns the ID of the current playtype.
@@ -76,6 +96,10 @@ impl Playtype {
 			Playtype::Molotow => 12,
 			Playtype::Everything => 13,
 			Playtype::Mezzo => 14,
+			Playtype::ColorDownup(0) => 15,
+			Playtype::ColorDownup(1) => 16,
+			Playtype::ColorDownup(2) => 17,
+			Playtype::ColorDownup(3) => 18,
 			_ => return None,
 		};
 		Some(res)
@@ -110,25 +134,30 @@ impl RuleSet {
     }
 
     pub fn is_trumpf(&self) -> bool {
-        if let Playtype::Color(_) = self.playtype {
-            true
-        } else {
-            false
-        }
+		self.get_trumpf_color().is_some()
     }
 
     pub fn get_trumpf_color(&self) -> Option<u8> {
         match self.playtype {
-            Playtype::Color(col) => Some(col),
+            Playtype::Color(col) |
+            Playtype::ColorDownup(col) => Some(col),
+            _ => None,
+        }
+    }
+
+    pub fn get_active_trumpf_color(&self) -> Option<u8> {
+        match self.active {
+            Playtype::Color(col) |
+            Playtype::ColorDownup(col) => Some(col),
             _ => None,
         }
     }
 
     pub fn is_color_trumpf(&self, color: u8) -> bool {
-        match self.playtype {
-            Playtype::Color(col) => col == color,
-            _ => false,
-        }
+		match self.get_trumpf_color() {
+			Some(c) => color == c,
+			None => false,
+		}
     }
 
 	/// Returns true if the 'new' is a stronger card than 'current'
@@ -146,9 +175,22 @@ impl RuleSet {
                 } else if tcur != tnew {
                     tnew // If tnew is trumpf, tcur wouldn't and vice versa
                 } else {
-                    // both are trumpf!
+					// both are trumpf!
                     let order: [u8; 9] = [0, 1, 2, 7, 3, 8, 4, 5, 6];
                     order[current.number as usize] < order[new.number as usize] // Basic, but with trumpf order!
+                }
+            },
+			Playtype::ColorDownup(trumpf) => {
+                let tcur = current.color == trumpf;
+                let tnew = new.color == trumpf;
+
+                if !tcur && !tnew {
+                    current.color == new.color && new.number < current.number // Downup
+                } else if tcur != tnew {
+                    tnew
+                } else {
+                    let order: [u8; 9] = [6, 5, 4, 7, 3, 8, 2, 1, 0];
+                    order[current.number as usize] < order[new.number as usize]
                 }
             },
 			Playtype::Mezzo => {
@@ -182,6 +224,11 @@ impl RuleSet {
             Playtype::Color(col) => {
                 let trumpf = (card.color == col) as i32;
                 let values: [i32; 9] = [0, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 11];
+                values[card.number as usize]
+            },
+            Playtype::ColorDownup(col) => {
+                let trumpf = (card.color == col) as i32;
+                let values: [i32; 9] = [11, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 0];
                 values[card.number as usize]
             },
 			Playtype::Molotow => {

@@ -9,6 +9,7 @@ use game_server::room::{
 	*,
 	client::*,
 };
+use Event::*;
 
 #[derive(Clone, Copy)]
 pub enum GameError {
@@ -16,30 +17,6 @@ pub enum GameError {
 	NotOnTurn,
 }
 
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
-#[non_exhaustive]
-pub enum GameEvent {
-    PlayCard(Card),
-	PlayShow(Show),
-
-	Announce(Playtype, bool),
-	Pass,
-
-	ShowPoints(i32,usize),
-    ShowList(Vec<Vec<Show>>),
-    HasMarriage(usize),
-
-    GameState(Game, Cardset, Vec<Show>),
-    GameSetting(Setting),
-	EverythingPlaytype(Playtype),
-
-    NewCards(Cardset),
-	StartGame(usize),
-
-	Bid(i32),
-}
-use GameEvent::*;
 
 #[derive(Clone, Copy)]
 #[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
@@ -110,7 +87,7 @@ impl JassRoom {
         for (_, client) in clients.iter_mut() {
             let plr_id = client.player_id;
 			let ev = SocketMessage::Event(
-				GameEvent::NewCards(self.game.players[plr_id].hand)
+				NewCards(self.game.players[plr_id].hand)
 			);
             client.send(ev).await;
         }
@@ -165,7 +142,7 @@ impl JassRoom {
 				.unwrap_or(0);
 
 			if 0 < points {
-				clients.ev_send_to_all(GameEvent::ShowPoints(points, plr_id)).await;
+				clients.ev_send_to_all(ShowPoints(points, plr_id)).await;
 			}
 		}
 
@@ -180,11 +157,11 @@ impl JassRoom {
 					.map(|plr| plr.shows.clone())
 					.collect();
 
-				clients.ev_send_to_all(GameEvent::ShowList(shows)).await;
+				clients.ev_send_to_all(ShowList(shows)).await;
 			}
         }
 
-		clients.ev_send_to_all(GameEvent::PlayCard(card)).await;
+		clients.ev_send_to_all(PlayCard(card)).await;
 
 		if let Playtype::Everything = self.game.ruleset.playtype {
 			if self.game.num_played_cards() == 0 {
@@ -203,7 +180,7 @@ impl JassRoom {
 				};
 
 				self.game.ruleset.active = ele;
-				clients.ev_send_to_all(GameEvent::EverythingPlaytype(ele)).await;
+				clients.ev_send_to_all(EverythingPlaytype(ele)).await;
 			}
 		}
 
@@ -217,12 +194,12 @@ impl JassRoom {
 		self.roundstate = RoundState::Playing;
 
 		self.game.announce(pt, misere);
-		clients.ev_send_to_all(GameEvent::Announce(pt, misere)).await;
+		clients.ev_send_to_all(Announce(pt, misere)).await;
 
 		if let Some(plr) = self.game.player_with_marriage() {
 			let team = self.game.players[plr].team_id;
 			if self.game.marriage_would_win(team) {
-				clients.ev_send_to_all(GameEvent::HasMarriage(plr)).await;
+				clients.ev_send_to_all(HasMarriage(plr)).await;
 			}
 		}
 	}
@@ -236,7 +213,7 @@ impl JassRoom {
 	async fn pass(&mut self, clients: &mut ClientHandler, plr_id: usize) {
 		if self.game.can_pass(plr_id) {
 			self.game.pass();
-			clients.ev_send_to_all(GameEvent::Pass).await;
+			clients.ev_send_to_all(Pass).await;
 		}
 	}
 
@@ -251,12 +228,12 @@ impl JassRoom {
 	async fn bid(&mut self, clients: &mut ClientHandler, bid: i32, plr_id: usize) {
 		if !self.game.can_bid(plr_id) { return; }
 		self.game.bid(bid);
-		clients.ev_send_to_all(GameEvent::Bid(bid)).await;
+		clients.ev_send_to_all(Bid(bid)).await;
 	}
 }
 
 #[async_trait]
-impl ServerRoom<GameEvent> for JassRoom {
+impl ServerRoom<Event> for JassRoom {
 	type Err = GameError;
 
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
@@ -292,12 +269,12 @@ impl ServerRoom<GameEvent> for JassRoom {
             clients.ev_send_to(plr_id, GameState(game, hand, shows)).await;
 		} else {
 			let setting = self.game.setting.clone();
-			clients.ev_send_to(plr_id, GameEvent::GameSetting(setting)).await;
+			clients.ev_send_to(plr_id, GameSetting(setting)).await;
 		}
 	}
 	async fn on_leave(&mut self, _clients: &mut ClientHandler, _plr_id: usize) {}
 
-	async fn on_event(&mut self, clients: &mut ClientHandler, event: GameEvent, plr_id: usize)
+	async fn on_event(&mut self, clients: &mut ClientHandler, event: Event, plr_id: usize)
 				-> Result<(), Self::Err>
 	{
 		if self.starts == 0 {
@@ -305,11 +282,11 @@ impl ServerRoom<GameEvent> for JassRoom {
 		}
 
 		match event {
-			GameEvent::PlayCard(card) => self.play_card(clients, card, plr_id).await,
-			GameEvent::Announce(pt, misere) => self.announce(clients, pt, misere, plr_id).await,
-			GameEvent::Pass => self.pass(clients, plr_id).await,
-			GameEvent::PlayShow(show) => self.play_show(clients, show, plr_id).await,
-			GameEvent::Bid(bid) => self.bid(clients, bid, plr_id).await,
+			PlayCard(card) => self.play_card(clients, card, plr_id).await,
+			Announce(pt, misere) => self.announce(clients, pt, misere, plr_id).await,
+			Pass => self.pass(clients, plr_id).await,
+			PlayShow(show) => self.play_show(clients, show, plr_id).await,
+			Bid(bid) => self.bid(clients, bid, plr_id).await,
 			_ => {},
 		}
 		Ok(())

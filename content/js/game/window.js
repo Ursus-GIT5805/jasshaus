@@ -31,7 +31,7 @@ function startAnnounce(){
 		let but = button(title, pt_img_url(pt), () => announce(pt), ident, ident);
 
 		// Append it
-		if(pt.hasOwnProperty("Color")) cpts.append(but);
+		if(pt.hasOwnProperty("Color") || pt.hasOwnProperty("ColorDownup")) cpts.append(but);
 		else pts.append(but);
 	}
 
