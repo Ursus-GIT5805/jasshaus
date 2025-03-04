@@ -262,8 +262,9 @@ impl RuleSet {
         // The shows are equally long
         if current.number != new.number {
             return match self.playtype {
-                Playtype::Downup | Playtype::SlalomDownup|
-				Playtype::Mary | Playtype::BigSlalomDownup => {
+                Playtype::Downup | Playtype::SlalomDownup |
+				Playtype::Mary | Playtype::BigSlalomDownup |
+				Playtype::ColorDownup(_) => {
                     current.number > new.number
                 }
                 _ => current.number < new.number,
@@ -272,7 +273,7 @@ impl RuleSet {
 
         // They have equal points, row, and number, but not color!
         // So if the new show's color is trumpf, it's better!
-        return self.is_color_trumpf(new.color);
+        self.is_color_trumpf(new.color)
     }
 
 	/// Returns the given shows value
