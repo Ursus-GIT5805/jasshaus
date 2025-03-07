@@ -12,6 +12,7 @@ run:
 	(trap 'kill 0' SIGINT; make cont & make serv)
 
 cont:
+	tsc -p content/tsdebug.json
 	python3 -m http.server -d content
 
 build_serv:

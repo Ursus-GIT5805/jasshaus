@@ -36,10 +36,6 @@
 	min-width: 6rem;
     max-width: 12rem;
 
-    border-radius: 0.2rem;
-	border-width: 0.2rem;
-	border-color: yellow;
-
 	overflow: hidden;
     text-overflow: ellipsis;
 
@@ -47,6 +43,13 @@
     color: #FFFFFF;
 
 	box-sizing: border-box;
+}
+
+.Current {
+    border-radius: 0.2rem;
+	border-width: 0.2rem;
+	border-color: yellow;
+	border-style: solid;
 }
 
 .Player:empty {

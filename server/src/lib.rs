@@ -1,4 +1,5 @@
 use serde::*;
+use socket_message::{ClientData, SocketMessage};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use std::marker::Send;
@@ -8,7 +9,7 @@ use axum::{
 	extract::Path,
 };
 
-use futures:: StreamExt;
+use futures::StreamExt;
 
 #[macro_use]
 mod log;
@@ -20,12 +21,35 @@ use room::*;
 
 type RoomHandlerRef<S,E,G> = Arc<Mutex<RoomManager<S,E,G>>>;
 
-async fn handle_ws_connection<S,E,G>(ws: WebSocket, id: String, rooms: RoomHandlerRef<S,E,G>)
+async fn handle_ws_connection<S,E,G>(mut ws: WebSocket, id: String, rooms: RoomHandlerRef<S,E,G>)
 where
 	S: Default + Clone + Send + 'static,
 	E: Clone + Send + Serialize + for<'de> Deserialize<'de>,
 	G: ServerRoom<E> + Send + TryFrom<S>,
 {
+	let client = {
+		let timeout = tokio::time::Duration::from_secs(2);
+
+		let res = tokio::time::timeout(timeout, ws.recv()).await;
+
+		let packet = res.expect("Connection timeout!")
+			.expect("Connection closed!")
+			.expect("Error on packet!");
+
+		match packet {
+			Message::Text(text) => {
+				let msg: SocketMessage<E> = serde_json::from_str(text.as_str())
+					.expect("Error on handshake!");
+
+				match msg {
+					SocketMessage::Introduction(c) => c,
+					_ => return
+				}
+			},
+			_ => return,
+		}
+	};
+
 	let room = {
 		let handler = rooms.lock().await;
 		match handler.get_room(&id) {
@@ -37,13 +61,16 @@ where
 		}
 	};
 
-	handle_room(ws, room).await;
+	handle_room(ws, client, room).await;
 
 	let mut handler = rooms.lock().await;
 	handler.maintain_room(&id).await;
 }
 
-async fn handle_room<Setting,Event,Game>(ws: WebSocket, room: RoomRef<Setting,Event,Game>)
+async fn handle_room<Setting,Event,Game>(
+	ws: WebSocket,
+	client: ClientData,
+	room: RoomRef<Setting,Event,Game>)
 where
 	Setting: Default + Clone + Send + 'static,
 	Game: ServerRoom<Event> + Send + TryFrom<Setting>,
@@ -53,7 +80,7 @@ where
     let (conn, client_id) = room
         .lock()
         .await
-        .register(ws_tx)
+        .register(client, ws_tx)
         .await
         .expect("The room was already full!");
 

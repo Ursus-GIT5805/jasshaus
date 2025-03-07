@@ -117,8 +117,6 @@ pub struct PlaytypeSetting {
 	pub passed_player_begins: bool,
 }
 
-// #[derive(Tsify)]
-// #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
@@ -193,112 +191,113 @@ pub struct Setting {
 }
 
 #[wasm_bindgen]
-impl Setting {
-	pub fn schieber() -> Self {
-        Setting {
-			num_players: 4,
-			team_choosing: TeamChoosing::Periodic(2),
-			end_condition: EndCondition::Points(1000),
+pub fn setting_schieber() -> Setting {
+    Setting {
+		num_players: 4,
+		team_choosing: TeamChoosing::Periodic(2),
+		end_condition: EndCondition::Points(1000),
 
-			point_eval: PointEval::Add,
+		point_eval: PointEval::Add,
 
-			less_points_win: false,
-            point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
+		less_points_win: false,
+        point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
 
-			allow_shows: true,
-			allow_table_shows: false,
-			show_gives_negative: false,
-			table_show_gives_negative: false,
+		allow_shows: true,
+		allow_table_shows: false,
+		show_gives_negative: false,
+		table_show_gives_negative: false,
 
-			allow_misere: true,
+		allow_misere: true,
 
-			announce: AnnounceRule::Choose,
-			playtype: {
-				let mut v = vec![PlaytypeSetting {
-					allow: true,
-					multiplier: 1,
-					passed_player_begins: true,
-				}; NUM_PLAYTYPES];
-				for c in 0..NUM_COLORS {
-					if let Some(id) = Playtype::Color(c as u8).get_id() {
-						match v.get_mut(id) {
-							Some(c) => c.passed_player_begins = false,
-							None => {},
-						}
+		announce: AnnounceRule::Choose,
+		playtype: {
+			let mut v = vec![PlaytypeSetting {
+				allow: true,
+				multiplier: 1,
+				passed_player_begins: true,
+			}; NUM_PLAYTYPES];
+			for c in 0..NUM_COLORS {
+				if let Some(id) = Playtype::Color(c as u8).get_id() {
+					match v.get_mut(id) {
+						Some(c) => c.passed_player_begins = false,
+						None => {},
 					}
 				}
-				v
-			},
+			}
+			v
+		},
 
-			allow_marriage: true,
+		allow_marriage: true,
 
-            match_points: 100,
-			last_points: 5,
-            marriage_points: 20,
-            show_points_maximum: 300,
+        match_points: 100,
+		last_points: 5,
+        marriage_points: 20,
+        show_points_maximum: 300,
 
-			allow_pass: true,
-            allow_back_pass: false,
-            pass_to_same_team: true,
+		allow_pass: true,
+        allow_back_pass: false,
+        pass_to_same_team: true,
 
-			strict_undertrumpf: true,
+		strict_undertrumpf: true,
 
-            startcondition: StartingCondition::Card(Card::new(0, 4)),
-            apply_startcondition_on_revanche: false,
-        }
-	}
+        startcondition: StartingCondition::Card(Card::new(0, 4)),
+        apply_startcondition_on_revanche: false,
+    }
+}
 
-	pub fn molotow() -> Self {
-        Setting {
-			num_players: 4,
-			team_choosing: TeamChoosing::None,
-			end_condition: EndCondition::Rounds(12),
-			point_eval: PointEval::Add,
+#[wasm_bindgen]
+pub fn setting_molotow() -> Setting {
+    Setting {
+		num_players: 4,
+		team_choosing: TeamChoosing::None,
+		end_condition: EndCondition::Rounds(12),
+		point_eval: PointEval::Add,
 
-			less_points_win: true,
-            point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
+		less_points_win: true,
+        point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
 
-			allow_shows: false,
-			allow_table_shows: true,
-			show_gives_negative: false,
-			table_show_gives_negative: false,
+		allow_shows: false,
+		allow_table_shows: true,
+		show_gives_negative: false,
+		table_show_gives_negative: false,
 
-			allow_misere: false,
+		allow_misere: false,
 
-			announce: AnnounceRule::Random,
-			playtype: {
-				let mut v = vec![PlaytypeSetting {
-					allow: false,
-					multiplier: 1,
-					passed_player_begins: false,
-				}; NUM_PLAYTYPES];
+		announce: AnnounceRule::Random,
+		playtype: {
+			let mut v = vec![PlaytypeSetting {
+				allow: false,
+				multiplier: 1,
+				passed_player_begins: false,
+			}; NUM_PLAYTYPES];
 
-				let pt_id = Playtype::Molotow.get_id().unwrap_or(0);
-				match v.get_mut(pt_id) {
-					Some(c) => c.allow = true,
-					None => {},
-				}
-				v
-			},
+			let pt_id = Playtype::Molotow.get_id().unwrap_or(0);
+			match v.get_mut(pt_id) {
+				Some(c) => c.allow = true,
+				None => {},
+			}
+			v
+		},
 
-			allow_marriage: true,
+		allow_marriage: true,
 
-            match_points: 100,
-			last_points: 5,
-            marriage_points: -20,
-            show_points_maximum: 300,
+        match_points: 100,
+		last_points: 5,
+        marriage_points: -20,
+        show_points_maximum: 300,
 
-			allow_pass: false,
-            allow_back_pass: false,
-            pass_to_same_team: true,
+		allow_pass: false,
+        allow_back_pass: false,
+        pass_to_same_team: true,
 
-			strict_undertrumpf: false,
+		strict_undertrumpf: false,
 
-            startcondition: StartingCondition::Random,
-            apply_startcondition_on_revanche: false,
-        }
-	}
+        startcondition: StartingCondition::Random,
+        apply_startcondition_on_revanche: false,
+    }
+}
 
+impl Setting {
 	pub fn must_bid(&self) -> bool {
 		match self.point_eval {
 			PointEval::Difference { .. } => true,
@@ -314,9 +313,7 @@ impl Setting {
 }
 
 impl Default for Setting {
-	fn default() -> Self {
-		Self::schieber()
-	}
+	fn default() -> Self { setting_schieber() }
 }
 
 #[wasm_bindgen]

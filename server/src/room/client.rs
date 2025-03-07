@@ -30,16 +30,16 @@ impl Connection {
 }
 
 pub struct Client {
-    pub name: String,
+	pub data: ClientData,
     pub player_id: usize,
 	pub vote: Option<usize>,
 	pub connection: ConnectionRef,
 }
 
 impl Client {
-    pub fn new(player_id: usize, ws_tx: WsWriter) -> Self {
+    pub fn new(data: ClientData, player_id: usize, ws_tx: WsWriter) -> Self {
         Client {
-            name: String::new(),
+			data,
             player_id,
 			vote: None,
             connection: Arc::from( Mutex::from( Connection::new(ws_tx) ) ),
@@ -86,11 +86,11 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
-	pub fn register(&mut self, plr_id: usize, ws_tx: WsWriter) -> (ConnectionRef, usize) {
+	pub fn register(&mut self, client: ClientData, plr_id: usize, ws_tx: WsWriter) -> (ConnectionRef, usize) {
 		let id = self.client_next;
 		self.client_next += 1;
 
-		let client = Client::new(plr_id, ws_tx);
+		let client = Client::new(client, plr_id, ws_tx);
 		let conn = client.connection.clone();
 		self.clients.insert(id, client);
 		(conn, id)
