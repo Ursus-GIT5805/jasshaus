@@ -28,7 +28,6 @@ pub struct Card {
     pub number: u8,
 }
 
-#[wasm_bindgen]
 impl Card {
     pub fn new(color: u8, number: u8) -> Self {
         Card { color, number }
@@ -59,6 +58,13 @@ pub fn all_cards() -> Vec<Card> {
     (0..NUM_COLORS)
         .flat_map(|col| (0..NUM_NUMBERS).map(move |num| Card::new(col as u8, num as u8)))
         .collect()
+}
+
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn card_from_id(id: u8) -> Card {
+	Card::from_id(id)
 }
 
 #[cfg(target_family = "wasm")]
@@ -199,25 +205,6 @@ impl Cardset {
         (self.list & (0x0008040201 << number)).count_ones()
 	}
 
-    pub fn has_stronger_trumpf(&self, card: Card) -> bool {
-        // Make a bitmask where each card with higher number is marked with 1
-        let mask = match card.number {
-            0 => 0b111111110,
-            1 => 0b111111100,
-            2 => 0b111111000,
-            3 => 0b000100000,
-            4 => 0b111101000,
-            5 => 0,
-            6 => 0b110101000,
-            7 => 0b100101000,
-            8 => 0b000101000,
-            _ => 0,
-        } << card.color * NUM_NUMBERS as u8;
-
-        // If the list contains something of the mask, there is a better trumpf
-        self.list & mask != 0
-    }
-
     pub fn has_show(&self, show: Show) -> Result<(), ShowError> {
         // Rows that do not exist are not legal
         if show.row < 1 || 9 < show.row || show.row == 2 {
@@ -342,5 +329,13 @@ pub fn parse_show(item: Vec<Card>) -> Option<Show> {
 impl Cardset {
 	pub fn from_list(item: Vec<Card>) -> Self {
 		Self::from(item)
+	}
+
+
+	pub fn from_object(obj: JsValue) -> Option<Self> {
+		match serde_wasm_bindgen::from_value(obj) {
+			Ok(r) => Some(r),
+			Err(_) => None,
+		}
 	}
 }

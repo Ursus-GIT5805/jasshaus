@@ -4,4 +4,9 @@ server/__pycache__
 **/target
 **/pkg
 **Cargo.lock
-content/turn_credentials.json
+server/Cargo.lock
+game/**Cargo.lock
+htmlform/**Cargo.lock
+content/js
+**/*.tsbuildinfo
+**/turn_credentials.json

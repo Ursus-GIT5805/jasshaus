@@ -111,3 +111,9 @@
 #chatClose:hover {
 	background-color: #222222;
 }
+
+.Active {
+	border-style: solid;
+	border-width: 0.25em;
+	border-color: lime;
+}

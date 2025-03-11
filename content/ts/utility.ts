@@ -1,4 +1,4 @@
-function detectMobile() {
+export function detectMobile() {
 	let regexp = /android|iphone|kindle|ipad/i;
 	return regexp.test(navigator.userAgent);
 }
@@ -6,7 +6,7 @@ function detectMobile() {
 // Global functions
 
 /// Return true if two objects are equal in their properties
-function objEquals(a, b) {
+export function objEquals(a: any, b: any) {
 	if(typeof a !== typeof b) return false;
 	if(typeof a === 'object') {
 		if( Object.keys(a).length !== Object.keys(b).length ) return false;
@@ -21,5 +21,5 @@ function objEquals(a, b) {
 
 // Global variables
 
-const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
-const IS_MOBILE = detectMobile();
+export const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
+export const IS_MOBILE = detectMobile();
