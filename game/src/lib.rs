@@ -48,10 +48,13 @@ pub enum MarriageState {
 	PlayedBoth(usize),
 }
 
+
+pub type PlayerID = usize;
+
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 #[wasm_bindgen]
 pub struct Player {
-    pub team_id: usize,
+    pub team_id: TeamID,
     pub hand: Cardset,
 	#[wasm_bindgen(skip)]
     pub shows: Vec<Show>,
@@ -73,6 +76,8 @@ impl Player {
 		Some(show)
 	}
 }
+
+pub type TeamID = usize;
 
 // #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]

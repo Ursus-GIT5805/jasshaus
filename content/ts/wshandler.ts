@@ -9,7 +9,9 @@ export type ClientData = {
 	name: string;
 }
 
-export interface GamePlugin {
+export class Wshandler {
+	socket: WebSocket;
+
 	oninit?: (client: ClientID, plr: PlayerID, num_players: number) => void;
 
 	onclient?: (data: ClientData, client_id: ClientID, player_id: PlayerID) => void;
@@ -27,21 +29,11 @@ export interface GamePlugin {
 	rtc_onoffer?: (client_id: ClientID, offer: RTCSessionDescription) => Promise<undefined | RTCSessionDescription>;
 	rtc_onanswer?: (client_id: ClientID, answer: RTCSessionDescription) => Promise<void>;
 	rtc_onicecandidate?: (client_id: ClientID, candidate: RTCIceCandidate) => Promise<void>;
-}
-
-// TODO create GamePeers as it's own GamePlugin
-
-export class GameClient {
-	socket: WebSocket;
-
-	plugins: GamePlugin[] = [];
 
 	constructor(
 		addr: string,
 		setting: ClientSetting,
-		plugins?: GamePlugin[],
 	) {
-		if(plugins) this.plugins = plugins;
 		this.socket = new WebSocket(addr);
 
 		this.socket.onopen = async (_) => {
@@ -109,47 +101,45 @@ export class GameClient {
 
 	PlayerID(data: any) {
 		let [client_id, player_id, num_players]: [ClientID, PlayerID, number] = data;
-		this.plugins.forEach((plugin) => plugin.oninit?.(client_id, player_id, num_players));
+		this.oninit?.(client_id, player_id, num_players);
 	}
 
 	// -----
 
-	ClientJoined([data, client_id, player_id]: [any, ClientID, PlayerID]) {
-		this.plugins.forEach((plugin) => plugin.onclient?.(data, client_id, player_id));
+	ClientJoined([data, client_id, player_id]: [ClientData, ClientID, PlayerID]) {
+		this.onclient?.(data, client_id, player_id);
 	}
 
 	ClientDisconnected(client_id: number) {
-		this.plugins.forEach((plugin) => plugin.onclientleave?.(client_id));
+		this.onclientleave?.(client_id);
 	}
 
 	JoinedClients(list: any[]) {
 		for(let entry of list) {
-			let [data, client_id, player_id]: [string, ClientID, PlayerID] = entry;
-			this.ClientJoined([data, client_id, player_id]);
+			let [data, client_id, player_id]: [ClientData, ClientID, PlayerID] = entry;
+			this.onclient?.(data, client_id, player_id);
 		}
 	}
 
 	// -----
 
 	Event(event: any) {
-		this.plugins.forEach((plugin) => plugin.onevent?.(event));
+		this.onevent?.(event);
 	}
 
 	// -----
 
 	ChatMessage([msg, client_id]: [string, ClientID]) {
-		this.plugins.forEach((plugin) => plugin.onchatmessage?.(msg, client_id));
+		this.onchatmessage?.(msg, client_id);
 	}
 
 	// -----
 
 	async RtcStart(client_id: ClientID) {
-		this.plugins.forEach(async (plugin) => {
-			let offer = await plugin.rtc_onstart?.(client_id);
-			if(!offer) return;
+		let offer = await this.rtc_onstart?.(client_id);
+		if(!offer) return;
 
-			this.send({ "RtcSignaling": [JSON.stringify(offer), "Offer", client_id] });
-		});
+		this.send({ "RtcSignaling": [JSON.stringify(offer), "Offer", client_id] });
 	}
 
 	async RtcSignaling(data: any) {
@@ -159,20 +149,18 @@ export class GameClient {
 		if(signal == "Offer") {
 			let offer = json as RTCSessionDescription;
 
-			this.plugins.forEach(async (plugin) => {
-				let answer = await plugin.rtc_onoffer?.(client_id, offer);
-				if(!answer) return;
+			let answer = await this.rtc_onoffer?.(client_id, offer);
+			if(!answer) return;
 
-				this.send({ "RtcSignaling": [JSON.stringify(answer), "Answer", client_id] });
-			});
+			this.send({ "RtcSignaling": [JSON.stringify(answer), "Answer", client_id] });
 		}
 		if(signal == "Answer") {
 			let answer = json as RTCSessionDescription;
-			this.plugins.forEach(async (plugin) => await plugin.rtc_onanswer?.(client_id, answer));
+			await this.rtc_onanswer?.(client_id, answer);
 		}
 		if(signal == "ICECandidate") {
 			let ice = json as RTCIceCandidate;
-			this.plugins.forEach(async (plugin) => await plugin.rtc_onicecandidate?.(client_id, ice));
+			await this.rtc_onicecandidate?.(client_id, ice)
 		}
 	}
 
@@ -195,11 +183,11 @@ export class GameClient {
 
 	HandleVote(data: any) {
 		let [opt, cid]: [number, PlayerID] = data;
-		this.plugins.forEach((plugin) => plugin.onvote?.(opt, cid));
+		this.onvote?.(opt, cid);
 	}
 
-	HandleNewVote(type: string) {
-		this.plugins.forEach((plugin) => plugin.onnewvote?.(type));
+	HandleNewVote(ty: string) {
+		this.onnewvote?.(ty);
 	}
 
 	CurrentVote(data: any) {
@@ -210,7 +198,7 @@ export class GameClient {
 	}
 
 	QuitVote() {
-		this.plugins.forEach((plugin) => plugin.onvotequit?.());
+		this.onvotequit?.();
 	}
 
 	// ---

@@ -46,14 +46,17 @@ impl Client {
         }
     }
 
+	pub async fn send_msg(&mut self, data: Message) {
+		let mut conn = self.connection.lock().await;
+        if let Err(e) = conn.ws.send(data).await {
+			error!("Error sending data socket: {}", e)
+        }
+	}
+
     pub async fn send<T: Serialize>(&mut self, data: T) {
         let jsonstr = serde_json::to_string(&data).unwrap();
         let msg = Message::Text(jsonstr.into());
-
-		let mut conn = self.connection.lock().await;
-        if let Err(e) = conn.ws.send(msg).await {
-			error!("Error sending data socket: {}", e)
-        }
+		self.send_msg(msg).await;
     }
 
 	pub async fn is_active(&mut self) -> bool {
@@ -109,9 +112,12 @@ impl ClientHandler {
     pub async fn send_to_all_except<T>(&mut self, client_id: usize, data: T)
 	where T: Serialize + Clone
 	{
+        let jsonstr = serde_json::to_string(&data).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
 			.filter(|(&id, _)| id != client_id)
-			.map(|(_, client)| client.send(data.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }
@@ -119,8 +125,11 @@ impl ClientHandler {
     pub async fn send_to_all<T>(&mut self, data: T)
 	where T: Serialize + Clone
 	{
+        let jsonstr = serde_json::to_string(&data).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
-			.map(|(_, client)| client.send(data.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }
@@ -141,7 +150,8 @@ impl ClientHandler {
 		let ev = SocketMessage::<T>::Event(data);
 		for (_, client) in self.clients.iter_mut() {
             if client.player_id == plr_id {
-				client.send(ev.clone()).await;
+				client.send(ev).await;
+				break;
 			}
         }
     }
@@ -151,9 +161,12 @@ impl ClientHandler {
 	where T: Serialize + Clone
 	{
 		let ev = SocketMessage::<T>::Event(data);
+		let jsonstr = serde_json::to_string(&ev).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
 			.filter(|(_, client)| client.player_id != plr_id)
-			.map(|(_, client)| client.send(ev.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }

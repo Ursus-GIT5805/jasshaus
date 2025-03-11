@@ -1,8 +1,7 @@
 import { CommHandler } from "./chat.js";
-import { MainPlugin } from "./game.js";
+import { Main } from "./game.js";
 import { DEV_MODE } from "./utility.js";
 import { VoteHandler } from "./voting.js";
-import { GameClient, GamePlugin } from "./wshandler.js";
 import { set_card_skin } from "./jass.js";
 import { ClientSetting, get_client_settings } from "./clientsetting.js";
 import { get_jass_settings, get_setting_form, jass_settings, save_jass_setting } from "./jasssettings.js";
@@ -67,13 +66,12 @@ window.onload = async () => {
 	let name = client_setting['name'];
 
 	let setting = new ClientSetting(name);
-	let	wshandler = new GameClient(WS_URL, setting);
 
-	let onvote = (index: number) => wshandler.vote(index);
-	let comm = new CommHandler(client_setting);
+	let main = new Main(WS_URL, setting);
+
 	try {
-		comm.initChat((msg) => wshandler.sendChatmessage(msg));
-		$("#botrightbuttons").append( comm.createChatbutton() );
+		main.comm.initChat((msg) => main.wshandler.sendChatmessage(msg));
+		$("#botrightbuttons").append( main.comm.createChatbutton() );
 	} catch(e) {
 		console.error(e);
 	}
@@ -81,35 +79,24 @@ window.onload = async () => {
 	if(setting.allow_rtc) {
 		// Spawn a task handling RTC
 		setTimeout(async () => {
-			if(!setting.allow_rtc) return;
-
 			let response = await fetch("turn_credentials.json");
 			let cred = await response.json();
 
-			await comm.init_rtc(
+			await main.comm.init_rtc(
 				cred.username,
 				cred.password,
-				(ice, id) => wshandler.sendICECandidate(ice, id)
+				(ice, id) => main.wshandler.sendICECandidate(ice, id)
 			);
-			wshandler.rtc_start();
+			main.wshandler.rtc_start();
 
-			$("#botrightbuttons").append( comm.createMicbutton() );
+			$("#botrightbuttons").append( main.comm.createMicbutton() );
 		});
  	}
-
-	let main = new MainPlugin(name, (data: any) => wshandler.send({ "Event": data }));
-	let plugins: GamePlugin[] = [
-		comm,
-		new VoteHandler($("body"), onvote),
-		main,
-	];
 
 	jass_settings['cardclicks']["#onchange"] = (val: boolean) => {
 		main.ui.hand.allow_clicks = val;
 	};
 	setupSettings();
-
-	wshandler.plugins = plugins;
 
 	if(room_id) $(`*[text="room_id"]`).text(room_id);
 	if(DEV_MODE) console.log("Started WS");

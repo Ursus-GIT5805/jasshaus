@@ -1,7 +1,10 @@
 import { Card, Cardset, Game, Event as GameEvent, Playtype, setting_molotow, Show  } from "./pkg/jasshaus_game.js"
-import { ClientData, ClientID, PlayerID } from "./wshandler.js";
+import { ClientData, ClientID, PlayerID, Wshandler } from "./wshandler.js";
 import { UI } from "./interface.js"
 import { get_pt_name } from "./jass.js";
+import { ClientSetting } from "./clientsetting.js";
+import { CommHandler } from "./chat.js";
+import { VoteHandler } from "./voting.js";
 
 declare global {
 	interface JQuery { vis(v: boolean): JQuery; }
@@ -11,26 +14,57 @@ $.fn.vis = function(v: boolean) {
 	return this.css("visibility", ["hidden", "visible"][+v]);
 }
 
-export class MainPlugin {
-	send: (data: any) => void;
+export class Main {
+	wshandler: Wshandler;
 
 	game: Game = new Game( setting_molotow() );
 
-	name: string;
-	player_id: PlayerID = 0;
+	comm: CommHandler;
+	vote: VoteHandler;
+
+	setting: ClientSetting;
 	ui: UI;
+
+	player_id: PlayerID = 0;
 
 	client_to_plr = new Map<PlayerID, ClientID>();
 	said_marriage: boolean = false;
 
-	constructor(name: string, send: (data: any) => void) {
-		this.name = name;
-		this.send = send;
+	constructor(addr: string, setting: ClientSetting) {
+		this.setting = setting;
+
+		this.wshandler = new Wshandler(addr, setting);
+		this.comm = new CommHandler(setting);
+		this.vote = new VoteHandler( $("body"), (idx) => this.wshandler.vote(idx) );
+
+		// Join Events
+		this.wshandler.oninit = (c, p, n) => this.oninit(c, p, n);
+		this.wshandler.onclient = (d, cid, pid) => this.onclient(d, cid, pid);
+		this.wshandler.onclientleave = (cid) => this.onclientleave(cid);
+		this.wshandler.onevent = (d) => this.onevent(d);
+
+		// RTC events
+		this.wshandler.rtc_onstart = (cid) => this.comm.rtc_onstart(cid);
+		this.wshandler.rtc_onoffer = (cid, offer) => this.comm.rtc_onoffer(cid, offer);
+		this.wshandler.rtc_onanswer = (cid, answer) => this.comm.rtc_onanswer(cid, answer);
+		this.wshandler.rtc_onicecandidate = (cid, ice) => this.comm.rtc_onicecandidate(cid, ice);
+
+		// Vote events
+		this.wshandler.onvote = (v, cid) => this.vote.onvote(v, cid);
+		this.wshandler.onnewvote = (ty) => this.vote.onnewvote(ty);
+		this.wshandler.onvotequit = () => this.vote.onvotequit();
+
+		this.wshandler.onchatmessage = (msg, client_id) => {
+			let client = this.comm.get(client_id);
+			if(client?.muted) return;
+
+			this.onchatmessage(msg, client_id);
+		};
 
 		this.ui = new UI(
 			(card: Card) => {
 				if(this.ui.is_window_open()) return false;
-				this.send({"PlayCard": card});
+				this.ev_send({"PlayCard": card});
 				return true;
 			},
 			this.game
@@ -40,11 +74,17 @@ export class MainPlugin {
 	setupUI() {
 		this.ui.setupInterface(this.player_id, this.game);
 		this.ui.setupAnnounce(
-			(pt: Playtype, misere: boolean) => this.send({ "Announce": [pt, misere] }),
-			() => this.send("Pass"),
+			(pt: Playtype, misere: boolean) => this.ev_send({ "Announce": [pt, misere] }),
+			() => this.ev_send("Pass"),
 		);
-		this.ui.setupBiding((bid) => this.send({ "Bid": bid }));
-		this.ui.setupShowButton((show) => this.send({ "PlayShow" : show }));
+		this.ui.setupBiding((bid) => this.ev_send({ "Bid": bid }));
+		this.ui.setupShowButton((show) => this.ev_send({ "PlayShow" : show }));
+	}
+
+	ev_send(data: any) {
+		this.wshandler.send({
+			"Event": data,
+		});
 	}
 
 	// ---
@@ -53,13 +93,17 @@ export class MainPlugin {
 		this.player_id = player_id;
 		this.ui.player_id = player_id;
 
+		this.comm.oninit(client_id, player_id);
 		this.ui.players.oninit(client_id, player_id, num_players);
 		this.client_to_plr.set(client_id, player_id);
-		this.ui.updateName(this.player_id, this.name);
+		this.ui.updateName(this.player_id, this.setting.name);
 	}
 
 	onclient(data: ClientData, client_id: ClientID, player_id: PlayerID) {
 		this.client_to_plr.set(client_id, player_id);
+
+		this.vote.onclient();
+		this.comm.onclient(data, client_id, player_id);
 		this.ui.players.onclient(data, client_id, player_id);
 		this.ui.updateName(player_id, data.name);
 	}
@@ -68,11 +112,14 @@ export class MainPlugin {
 		let player_id = this.client_to_plr.get(client_id);
 
 		this.client_to_plr.delete(client_id);
+		this.vote.onclientleave(client_id);
+		this.comm.onclientleave(client_id);
 		this.ui.players.onclientleave(client_id);
 		if(player_id !== undefined) this.ui.updateName(player_id, "");
 	}
 
 	onchatmessage(msg: string, client_id: ClientID) {
+		this.comm.onchatmessage(msg, client_id);
 		this.ui.players.onchatmessage(msg, client_id);
 	}
 
@@ -142,6 +189,7 @@ export class MainPlugin {
 					this.ui.openSummary();
 				}, 2000);
 			} else {
+				this.ui.updateCurrent(this.game.current_player);
 				this.ui.updatePoints();
 				this.ui.updateOnturn();
 			}
@@ -192,6 +240,7 @@ export class MainPlugin {
 			this.ui.updateHand(hand);
 			this.ui.hand.setIllegal();
 
+			this.ui.updatePoints();
 			this.ui.updateNames();
 			this.ui.updateOnturn();
 			this.ui.updateRoundDetails();

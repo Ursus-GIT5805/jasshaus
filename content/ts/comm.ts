@@ -114,11 +114,6 @@ export class PeerHandler<Data> {
 		this.delete(client_id);
 	}
 
-	onclientintroduction(client_id: ClientID, name: string) {
-		let client = this.clients.get(client_id);
-		if(client) client.name = name;
-	}
-
 	// ---
 
 	async init_rtc(

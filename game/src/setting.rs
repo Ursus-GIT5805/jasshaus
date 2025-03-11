@@ -13,6 +13,7 @@ use htmlform_macros::*;
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum StartingCondition {
 	#[Form("#title": "Zufällig")]
@@ -23,6 +24,7 @@ pub enum StartingCondition {
 
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[wasm_bindgen]
+#[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum PointRule {
 	#[Form("#title": "Stich")]
@@ -44,6 +46,7 @@ pub fn get_gamesettingform() -> String {
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum TeamChoosing {
 	#[Form("#title": "Keine Teams")]

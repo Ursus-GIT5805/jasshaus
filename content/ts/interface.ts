@@ -26,7 +26,6 @@ function playtype_button(pt: Playtype, mult: number): JQuery<HTMLElement> {
 	let imgsrc = `pt${id}`;
 
 	let ele = $('<div>')
-		.click(() => {}) // TODO actually announce here
 		.append( $('<img>').attr('src', src).attr("imgsrc", imgsrc) )
 		.append( $("<a>").text(text).attr("text", imgsrc) );
 
