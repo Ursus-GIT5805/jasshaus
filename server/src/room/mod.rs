@@ -137,6 +137,10 @@ where
 			}
 		};
 
+		if client.name.is_empty() {
+			return None;
+		}
+
 		let joined_clients = self.clients.iter()
 			.map(|(i,client)| (client.data.clone(), *i, client.player_id))
 			.collect();

@@ -156,7 +156,15 @@ impl<'a> Server<'a> {
 		E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
 		G: ServerRoom<E> + Send + 'static + TryFrom<S>,
 	{
-		let rooms = RoomManager::<S,E,G>::new();
+		let mut rooms = RoomManager::<S,E,G>::new();
+
+		if cfg!(debug_assertions) {
+			rooms.create_room(RoomSetting {
+				public: true,
+				game_setting: S::default(),
+			});
+		}
+
 		let roomsref = Arc::from( Mutex::from(rooms) );
 
 		let post_binding = roomsref.clone();
