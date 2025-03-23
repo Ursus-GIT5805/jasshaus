@@ -263,7 +263,7 @@ impl ServerRoom<Event> for JassRoom {
 
 	async fn on_enter(&mut self, clients: &mut ClientHandler, plr_id: usize) {
 		if self.starts > 0 {
-			let game = self.game.clone();
+			let game = self.game.public_clone();
             let hand = self.game.players[plr_id].hand;
             let shows = self.game.players[plr_id].shows.clone();
             clients.ev_send_to(plr_id, GameState(game, hand, shows)).await;

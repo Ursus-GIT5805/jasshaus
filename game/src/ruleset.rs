@@ -32,7 +32,7 @@ pub enum Playtype {
 const fn determine_num_playtypes() -> usize {
 	let mut i = 0;
 	loop {
-		if Playtype::const_from_id(i).is_none() { break; }
+		if Playtype::from_id(i).is_none() { break; }
 		i += 1;
 	}
 	i
@@ -41,7 +41,7 @@ const fn determine_num_playtypes() -> usize {
 pub const NUM_PLAYTYPES: usize = determine_num_playtypes();
 
 impl Playtype {
-	pub const fn const_from_id(id: usize) -> Option<Self> {
+	pub const fn from_id(id: usize) -> Option<Self> {
 		let res = match id {
 			0 => Playtype::Updown,
 			1 => Playtype::Downup,
@@ -66,17 +66,10 @@ impl Playtype {
 		};
 		Some(res)
 	}
-}
-
-#[wasm_bindgen]
-impl Playtype {
-	pub fn from_id(id: usize) -> Option<Self> {
-		Self::const_from_id(id)
-	}
 
 	/// Returns the ID of the current playtype.
 	/// They have to map from a number between 0..NUM_PLAYTYPES
-	pub fn get_id(&self) -> Option<usize> {
+	pub const fn get_id(&self) -> Option<usize> {
 		let res = match self {
 			Playtype::Updown => 0,
 			Playtype::Downup => 1,
@@ -106,10 +99,17 @@ impl Playtype {
 	}
 }
 
+
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
 pub fn get_playtype_id(item: Playtype) -> Option<usize> {
 	item.get_id()
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn playtype_from_id(item: usize) -> Option<Playtype> {
+	Playtype::from_id(item)
 }
 
 // #[derive(Tsify)]

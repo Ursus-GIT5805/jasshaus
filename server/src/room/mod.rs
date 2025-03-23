@@ -68,7 +68,6 @@ where
 		let game = G::try_from(setting.game_setting.clone())
 			.map_err(|_| ())?;
 
-
 		let res = Room {
 			_marker: PhantomData,
             clients: ClientHandler::default(),
@@ -122,7 +121,11 @@ where
     }
 
 	/// Register a new client given the SplitSink
-    pub async fn register(&mut self, ws_tx: WsWriter) -> Option<(ConnectionRef, usize)> {
+    pub async fn register(
+		&mut self,
+		client: ClientData,
+		ws_tx: WsWriter,
+	) -> Option<(ConnectionRef, usize)> {
         let plr_id = match self.get_unused_player_id() {
 			Some(id) => id,
 			None => {
@@ -135,14 +138,14 @@ where
 		};
 
 		let joined_clients = self.clients.iter()
-			.map(|(i,client)| (client.name.clone(), *i, client.player_id))
+			.map(|(i,client)| (client.data.clone(), *i, client.player_id))
 			.collect();
 
-		let (conn, id) = self.clients.register(plr_id, ws_tx);
+		let (conn, id) = self.clients.register(client.clone(), plr_id, ws_tx);
 		let (_, num_players) = self.game.get_player_bound();
 
 		self.clients.send_to(id, PlayerID::<E>(id, plr_id, num_players)).await;
-        self.clients.send_to_all_except(id, ClientJoined::<E>(id, plr_id))
+        self.clients.send_to_all_except(id, ClientJoined::<E>(client, id, plr_id))
             .await;
 
 		self.clients.send_to(id, JoinedClients::<E>(joined_clients)).await;
@@ -328,23 +331,6 @@ where
 			ChatMessage(text, _) => {
 				self.clients.send_to_all(ChatMessage::<E>(text, client_id)).await;
 			},
-            ClientIntroduction(name, _) => {
-                if let Some(client) = self.clients.get_mut(&client_id) {
-                    if client.name.is_empty() {
-                        client.name = if name.is_empty() {
-							format!("unnamed{}", client_id)
-						} else {
-							name.clone()
-						};
-
-						self.clients.send_to_all_except(
-                            client_id,
-                            ClientIntroduction::<E>(name, client_id),
-                        )
-                        .await;
-                    }
-                }
-            }
 			Vote(opt, _) => self.handle_vote(opt, client_id).await,
             _ => {
                 error!("Invalid header!");
@@ -401,7 +387,7 @@ impl RoomIndex
 		G: ServerRoom<E> + TryFrom<S>,
 	{
 		let names: Vec<_> = item.clients.iter()
-			.map(|(_,client)| client.name.clone())
+			.map(|(_,client)| client.data.name.clone())
 			.collect();
 
 		Self {

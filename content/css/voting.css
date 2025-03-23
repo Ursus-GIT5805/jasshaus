@@ -1,4 +1,4 @@
-#voteWindow {
+.VoteWindow {
 	position: absolute;
 	display: flex;
 	flex-direction: column;
@@ -13,7 +13,7 @@
 	z-index: 444;
 }
 
-#voteButtons {
+.VoteButtons {
 	display: flex;
 	flex-direction: row;
 	justify-content: center;
@@ -31,4 +31,14 @@
 	div:hover {
 		filter: brightness(120%);
 	}
+}
+
+.VoteButtons:has(.Selected) :not(.Selected) {
+    background-color: red;
+    pointer-events: none;
+}
+
+.VoteButtons .Selected {
+    background-color: green;
+    pointer-events: none;
 }

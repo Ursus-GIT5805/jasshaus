@@ -70,6 +70,11 @@ a { color: inherit; }
     background-color: #7D7D7D;
 }
 
+.Error {
+	color: red;
+	font-weight: bold;
+}
+
 .Button:hover {
     background-color: #3D3D3D;
 }

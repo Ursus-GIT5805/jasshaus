@@ -2,6 +2,13 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Clone)]
 #[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct ClientData {
+	pub name: String,
+}
+
+#[derive(Clone)]
+#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 pub enum RTCSignal {
 	Offer,
 	Answer,
@@ -32,10 +39,11 @@ pub enum SocketMessage<T> {
 	RtcStart(usize),
 	RtcSignaling(String, RTCSignal, usize),
 
-	ClientJoined(usize,usize),
+	Introduction(ClientData),
+
+	ClientJoined(ClientData, usize,usize),
 	ClientDisconnected(usize),
-	ClientIntroduction(String,usize),
-	JoinedClients(Vec<(String,usize,usize)>),
+	JoinedClients(Vec<(ClientData,usize,usize)>),
 
 	PlayerID(usize, usize, usize),
 	ChatMessage(String,usize),

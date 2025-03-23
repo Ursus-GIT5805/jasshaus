@@ -48,10 +48,13 @@ pub enum MarriageState {
 	PlayedBoth(usize),
 }
 
+
+pub type PlayerID = usize;
+
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 #[wasm_bindgen]
 pub struct Player {
-    pub team_id: usize,
+    pub team_id: TeamID,
     pub hand: Cardset,
 	#[wasm_bindgen(skip)]
     pub shows: Vec<Show>,
@@ -74,9 +77,11 @@ impl Player {
 	}
 }
 
-#[derive(Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
+pub type TeamID = usize;
+
+// #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[wasm_bindgen]
 pub struct Team {
     pub points: i32,
     pub won_points: i32,
@@ -86,6 +91,7 @@ pub struct Team {
 	pub won: Cardset,
 }
 
+#[wasm_bindgen]
 impl Team {
 	#[inline]
 	pub fn gain_points(&self) -> i32 {
@@ -121,7 +127,6 @@ pub struct Game {
 	pub marriage: MarriageState,
 	pub last_bid_player: Option<usize>,
 
-    #[serde(skip)]
     pub players: Vec<Player>,
     pub teams: Vec<Team>,
 
@@ -994,5 +999,27 @@ impl Game {
 		v.iter()
 			.map(|(_,i)| *i)
 			.collect()
+	}
+
+	pub fn public_clone(&self) -> Self {
+		let mut out = self.clone();
+
+		for plr in out.players.iter_mut() {
+			plr.hand.clear();
+			plr.shows.clear();
+		}
+
+		out
+	}
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl Game {
+	pub fn from_object(obj: JsValue) -> Option<Self> {
+		match serde_wasm_bindgen::from_value(obj) {
+			Ok(r) => Some(r),
+			Err(_) => None,
+		}
 	}
 }

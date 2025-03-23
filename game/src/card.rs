@@ -28,7 +28,6 @@ pub struct Card {
     pub number: u8,
 }
 
-#[wasm_bindgen]
 impl Card {
     pub fn new(color: u8, number: u8) -> Self {
         Card { color, number }
@@ -59,6 +58,13 @@ pub fn all_cards() -> Vec<Card> {
     (0..NUM_COLORS)
         .flat_map(|col| (0..NUM_NUMBERS).map(move |num| Card::new(col as u8, num as u8)))
         .collect()
+}
+
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn card_from_id(id: u8) -> Card {
+	Card::from_id(id)
 }
 
 #[cfg(target_family = "wasm")]
@@ -323,5 +329,13 @@ pub fn parse_show(item: Vec<Card>) -> Option<Show> {
 impl Cardset {
 	pub fn from_list(item: Vec<Card>) -> Self {
 		Self::from(item)
+	}
+
+
+	pub fn from_object(obj: JsValue) -> Option<Self> {
+		match serde_wasm_bindgen::from_value(obj) {
+			Ok(r) => Some(r),
+			Err(_) => None,
+		}
 	}
 }

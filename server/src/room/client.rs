@@ -30,30 +30,33 @@ impl Connection {
 }
 
 pub struct Client {
-    pub name: String,
+	pub data: ClientData,
     pub player_id: usize,
 	pub vote: Option<usize>,
 	pub connection: ConnectionRef,
 }
 
 impl Client {
-    pub fn new(player_id: usize, ws_tx: WsWriter) -> Self {
+    pub fn new(data: ClientData, player_id: usize, ws_tx: WsWriter) -> Self {
         Client {
-            name: String::new(),
+			data,
             player_id,
 			vote: None,
             connection: Arc::from( Mutex::from( Connection::new(ws_tx) ) ),
         }
     }
 
+	pub async fn send_msg(&mut self, data: Message) {
+		let mut conn = self.connection.lock().await;
+        if let Err(e) = conn.ws.send(data).await {
+			error!("Error sending data socket: {}", e)
+        }
+	}
+
     pub async fn send<T: Serialize>(&mut self, data: T) {
         let jsonstr = serde_json::to_string(&data).unwrap();
         let msg = Message::Text(jsonstr.into());
-
-		let mut conn = self.connection.lock().await;
-        if let Err(e) = conn.ws.send(msg).await {
-			error!("Error sending data socket: {}", e)
-        }
+		self.send_msg(msg).await;
     }
 
 	pub async fn is_active(&mut self) -> bool {
@@ -86,11 +89,11 @@ pub struct ClientHandler {
 }
 
 impl ClientHandler {
-	pub fn register(&mut self, plr_id: usize, ws_tx: WsWriter) -> (ConnectionRef, usize) {
+	pub fn register(&mut self, client: ClientData, plr_id: usize, ws_tx: WsWriter) -> (ConnectionRef, usize) {
 		let id = self.client_next;
 		self.client_next += 1;
 
-		let client = Client::new(plr_id, ws_tx);
+		let client = Client::new(client, plr_id, ws_tx);
 		let conn = client.connection.clone();
 		self.clients.insert(id, client);
 		(conn, id)
@@ -109,9 +112,12 @@ impl ClientHandler {
     pub async fn send_to_all_except<T>(&mut self, client_id: usize, data: T)
 	where T: Serialize + Clone
 	{
+        let jsonstr = serde_json::to_string(&data).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
 			.filter(|(&id, _)| id != client_id)
-			.map(|(_, client)| client.send(data.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }
@@ -119,8 +125,11 @@ impl ClientHandler {
     pub async fn send_to_all<T>(&mut self, data: T)
 	where T: Serialize + Clone
 	{
+        let jsonstr = serde_json::to_string(&data).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
-			.map(|(_, client)| client.send(data.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }
@@ -141,7 +150,8 @@ impl ClientHandler {
 		let ev = SocketMessage::<T>::Event(data);
 		for (_, client) in self.clients.iter_mut() {
             if client.player_id == plr_id {
-				client.send(ev.clone()).await;
+				client.send(ev).await;
+				break;
 			}
         }
     }
@@ -151,9 +161,12 @@ impl ClientHandler {
 	where T: Serialize + Clone
 	{
 		let ev = SocketMessage::<T>::Event(data);
+		let jsonstr = serde_json::to_string(&ev).unwrap();
+        let msg = Message::Text(jsonstr.into());
+
 		let futures = self.clients.iter_mut()
 			.filter(|(_, client)| client.player_id != plr_id)
-			.map(|(_, client)| client.send(ev.clone()));
+			.map(|(_, client)| client.send_msg(msg.clone()));
 
 		futures::future::join_all(futures).await;
     }
