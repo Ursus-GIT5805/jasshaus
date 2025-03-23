@@ -1,5 +1,4 @@
-import { Cardset, Fullhouse, Stairs, Street, StreetBomb, Trick } from "../pkg/tichu_game.js";
-import { Card } from "./pkg/tichu_game.js"
+import { Card, Cardset, Fullhouse, Stairs, Street, StreetBomb, Trick } from "../pkg/tichu_game.js";
 
 function get_card_img(card: Card): string {
 	return `./img/classic/card${card.color},${card.number+1}.jpg`;
