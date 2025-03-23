@@ -3,9 +3,12 @@ use jasshaus_game::{
 	server::*,
 	setting::*,
 };
-use game_server::run_server;
+use game_server::*;
 
 #[tokio::main]
 async fn main() {
-	run_server::<Setting, Event, JassRoom>("0.0.0.0:7999").await;
+	Server::new("0.0.0.0:7999", "jasshaus")
+		.unix_socket("unix_sock")
+		.build::<Setting, Event, JassRoom>()
+		.await;
 }

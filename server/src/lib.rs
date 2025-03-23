@@ -1,7 +1,9 @@
 use serde::*;
-use std::sync::Arc;
+use std::{future::Future, pin::Pin, sync::Arc};
 use tokio::sync::Mutex;
 use std::marker::Send;
+
+use tokio::net::UnixListener;
 
 use axum::{
     extract::ws::{Message, WebSocket, WebSocketUpgrade}, http::{Response, StatusCode}, routing::{get, post}, Router,
@@ -97,82 +99,152 @@ where
     debug!("Client[{}] disconnected!", client_id);
 }
 
-pub async fn run_server<S,E,G>(addr: &'static str)
-where
-	S: Default + Clone + for<'de> Deserialize<'de> + Send + 'static,
-	E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
-	G: ServerRoom<E> + Send + 'static + TryFrom<S>,
-{
-	let rooms = RoomManager::<S,E,G>::new();
-	let roomsref = Arc::from( Mutex::from(rooms) );
+pub struct Server<'a> {
+	addr: &'a str,
+	name: &'a str,
 
-	let post_binding = roomsref.clone();
-	let rooms_binding = roomsref.clone();
-	let ws_binding = roomsref.clone();
+	socket_file: Option<Box<std::path::Path>>,
+}
 
-    let app = Router::new()
-        .route("/rooms", post(|req: String| async move {
-			let mut rooms = post_binding.lock().await;
+impl<'a> Server<'a> {
+	pub fn new(addr: &'a str, name: &'a str) -> Self {
+		Self {
+			addr,
+			name,
 
-			let setting: S = match serde_json::from_str(req.as_str()) {
-				Ok(msg) => msg,
-				Err(_) => return Response::builder()
-					.status(StatusCode::FORBIDDEN)
-					.body(String::from("Invalid game settings"))
-					.unwrap()
-			};
-			let res = rooms.create_room(RoomSetting {
-				game_setting: setting,
-				public: true,
-			});
-
-			match res {
-				Some((id, _)) => Response::builder()
-					.status(StatusCode::OK)
-					.body(id)
-					.unwrap(),
-				None =>	Response::builder()
-					.status(StatusCode::FORBIDDEN)
-					.body(String::from("Could not create room"))
-					.unwrap()
-			}
-		}))
-        .route("/rooms", get(|_: String| async move {
-			let index = {
-				let handler = rooms_binding.lock().await;
-				handler.index_rooms().await
-			};
-
-			let body = serde_json::to_string(&index).unwrap();
-
-			Response::builder()
-				.status(StatusCode::OK)
-				.body(body)
-				.unwrap()
-		}))
-        .route("/ws/{room_id}",
-			   get(|ws: WebSocketUpgrade, Path(room_id): Path<String>| async move {
-				   ws.on_upgrade(|ws: WebSocket| async move {
-					   handle_ws_connection(ws, room_id, ws_binding).await;
-				   })
-			   })
-		);
-
-	let maintenance = async move {
-		let duration = tokio::time::Duration::from_secs( 3600 );
-
-		loop {
-			tokio::time::sleep( duration ).await;
-			debug!("Room maintenance...");
-			roomsref.lock().await.maintain().await;
+			socket_file: None,
 		}
-	};
+	}
 
-	let server = async move {
-		let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-		axum::serve(listener, app).await
-			.expect("Could not start server!");
-	};
+	pub fn unix_socket(mut self, path: &'static str) -> Self {
+		let path = std::path::Path::new(path);
+		self.socket_file = Some(Box::from(path));
+		self
+	}
 
-	futures::future::join(maintenance, server).await;
+	pub async fn build<S,E,G>(self)
+	where
+		S: Default + Clone + for<'de> Deserialize<'de> + Send + 'static,
+		E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
+		G: ServerRoom<E> + Send + 'static + TryFrom<S>,
+	{
+		let rooms = RoomManager::<S,E,G>::new();
+		let roomsref = Arc::from( Mutex::from(rooms) );
+
+		let post_binding = roomsref.clone();
+		let rooms_binding = roomsref.clone();
+		let ws_binding = roomsref.clone();
+
+		let app = Router::new()
+			.route("/rooms", post(|req: String| async move {
+				let mut rooms = post_binding.lock().await;
+
+				let setting: S = match serde_json::from_str(req.as_str()) {
+					Ok(msg) => msg,
+					Err(_) => return Response::builder()
+						.status(StatusCode::FORBIDDEN)
+						.body(String::from("Invalid game settings"))
+						.unwrap()
+				};
+				let res = rooms.create_room(RoomSetting {
+					game_setting: setting,
+					public: true,
+				});
+
+				match res {
+					Some((id, _)) => Response::builder()
+						.status(StatusCode::OK)
+						.body(id)
+						.unwrap(),
+					None =>	Response::builder()
+						.status(StatusCode::FORBIDDEN)
+						.body(String::from("Could not create room"))
+						.unwrap()
+				}
+			}))
+			.route("/rooms", get(|_: String| async move {
+				let index = {
+					let handler = rooms_binding.lock().await;
+					handler.index_rooms().await
+				};
+
+				let body = serde_json::to_string(&index).unwrap();
+
+				Response::builder()
+					.status(StatusCode::OK)
+					.body(body)
+					.unwrap()
+			}))
+			.route("/ws/{room_id}",
+				   get(|ws: WebSocketUpgrade, Path(room_id): Path<String>| async move {
+					   ws.on_upgrade(|ws: WebSocket| async move {
+						   handle_ws_connection(ws, room_id, ws_binding).await;
+					   })
+				   })
+			);
+
+		// ===== Tasks =====
+
+		let rooms = roomsref.clone();
+		let maintenance = async move {
+			let duration = tokio::time::Duration::from_secs( 3600 );
+
+			loop {
+				tokio::time::sleep( duration ).await;
+				debug!("Room maintenance...");
+				rooms.lock().await.maintain().await;
+			}
+		};
+
+		let server = async move {
+			let listener = tokio::net::TcpListener::bind(self.addr).await.unwrap();
+			axum::serve(listener, app).await
+				.expect("Could not start server!");
+		};
+
+		let mut tasks: Vec< Pin<Box<dyn Future<Output = ()> + Send>> > = vec![
+			Box::pin(maintenance),
+			Box::pin(server),
+		];
+
+		// = futures::future::join(maintenance, server);
+
+		if let Some(path) = self.socket_file {
+			let rooms = roomsref.clone();
+			let unix_socket = async move {
+				let listener = match UnixListener::bind(&path) {
+					Ok(l) => l,
+					Err(_) => {
+						std::fs::remove_file(&path).expect("Could not remove socket!");
+						UnixListener::bind(&path).expect("Could not bind to socket!")
+					}
+				};
+
+
+				while let Ok((socket, _addr)) = listener.accept().await {
+					let roomsref = rooms.clone();
+					tokio::spawn(async move {
+						let binding = roomsref.clone();
+						let mut handler = binding.lock().await;
+
+						let mut data = vec![];
+						socket.try_read_buf(&mut data).unwrap();
+
+						let cmd: ServerRequest = bincode::deserialize(&data).unwrap();
+						let answer = handler.process_request(cmd).await;
+
+						let msg = bincode::serialize(&answer).unwrap();
+						// println!("{:?}", msg);
+						socket.try_write(&msg).unwrap();
+					});
+				}
+			};
+
+			tasks.push( Box::pin(unix_socket) );
+		}
+
+		println!("Started server {} at {}", self.name, self.addr);
+
+		futures::future::join_all(tasks).await;
+	}
 }

@@ -355,6 +355,25 @@ where
 
 pub type RoomID = String;
 
+#[derive(Serialize, Deserialize)]
+#[derive(Debug)]
+pub enum ServerRequest {
+	CloseRoom(RoomID),
+
+	ListRooms,
+	CleanUnused,
+
+	SaveToFile(String),
+	LoadFromFile(String),
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum ServerAnswer {
+	Successful,
+	Unsuccessful,
+	RoomList(Vec<RoomIndex>),
+}
+
 pub struct RoomManager<S,E,G>
 where
 	S: Clone + Send,
@@ -365,7 +384,7 @@ where
 	rooms: HashMap<RoomID, RoomRef<S,E,G> >,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[derive(Clone)]
 pub struct RoomIndex {
 	pub players: Vec<String>,
@@ -517,6 +536,38 @@ where
 		match self.rooms.get(id) {
 			Some(c) => Some(c.clone()),
 			None => None,
+		}
+	}
+
+	pub async fn process_request(&mut self, req: ServerRequest) -> ServerAnswer {
+		match req {
+			ServerRequest::CloseRoom(room_id) => {
+				match self.rooms.remove(&room_id) {
+					Some(room) => {
+						let mut lock = room.lock().await;
+						lock.cleanup().await;
+						ServerAnswer::Successful
+					},
+					None => ServerAnswer::Unsuccessful,
+				}
+			},
+			ServerRequest::CleanUnused => {
+				self.maintain().await;
+				ServerAnswer::Successful
+			},
+			ServerRequest::ListRooms => {
+				let futures = self.rooms.iter()
+					.map(|(id, room)| {
+						async move {
+							let lock = room.lock().await;
+							RoomIndex::new(id.clone(), lock.deref())
+						}
+					});
+
+				let results = futures::future::join_all(futures).await;
+				ServerAnswer::RoomList(results)
+			},
+			_ => todo!()
 		}
 	}
 }
