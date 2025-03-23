@@ -130,7 +130,13 @@ where
 	E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
 	G: ServerRoom<E> + Send + 'static + TryFrom<S>,
 {
-	let rooms = RoomManager::<S,E,G>::new();
+	let mut rooms = RoomManager::<S,E,G>::new();
+
+	rooms.create_room(RoomSetting::<S> {
+		public: true,
+		game_setting: S::default(),
+	});
+
 	let roomsref = Arc::from( Mutex::from(rooms) );
 
 	let post_binding = roomsref.clone();

@@ -12,6 +12,10 @@ serde = { version = "1.0", features = ["derive"] }
 wasm-bindgen = { version = "0.2" }
 tsify-next = { version = "0.5", features = ["js"] }
 serde-wasm-bindgen = "0.4"
+serde-big-array = "0.5"
+# serde_bytes = "0.11"
+# bit-set = { version = "0.8", features = ["serde"] }
+# bitvec = { version = "1", features = ["serde"] }
 
 # For the serer
 game-server = { path = "../../server", optional = true }

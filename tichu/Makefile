@@ -1,7 +1,7 @@
 server_pwd="server"
 
 b:
-	cd game && wasm-pack build --target web
+	cd game && wasm-pack build --target web --dev
 	rsync -av game/pkg content/
 
 run:
@@ -10,6 +10,8 @@ run:
 	(trap 'kill 0' SIGINT; make cont & make serv)
 
 cont:
+	make b
+	tsc -p content/tsdebug.json
 	python3 -m http.server -d content
 
 

@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="css/game.css"/>
     <link rel="stylesheet" href="css/hand.css"/>
     <link rel="stylesheet" href="css/chat.css"/>
-    <!-- <link rel="stylesheet" href="css/carpet.css"/> -->
+    <link rel="stylesheet" href="css/voting.css"/>
     <link rel="stylesheet" href="css/players.css"/>
 
     <body>
@@ -19,17 +19,21 @@
 		<div class="Hand" id="cards"></div>
 
 		<div id="points" class="Board">
-		  <b><u>Tichu 1000</u></b>
-		  <div id="teampoints"></div>
+			<b><u id="goal"></u></b>
+			<div id="teampoints"></div>
 		</div>
 
+		<div id="gameDetails" class="Board">
+			<b><u id="gamePhase"></u></b>
+			<div id="playerInfo"></div>
+		</div>
 
 		<div id="buttonRow">
+		  <div id="pass" class="Button">Pass</div>
+		  <div id="play" class="Button">Play</div>
 		  <div id="announceGTichu" class="Button">Grand Tichu</div>
 		  <div id="cancelGTichu" class="Button">Continue</div>
 		  <div id="announceTichu" class="Button">Tichu</div>
-		  <div id="pass" class="Button">Pass</div>
-		  <div id="play" class="Button">Play</div>
 		</div>
 
 		<!-- Popup windows -->
@@ -39,6 +43,22 @@
 		  <div id="exchangeHolder"></div>
 		  <div class="Button" id="exchange">Exchange</div>
 		</div>
+
+		<div id="trickWindow" class="Board Window">
+			<h2>Choose trick</h2>
+			<div id="tricklist"></div>
+		</div>
+
+		<div id="wishWindow" class="Board Window">
+			<h2>Wish a number</h2>
+			<div id="wishButtons"></div>
+		</div>
+
+        <div id="endWindow" class="Board Window">
+          <h1 id="endResult"></h1>
+		  <div id="endTeams"></div>
+		  <a href="index.html"><div class="Button Important">Leave Room</div></a>
+        </div>
 
 		<!-- Rest -->
 
@@ -64,23 +84,6 @@
 		</noscript>
 	</body>
 
-	<script type="module" src="js/loadwasm.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-    <script src="js/utility.js"></script>
-    <script src="js/formcreator.js"></script>
-    <!-- <script src="js/settings.js"></script> -->
-
-	<script src="js/voting.js"></script>
-    <script src="js/game/comm.js"></script>
-    <script src="js/game/wshandler.js"></script>
-
-    <script src="js/game/players.js"></script>
-
-    <script src="js/game/hand.js"></script>
-    <script src="js/game/carpet.js"></script>
-
-	<script src="js/game/interface.js"></script>
-    <script src="js/game/event.js"></script>
-	<!-- <script src="js/game/window.js"></script> -->
-    <script src="js/game/main.js"></script>
+	<script type="module" src="js/main.js"></script>
 </html>

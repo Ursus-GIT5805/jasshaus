@@ -216,7 +216,6 @@ export class CommHandler extends PeerHandler<CommClientData> {
 	onchatmessage(msg: string, client_id: ClientID) {
 		let client = this.clients.get(client_id);
 		if(client === undefined) return;
-		if(client?.data?.muted) return;
 
 		let name = client.name || "???";
 		let text = `[${name}]: ${msg}`;

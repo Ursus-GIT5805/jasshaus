@@ -1,0 +1,1 @@
+../../../content/ts/chat.ts

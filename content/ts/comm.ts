@@ -39,7 +39,7 @@ export class Client<Data> {
 	}
 
 	getShortName(): string {
-		return this.name.substring(3);
+		return this.name.substring(0, 3);
 	}
 }
 

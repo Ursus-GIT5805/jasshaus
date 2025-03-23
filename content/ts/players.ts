@@ -4,6 +4,7 @@ import { ClientData, ClientID, PlayerID } from "./wshandler.js";
 export class CirclePlayer {
 	curplr: undefined | PlayerID = undefined;
 	players = new Map<ClientID, PlayerID>();
+	click_callback?: (plr: PlayerID) => void;
 
 	setMessage(
 		msg: string | JQuery<HTMLElement>,
@@ -29,6 +30,10 @@ export class CirclePlayer {
 		this.curplr = plr;
 	}
 
+	setState(st: string, plr: PlayerID, state: boolean) {
+		$(`#player${plr}`).toggleClass(st, state);
+	}
+
 	// ---
 
 	oninit(client_id: ClientID, player_id: PlayerID, num_players: number) {
@@ -45,7 +50,8 @@ export class CirclePlayer {
 			let ele = $('<div>')
 				.attr("id", id)
 				.attr("text", id)
-				.addClass("Player");
+				.addClass("Player")
+				.click(() => this.click_callback?.(r));
 
 			if(i < num_players / 3) $("#pright").append(ele);
 			else if(i < num_players / 3*2) $("#pup").append(ele);

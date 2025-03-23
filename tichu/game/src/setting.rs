@@ -25,13 +25,22 @@ pub struct Setting {
 
 	// Number of cards a player has to decide GT
 	pub num_cards_gt: usize,
+
+	// Skip exchange?
+	pub skip_exchange: bool,
+
+	// Points to gain (or lose) on Tichu
+	pub tichu_points: i32,
+	// Points to gain (or lose) on Grand Tichu
+	pub grand_tichu_points: i32,
+
+	// Points to receive when one team finishes before any other team's player
+	pub fast_finish_points: i32,
 }
 
 #[wasm_bindgen]
-impl Setting {
-	pub fn new() -> Self {
-		Self::default()
-	}
+pub fn setting_classic() -> Setting {
+	Setting::default()
 }
 
 impl Default for Setting {
@@ -40,6 +49,11 @@ impl Default for Setting {
 			num_players: 4,
 			end_condition: EndCondition::Points(1000),
 			num_cards_gt: 8,
+			skip_exchange: false,
+
+			tichu_points: 100,
+			grand_tichu_points: 200,
+			fast_finish_points: 100,
 		}
 	}
 }

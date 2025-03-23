@@ -1,7 +1,7 @@
-use tichu_game::{
-	server::*,
-	setting::*,
-};
+use tichu_game::setting::Setting;
+use tichu_game::Event;
+use tichu_game::server::TichuRoom;
+
 use game_server::run_server;
 
 #[tokio::main]

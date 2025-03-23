@@ -25,6 +25,30 @@ export class Carpet<Card> {
 		this.content_handler = content_handler;
 	}
 
+	setDropAction(callback: (card: Card) => void) {
+		this.container[0].ondragenter = (e: MouseEvent) => {
+			e.preventDefault();
+			this.container.addClass("DragOver");
+		}
+		this.container[0].ondragleave = (e: MouseEvent) => {
+			let rt = e.relatedTarget as HTMLElement;
+			if( this.container[0].contains( rt ) ) return;
+
+			this.container.removeClass("DragOver");
+		}
+
+		this.container[0].ondragover = (e) => e.preventDefault();
+		this.container[0].ondrop = (e) => {
+			this.container.removeClass("DragOver");
+
+			let data = e.dataTransfer?.getData("card");
+			if(data === undefined) return;
+
+			let obj = JSON.parse(data) as Card;
+			callback(obj);
+		};
+	}
+
 	playCard(
 		card: Card,
 		player: PlayerID,

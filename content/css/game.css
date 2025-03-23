@@ -184,3 +184,7 @@ body > .PlayerMSG {
 
 	transform: translateX(-50%);
 }
+
+.DragOver {
+    border-color: #33ff33 !important;
+}

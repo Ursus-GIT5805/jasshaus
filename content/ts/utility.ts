@@ -23,3 +23,21 @@ export function objEquals(a: any, b: any) {
 
 export const DEV_MODE = window.location.protocol == "file:" || window.location.protocol == "http:";
 export const IS_MOBILE = detectMobile();
+
+//
+
+function getRoomID(): null | string {
+	let params = new URLSearchParams(location.search);
+	return params.get('room');
+}
+export const ROOM_ID = getRoomID();
+
+export function determine_ws_url(port: number): string {
+	if(DEV_MODE){
+		if(location.protocol == "http:") {
+			return `ws://${location.hostname}:${port}/ws`;
+		}
+		return `ws://127.0.0.1:${port}/ws`;
+	}
+	return `wss://${location.host}/ws`;
+}

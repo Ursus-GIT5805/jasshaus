@@ -1,15 +1,46 @@
 pub mod card;
 pub mod setting;
 
+pub mod trick;
+
 #[cfg(feature = "server")]
 pub mod server;
 
 use card::*;
+use trick::*;
 use setting::*;
 
 use wasm_bindgen::prelude::*;
 use tsify_next::Tsify;
 use serde::{Serialize, Deserialize};
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Clone)]
+#[derive(Eq, PartialEq)]
+#[derive(Serialize, Deserialize)]
+pub enum Event {
+	// Client <-> Server
+	Play(Trick, usize),
+	WishPlay(Trick, u8, usize),
+	Pass(usize),
+	Announce(TichuState, usize),
+	ExchangeCards(Vec<Card>),
+	GiveAway(usize),
+	DecideGrandTichu(bool, usize),
+
+	// Server -> Client only
+
+	AddCards(Cardset),
+	StartPlaying(usize),
+	StartDistribution(Cardset),
+	StartExchange,
+	DidExchange(usize),
+	NewGame,
+
+	State(Game, Cardset),
+	Setting(Setting),
+}
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -29,23 +60,12 @@ pub enum TichuState {
 #[derive(Clone, PartialEq, Eq)]
 #[derive(Copy)]
 #[derive(Serialize, Deserialize)]
-pub enum PlayerState {
-	DecidingGrandTichu,
-	Playing,
-	Finished,
-}
-
-#[derive(Tsify)]
-#[tsify(into_wasm_abi, from_wasm_abi)]
-#[derive(Clone, PartialEq, Eq)]
-#[derive(Copy)]
-#[derive(Serialize, Deserialize)]
 #[repr(u8)]
 pub enum Phase {
 	Distributing,
 	Exchange,
+	GiveAway,
 	Playing,
-	Bombing,
 }
 
 // #[derive(Tsify)]
@@ -54,26 +74,28 @@ pub enum Phase {
 #[derive(Clone, PartialEq, Eq)]
 #[derive(Serialize, Deserialize)]
 pub struct Player {
-	pub team_id: usize,
+	pub team_id: TeamID,
 
-	// Private Information
-	#[serde(skip)]
-	pub cards: Cardset,
-	#[serde(skip)]
-	pub exchange: Vec<Card>,
-
-	pub state: PlayerState,
+	pub num_cards: usize,
+	pub finished: bool,
 	pub won_cards: Cardset,
 	pub tichu: TichuState,
+
+	// Private Information
+	pub cards: Cardset,
+	#[wasm_bindgen(skip)]
+	pub exchange: Vec<Card>,
 }
 
 impl Player {
 	pub fn new(team_id: usize) -> Self {
 		Self {
 			team_id,
+
+			num_cards: 0,
 			cards: Cardset::default(),
 			exchange: vec![],
-			state: PlayerState::Playing,
+			finished: false,
 
 			won_cards: Cardset::default(),
 			tichu: TichuState::None,
@@ -81,18 +103,22 @@ impl Player {
 	}
 
 	pub fn clear_round_data(&mut self) {
+		self.num_cards = 0;
 		self.cards.clear();
 		self.won_cards.clear();
 		self.exchange.clear();
 
 		self.tichu = TichuState::None;
-		self.state = PlayerState::DecidingGrandTichu;
+		self.finished = false;
 	}
 
 	pub fn finished(&self) -> bool {
-		self.state == PlayerState::Finished
+		self.finished
 	}
 }
+
+pub type PlayerID = usize;
+pub type TeamID = usize;
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -110,8 +136,8 @@ pub struct Team {
 pub struct Game {
 	pub phase: Phase,
 	pub wished_number: Option<u8>,
-	pub best_play: Option<Play>,
-	pub played_cards: Cardset,
+	best_trick: Option<Trick>,
+	played_cards: Cardset,
 
 	pub first_finished: Option<usize>,
 	pub last_player: usize,
@@ -131,7 +157,7 @@ impl Game {
 		Self {
 			phase: Phase::Distributing,
 			wished_number: None,
-			best_play: None,
+			best_trick: None,
 			played_cards: Cardset::default(),
 
 			first_finished: None,
@@ -152,7 +178,7 @@ impl Game {
 			plr.clear_round_data();
 		}
 
-		self.best_play = None;
+		self.best_trick = None;
 		self.phase = Phase::Distributing;
 		self.first_finished = None;
 	}
@@ -165,7 +191,7 @@ impl Game {
 	/// Returns true when it's time to start exchanging
 	pub fn should_start_exchange(&self) -> bool {
 		self.phase == Phase::Distributing &&
-			!self.players.iter().any(|p| p.cards.len() != self.cards_per_player())
+			!self.players.iter().any(|p| p.num_cards != self.cards_per_player())
 	}
 
 	/// Returns true when it's time to evaluate the exchange
@@ -184,11 +210,11 @@ impl Game {
 				.filter(|plr| plr.finished());
 
 			for plr in unfinished {
-				gain.merge(plr.won_cards);
+				gain.merge( &plr.won_cards );
 				plr.won_cards.clear();
 			}
 
-			self.players[first_plr].cards.merge(gain);
+			self.players[first_plr].won_cards.merge( &gain );
 		}
 
 		// Give hand cards of unfinished players to the next team
@@ -205,8 +231,8 @@ impl Game {
 				let team_id = self.players[plr_id].team_id;
 				let id = representant[ (team_id+1) % self.teams.len() ];
 
-				let cards = self.players[plr_id].cards;
-				self.players[id].cards.merge(cards);
+				let cards = self.players[plr_id].cards.clone();
+				self.players[id].cards.merge( &cards );
 				self.players[plr_id].cards.clear();
 			}
 		}
@@ -227,18 +253,33 @@ impl Game {
 	fn next_player_of_team(&self, plr: usize) -> usize {
 		let team_id = self.players[plr].team_id;
 		let plrs = self.get_players_of_team(team_id);
-		let idx = *plrs.iter().find(|&id| *id == plr).unwrap_or(&0);
+		let idx = plrs.iter().position(|&id| id == plr).unwrap_or(0);
+
 		plrs[(idx+1) % plrs.len()]
 	}
 
 	/// Takes the current cards and gives them to the `last_player`
-	/// (i.e. give the cards to the player on whose cards wasn't played)
+	/// (i.e. give the cards to the player with the best trick)
 	fn take_cards(&mut self) {
+		if let Some(trick) = &self.best_trick {
+			match trick {
+				Trick::Dragon => {
+					self.phase = Phase::GiveAway;
+					return;
+				},
+				_ => {},
+			}
+		}
+
 		let plr = &mut self.players[self.current_player];
-		plr.won_cards.merge(self.played_cards);
+		plr.won_cards.merge( &self.played_cards );
 
 		self.played_cards.clear();
-		self.best_play = None;
+		self.best_trick = None;
+
+		if plr.finished() {
+			self.proceed_to_next_player();
+		}
 	}
 
 	/// Proceed to the next player that will act next
@@ -254,22 +295,75 @@ impl Game {
 		self.current_player = cur;
 	}
 
+	fn handle_finish(&mut self, plr_id: usize) {
+		self.players[plr_id].finished = true;
+
+		if self.first_finished.is_none() {
+			self.handle_tichu(plr_id);
+		}
+
+		let teams = self.teams.len();
+		let mut num_plrs = vec![0; teams];
+		let mut finished_plrs = vec![0; teams];
+
+		for plr in self.players.iter() {
+			num_plrs[plr.team_id] += 1;
+			finished_plrs[plr.team_id] += plr.finished() as i32;
+		}
+
+		let num_finished_teams = num_plrs.iter().zip(finished_plrs.iter())
+			.filter(|(&total, &finished)| total == finished)
+			.count();
+
+		let num_at_least_one = num_plrs.iter()
+			.filter(|&x| *x != 0)
+			.count();
+
+		// One team finished and no other player of another team did!
+		if num_finished_teams == 1 && num_at_least_one == 1 {
+			// Give extra points for finishing fast
+			let team_id = self.players[plr_id].team_id;
+			self.teams[team_id].points += self.setting.fast_finish_points;
+		}
+	}
+
 	/// Play the trick
 	/// This will not check if the trick is legal to play!
 	pub fn play_trick(&mut self, trick: Trick, plr_id: usize) {
-		let cards: Cardset = trick.clone().into();
-		let play = Play::from(trick);
+		let cards: Cardset = trick.get_cards();
 
-		// TODO Handle dog
-
-		self.played_cards.merge(cards);
+		self.played_cards.merge( &cards );
 		self.last_player = plr_id;
-		self.best_play = Some(play);
+
+		let plr = &mut self.players[plr_id];
+		plr.num_cards -= cards.len();
+		plr.cards.erase_set( &cards );
 
 		self.current_player = plr_id;
 
-		let plr = &mut self.players[plr_id];
-		plr.cards.erase_set(cards);
+		match &trick {
+			Trick::Dog => {
+				let next = self.next_player_of_team(self.current_player);
+				self.current_player = next;
+				self.last_player = next;
+
+				if self.players[next].finished() {
+					self.proceed_to_next_player();
+				}
+				return;
+			},
+			Trick::Phoenix(_) => {
+				let pow = match &self.best_trick {
+					Some(tr) => tr.get_power(),
+					None => 0,
+				};
+
+				self.best_trick = Some(Trick::Phoenix(pow));
+			},
+			_ => {
+				self.best_trick = Some(trick);
+			},
+		}
 
 		// See if wish is fulfilled
 		if let Some(wish) = self.wished_number {
@@ -279,11 +373,8 @@ impl Game {
 		}
 
 		// Check if player finished
-		if plr.cards.is_empty() {
-			plr.state = PlayerState::Finished;
-			if self.first_finished.is_none() {
-				self.first_finished = Some(plr_id);
-			}
+		if plr.num_cards == 0 {
+			self.handle_finish(plr_id);
 		}
 
 		self.proceed_to_next_player();
@@ -303,26 +394,60 @@ impl Game {
 		if self.current_player == self.last_player {
 			self.take_cards();
 		}
-
-		if self.players[self.current_player].finished() {
-			self.proceed_to_next_player();
-		}
 	}
 
 	/// Returns true when the given player can pass
 	pub fn can_pass(&self, plr_id: usize) -> bool {
-		self.phase == Phase::Playing && self.current_player == plr_id
+		if self.phase != Phase::Playing ||
+			self.current_player != plr_id
+		{
+			return false;
+		}
+
+		let trick = match &self.best_trick {
+			Some(tr) => tr,
+			None => return false,
+		};
+
+		if let Some(num) = self.wished_number {
+			let hand = &self.players[plr_id].cards;
+
+			if can_fulfill(hand, trick.clone(), num) {
+				return false;
+			}
+		}
+
+		true
 	}
 
 	/// Start playing
 	pub fn start_playing(&mut self) {
 		self.phase = Phase::Playing;
 		for plr in self.players.iter_mut() {
-			plr.state = PlayerState::Playing;
+			plr.finished = false;
 		}
 		self.current_player = self.players.iter()
 			.position(|plr| plr.cards.contains(ONE))
 			.unwrap_or(0);
+	}
+
+	fn handle_tichu(&mut self, plr_id: usize) {
+		self.first_finished = Some(plr_id);
+
+		for (id, plr) in self.players.iter().enumerate() {
+			let points = match plr.tichu {
+				TichuState::Tichu => self.setting.tichu_points,
+				TichuState::GrandTichu => self.setting.grand_tichu_points,
+				_ => continue,
+			};
+			let sign = if id == plr_id {
+				1
+			} else {
+				-1
+			};
+
+			self.teams[plr.team_id].points += sign*points;
+		}
 	}
 
 	/// Handles the exchange
@@ -351,6 +476,22 @@ impl Game {
 		self.players[plr_id].tichu = tichu;
 	}
 
+	/// Gives away the current cards to the given player
+	/// If the current phase is not Phase::GiveAway, this does nothing
+	pub fn give_away(&mut self, plr_id: usize) {
+		if self.phase == Phase::GiveAway {
+			self.players[plr_id].won_cards.merge(&self.played_cards);
+			self.played_cards.clear();
+			self.best_trick = None;
+
+			self.phase = Phase::Playing;
+
+			if self.players[self.current_player].finished() {
+				self.proceed_to_next_player();
+			}
+		}
+	}
+
 	/// Sets the exchanging cards of a player
 	/// This will not check if it's a legal move!
 	pub fn exchange(&mut self, cards: Vec<Card>, plr_id: usize) {
@@ -360,14 +501,13 @@ impl Game {
 	}
 
 	/// Checks whether the given Trick (and wish) is legally playable by the plr
-	pub fn legal_to_play(&self, trick: Trick, wish: Option<u8>, plr_id: usize) -> bool {
-		let cards: Cardset = trick.clone().into();
+	pub fn legal_to_play(&self, trick: &Trick, wish: Option<u8>, plr_id: usize) -> bool {
+		let cards: Cardset = trick.get_cards();
 
-		if self.players[plr_id].state != PlayerState::Playing {
-			println!("Player is not in the correct state!");
+		if self.phase != Phase::Playing || self.players[plr_id].finished() {
 			return false;
 		}
-		if !self.players[plr_id].cards.contains_set(cards) {
+		if !self.players[plr_id].cards.contains_set( cards.clone() ) {
 			println!("Player doesn't not have the cards!");
 			return false;
 		}
@@ -375,44 +515,50 @@ impl Game {
 			println!("Player cannot wish without the ONE");
 			return false;
 		}
+		if plr_id != self.current_player && !trick.is_bomb() {
+			println!("Player cannot play this now!");
+			return false;
+		}
 
-		let play: Play = trick.into();
+		if plr_id != self.current_player {
+			// Can't play if nothing is played
+			if self.best_trick.is_none() {
+				return false;
+			}
+		}
 
-		let best = match self.best_play {
-			Some(play) => play,
-			None => return true,
-		};
-
-		// Check if wish is fulfilled
-		if let Some(wish) = self.wished_number {
-			if let Some(card) = cards.get_card_of_number(wish) {
-				let can_play = match best.ty {
-					Playtype::Single => {
-						let play = Play::from(card);
-						best.power < play.power
-					},
-					Playtype::Street(len) => {
-						todo!()
-					},
-					_ => panic!("Unreachable statement!"),
+		let best = match &self.best_trick {
+			Some(trick) => trick,
+			None => {
+				// no best trick, so there might be a wish
+				let res = if let Some(wish) = self.wished_number {
+					cards.count_number(wish) == 0
+				} else {
+					true
 				};
 
-				if can_play {
+				return res;
+			},
+		};
+
+		// Check if the wish is considered
+		if let Some(wish) = self.wished_number {
+			if cards.count_number(wish) == 0 {
+				let hand = &self.players[plr_id].cards;
+
+				if can_fulfill(hand, best.clone(), wish) {
 					return false;
 				}
 			}
 		}
 
-		let ty_beats  = play.ty.can_beat(best.ty);
-		let power_beats = play.ty == best.ty && best.power < play.power;
-
-		ty_beats || power_beats
+		trick.can_beat(best)
 	}
 
 	/// Checks whether the given player can legally exchange the given cards
 	pub fn can_exchange(&self, vec: Vec<Card>, plr_id: usize) -> bool {
 		let is_time = self.phase == Phase::Exchange && self.players[plr_id].exchange.is_empty();
-		let has_cards = self.players[plr_id].cards.contains_set(vec);
+		let has_cards = self.players[plr_id].cards.contains_set( vec );
 		is_time && has_cards
 	}
 
@@ -421,7 +567,17 @@ impl Game {
 		let p = &self.players[plr_id];
 		self.phase == Phase::Playing &&
 			p.tichu == TichuState::None &&
-			p.cards.len() == self.cards_per_player()
+			p.num_cards == self.cards_per_player()
+	}
+
+	/// Checks whether the given 'plr_id' can give the cards away to 'target'.
+	pub fn can_give_away(&self, target: usize, plr_id: usize) -> bool {
+		let tid1 = self.players[plr_id].team_id;
+		let tid2 = self.players[target].team_id;
+
+		self.phase == Phase::GiveAway &&
+			self.current_player == plr_id &&
+			tid1 != tid2
 	}
 
 	/// Returns the player IDs of the given team ID.
@@ -472,16 +628,56 @@ impl Game {
 
 	/// Returns true if the game should end
 	pub fn should_game_end(&self) -> bool {
-		// TODO: check if multiple teams have the same number of points
 		match self.setting.end_condition {
-			EndCondition::Points(points) => self.teams.iter()
-				.any(|team| points <= team.points)
+			EndCondition::Points(points) => {
+				let mx = self.teams.iter()
+					.map(|team| team.points)
+					.max()
+					.unwrap_or(i32::MIN);
+
+				let num_best = self.teams.iter()
+					.filter(|team| team.points == mx)
+					.count();
+
+				points <= mx && num_best == 1
+			},
 		}
+	}
+
+	/// Return an ordered list of team IDs starting with the best team
+	pub fn rank_teams(&self) -> Vec<usize> {
+		let mut v: Vec<_> = (0..self.teams.len()).collect();
+		v.sort_by_key(|&id| self.teams[id].points);
+		v.reverse();
+		v
 	}
 
 	/// Returns how many cards a player receives
 	pub fn cards_per_player(&self) -> usize {
 		14 // TODO actually calculate depending on deck size
+	}
+
+	/// Clone the gamestate with only public information
+	pub fn public_clone(&self) -> Self {
+		let mut state = self.clone();
+
+		for plr in state.players.iter_mut() {
+			plr.cards.clear();
+			plr.exchange.clear();
+		}
+
+		state
+	}
+
+	/// Returns the best trick on the table
+	/// Returns None if no trick was played yet.
+	pub fn get_best_trick(&self) -> Option<Trick> {
+		self.best_trick.clone()
+	}
+
+	/// Set the public visible number of cards onto target player
+	pub fn set_num_cards(&mut self, num: usize, plr: PlayerID) {
+		self.players[plr].num_cards = num;
 	}
 
 	/// Parses the game state from the given Javascript Object (WASM only)

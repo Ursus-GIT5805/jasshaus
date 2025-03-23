@@ -45,6 +45,11 @@
 	box-sizing: border-box;
 }
 
+.Player:hover {
+	cursor: pointer;
+    background-color: #222222;
+}
+
 .Current {
     border-radius: 0.2rem;
 	border-width: 0.2rem;

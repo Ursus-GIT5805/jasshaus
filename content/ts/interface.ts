@@ -59,6 +59,11 @@ export class UI {
 			onplay,
 		);
 		this.hand.indicate_new = false;
+
+
+		this.carpet.setDropAction((card) => {
+			if(onplay(card)) this.hand.erase(card);
+		});
 	}
 
 	// ===== Setups =====

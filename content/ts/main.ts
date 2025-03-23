@@ -1,31 +1,11 @@
-import { CommHandler } from "./chat.js";
 import { Main } from "./game.js";
-import { DEV_MODE } from "./utility.js";
-import { VoteHandler } from "./voting.js";
+import { determine_ws_url, DEV_MODE, ROOM_ID } from "./utility.js";
 import { set_card_skin } from "./jass.js";
 import { ClientSetting, get_client_settings } from "./clientsetting.js";
 import { get_jass_settings, get_setting_form, jass_settings, save_jass_setting } from "./jasssettings.js";
 import init from "./pkg/jasshaus_game.js"
 
-function getRoomID(): null | string {
-	let params = new URLSearchParams(location.search);
-	return params.get('room');
-}
-const room_id = getRoomID();
-
-function determine_ws_url(): string {
-	if(DEV_MODE){
-		const PORT = 7999;
-
-		if(location.protocol == "http:") {
-			return `ws://${location.hostname}:${PORT}/ws`;
-		}
-		return `ws://127.0.0.1:${PORT}/ws`;
-	}
-	return `wss://${location.host}/ws`;
-}
-
-const WS_URL = `${determine_ws_url()}/${room_id}`;
+const WS_URL = `${determine_ws_url(7999)}/${ROOM_ID}`;
 
 // ---
 
@@ -98,6 +78,6 @@ window.onload = async () => {
 	};
 	setupSettings();
 
-	if(room_id) $(`*[text="room_id"]`).text(room_id);
+	if(ROOM_ID) $(`*[text="room_id"]`).text(ROOM_ID);
 	if(DEV_MODE) console.log("Started WS");
 };

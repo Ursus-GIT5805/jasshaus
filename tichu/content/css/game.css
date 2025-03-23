@@ -44,13 +44,26 @@ body {
 #points {
 	position: absolute;
 
-	top: 0;
 	right: 0;
+	top: 0;
 
 	border-width: 0 0 0.5em 0.5em;
 	border-radius: 0 0 0 0.5em;
 
 	font-size: 1.5rem;
+}
+
+#gameDetails {
+	position: absolute;
+
+	left: 0;
+	top: 0;
+
+	min-width: 12em;
+	min-height: 5em;
+
+	border-width: 0 0.5em 0.5em 0;
+	border-radius: 0 0 0.5em 0;
 }
 
 
@@ -139,6 +152,8 @@ body {
 /* ---- */
 
 .Window {
+	display: none;
+
 	position: absolute;
 
 	left: 50%;
@@ -147,8 +162,6 @@ body {
 }
 
 #exchangeWindow {
-	display: none;
-
 	max-width: 60%;
 	max-height: 50%;
 
@@ -180,19 +193,34 @@ body {
 	}
 }
 
+.Disabled {
+	cursor: not-allowed;
+	pointer-events: none;
+	filter: grayscale(100%) !important;
+}
+
 /* --- */
 
 .Trick {
 	display: flex;
 	flex-direction: row;
+}
 
-	max-width: 50%;
-	overflow: auto;
+.TrickWrapper {
+	display: flex;
+	flex-direction: column;
+	justify-content: ;
+
+	> .Trick {
+		overflow: unset;
+	}
 }
 
 #carpet {
     width: min(50vw, 50vh);
     height: min(50vw, 50vh);
+
+	overflow: auto;
 
     background-color: #00BB00;
 
@@ -200,11 +228,106 @@ body {
     border-style: solid;
     border-color: #008100;
 
-	.Trick {
+	> * {
 		position: absolute;
+
+		max-width: 100%;
 
 		left: 50%;
 		top: 50%;
 		transform: translateX(-50%) translateY(-50%);
 	}
+
+	.Trick {
+		height: 10em;
+	}
+}
+
+.DragOver {
+	border-width: 2px;
+    border-style: solid;
+    border-color: #33ff33;
+}
+
+#wishButtons {
+	display: flex;
+	flex-direction: column;
+}
+
+body > .PlayerMSG {
+	left: 50%;
+	bottom: 22.5vh;
+
+	transform: translateX(-50%);
+}
+
+.ActionButton.Active {
+	border-style: solid;
+	border-width: 0.25em;
+	border-color: lime;
+}
+
+.Active {
+	border-style: solid !important;
+	border-color: lime !important;
+}
+
+.Finished {
+	color: gray !important;
+	background-color: #000022 !important;
+}
+
+.AnnouncedTichu {
+	background-color: #888800 !important;
+	color: #FFFFFF !important;
+}
+
+
+.AnnouncedGrandTichu {
+	background-color: #cc0088 !important;
+	color: #FFFFFF !important;
+}
+
+#tricklist {
+	display: flex;
+	flex-direction: column;
+
+	> div {
+		padding: 1.5rem;
+		border-radius: 1rem;
+	}
+
+	> div:hover {
+		cursor: pointer;
+		filter: brightness(125%);
+		background-color: #00000044;
+	}
+}
+
+#endWindow {
+	flex-direction: column;
+	justify-content: center;
+	text-align: center;
+	align-items: center;
+	overflow: auto;
+
+    min-height: 5rem;
+
+	padding: 1rem;
+
+	div {
+		display: flex;
+		justify-content: space-evenly;
+	}
+}
+
+#endTeams {
+	white-space: nowrap;
+	flex-direction: column;
+	align-items: center;
+
+	h1 { color: #AA8A00; }
+	h2 { color: #8F9396; }
+	h3 { color: #A25D2F; }
+	* { margin: 0; }
 }

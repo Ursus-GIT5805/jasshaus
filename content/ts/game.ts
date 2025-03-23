@@ -27,7 +27,6 @@ export class Main {
 
 	player_id: PlayerID = 0;
 
-	client_to_plr = new Map<PlayerID, ClientID>();
 	said_marriage: boolean = false;
 
 	constructor(addr: string, setting: ClientSetting) {
@@ -79,6 +78,7 @@ export class Main {
 		);
 		this.ui.setupBiding((bid) => this.ev_send({ "Bid": bid }));
 		this.ui.setupShowButton((show) => this.ev_send({ "PlayShow" : show }));
+		this.comm.displayClientNames();
 	}
 
 	ev_send(data: any) {
@@ -95,13 +95,10 @@ export class Main {
 
 		this.comm.oninit(client_id, player_id);
 		this.ui.players.oninit(client_id, player_id, num_players);
-		this.client_to_plr.set(client_id, player_id);
 		this.ui.updateName(this.player_id, this.setting.name);
 	}
 
 	onclient(data: ClientData, client_id: ClientID, player_id: PlayerID) {
-		this.client_to_plr.set(client_id, player_id);
-
 		this.vote.onclient();
 		this.comm.onclient(data, client_id, player_id);
 		this.ui.players.onclient(data, client_id, player_id);
@@ -109,9 +106,8 @@ export class Main {
 	}
 
 	onclientleave(client_id: ClientID) {
-		let player_id = this.client_to_plr.get(client_id);
+		let player_id = this.comm.clients.get(client_id)?.player_id;
 
-		this.client_to_plr.delete(client_id);
 		this.vote.onclientleave(client_id);
 		this.comm.onclientleave(client_id);
 		this.ui.players.onclientleave(client_id);
