@@ -1,7 +1,7 @@
 import { Hand } from "./hand.js";
 import { MISERE_IMG, PASS_IMG, get_card_ele, get_pt_img_path, get_pt_name, show_to_ele } from "./jass.js";
-import { get_num_playtypes, get_playtype_id, must_bid, parse_show } from "./pkg/jasshaus_game.js";
-import { Playtype, playtype_from_id, Card, Cardset, Game,  Show } from "./pkg/jasshaus_game.js";
+import { get_num_playtypes, get_playtype_id, must_bid, parse_show } from "../pkg/jasshaus_game.js";
+import { Playtype, playtype_from_id, Card, Cardset, Game,  Show } from "../pkg/jasshaus_game.js";
 import { CirclePlayer } from "./players.js";
 import { objEquals } from "./utility.js";
 import { PlayerID } from "./wshandler.js";

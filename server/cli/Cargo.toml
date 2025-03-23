@@ -1,0 +1,9 @@
+[package]
+name = "cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+game-server = { path = ".." }
+clap = { version = "4", features = ["derive"] }
+bincode = "1"

@@ -1,4 +1,4 @@
-import { Card, Cardset, Game, Event as GameEvent, Playtype, setting_molotow, Show  } from "./pkg/jasshaus_game.js"
+import { Card, Cardset, Game, Event as GameEvent, Playtype, Show, setting_molotow } from "../pkg/jasshaus_game.js"
 import { ClientData, ClientID, PlayerID, Wshandler } from "./wshandler.js";
 import { UI } from "./interface.js"
 import { get_pt_name } from "./jass.js";

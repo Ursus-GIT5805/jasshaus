@@ -1,6 +1,6 @@
 import { createForm, extractDefault } from "./formcreator.js"
 import { card_img_path, get_pt_img_path, get_pt_name, set_card_skin } from "./jass.js";
-import { card_from_id, playtype_from_id } from "./pkg/jasshaus_game.js";
+import { card_from_id, playtype_from_id } from "../pkg/jasshaus_game.js";
 
 const LOCALSTORAGE_KEY = "JasshausData2";
 

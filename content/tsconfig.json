@@ -3,12 +3,12 @@
 		"module": "ES6",
 		"target": "ES6",
 
-        "lib": ["es2020", "dom"],
+		"lib": ["es2020", "dom"],
 		"removeComments": true,
-        "rootDir": "./ts",
+		"rootDir": "./ts",
 		"outDir": "./js",
 		"esModuleInterop": true,
 
 		"strict": true,
-    },
+	},
 }

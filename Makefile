@@ -5,7 +5,9 @@ target="aarch64-unknown-linux-gnu"
 
 b:
 	cd game && wasm-pack build --target web --dev
-	rsync -av game/pkg content/js/pkg
+	rsync -av game/pkg content/
+	mkdir -p content/js/
+	tsc -p content/tsdebug.json
 
 run:
 	make b
@@ -13,9 +15,7 @@ run:
 	(trap 'kill 0' SIGINT; make cont & make serv)
 
 cont:
-	mkdir -p content/js/
 	make b
-	tsc -p content/tsdebug.json
 	python3 -m http.server -d content
 
 build_serv:
@@ -34,7 +34,7 @@ release:
 	rsync -v $(server_pwd)/target/$(target)/release/jasshaus-server build/jasshaus-server
 	cd game && wasm-pack build --target web --release
 	mkdir -p content/js/
-	rsync -av game/pkg content/js/
+	rsync -av game/pkg content/
 	rsync -av content build
 	find ./build/content/js/ -maxdepth 1 -type f -exec uglifyjs {} -m -c -o {} \;
 

@@ -1,4 +1,4 @@
-import { Card, get_card_id, get_playtype_id, Playtype, Show, show_to_cards } from "./pkg/jasshaus_game.js"
+import { Card, get_card_id, get_playtype_id, Playtype, Show, show_to_cards } from "../pkg/jasshaus_game.js"
 
 export const PASS_IMG = "img/pass.svg";
 export const MISERE_IMG = "img/misere.svg";

@@ -1,4 +1,4 @@
-import init, { get_gamesettingform, playtype_from_id, setting_schieber } from "./pkg/jasshaus_game.js";
+import init, { get_gamesettingform, playtype_from_id, setting_molotow } from "../pkg/jasshaus_game.js";
 import { get_pt_name } from "./jass.js";
 import { createForm } from "./formcreator.js";
 import { get_setting_form, save_jass_setting } from "./jasssettings.js";
@@ -93,7 +93,7 @@ export function createGameSettingForm(): object {
 	formdata['point_recv_order']['#type']['#resizable'] = false;
 	formdata['point_recv_order']['#type']['#list']['#disabled'] = true;
 
-	let form = createForm(formdata, "Form", setting_schieber());
+	let form = createForm(formdata, "Form", setting_molotow());
 
 	if(form.ele) form.ele.find("#playtypes")
 		.children().eq(1).children()

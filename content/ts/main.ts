@@ -3,7 +3,7 @@ import { determine_ws_url, DEV_MODE, ROOM_ID } from "./utility.js";
 import { set_card_skin } from "./jass.js";
 import { ClientSetting, get_client_settings } from "./clientsetting.js";
 import { get_jass_settings, get_setting_form, jass_settings, save_jass_setting } from "./jasssettings.js";
-import init from "./pkg/jasshaus_game.js"
+import init from "../pkg/jasshaus_game.js"
 
 const WS_URL = `${determine_ws_url(7999)}/${ROOM_ID}`;
 
