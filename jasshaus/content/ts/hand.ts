@@ -74,6 +74,13 @@ export class Hand<Card extends object> {
 			}
 		});
 
+		ele[0].onmouseenter = (e) => {
+			if(this.selecting) {
+				// If left button is down
+				if(e.buttons == 1) ele.toggleClass("Selected");
+			}
+		}
+
 		const card_string = JSON.stringify(card);
 		ele[0].ondragstart = (e) => {
 			let can_drag = !ele.hasClass("Illegal");
