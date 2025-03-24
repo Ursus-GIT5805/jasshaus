@@ -212,6 +212,7 @@ export class Main {
 				this.ui.updatePhase("GiveAway");
 				if(this.player_id == this.game.current_player) {
 					this.ui.hand.setIllegal();
+					this.ui.displayInfo("Choose an opponent to give the dragon.");
 				}
 			}
 
@@ -257,6 +258,7 @@ export class Main {
 			this.gameMessage("I received the dragon!", target);
 			this.ui.hand.setLegality(() => true);
 			this.ui.updatePhase("Playing");
+			this.ui.displayInfo(undefined);
 			this.ui.updateOnTurn();
 			this.ui.clean_carpet();
 		} else if("AddCards" in data) {

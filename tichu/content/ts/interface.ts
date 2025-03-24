@@ -232,6 +232,15 @@ export class UI {
 
 	// ---
 
+	displayInfo(text: string | undefined) {
+		if(text === undefined) {
+			$("#infoWindow").display(false);
+		} else {
+			$("#infoWindow").display(true)
+				.text(text);
+		}
+	}
+
 	openTrickwindow(
 		callback: (trick: Trick) => void,
 		tricks: Trick[],

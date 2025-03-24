@@ -333,3 +333,12 @@ body > .PlayerMSG {
 	h3 { color: #A25D2F; }
 	* { margin: 0; }
 }
+
+#infoWindow {
+	top: 30%;
+
+	text-align: center;
+
+	font-size: 2rem;
+	font-weight: bold;
+}
