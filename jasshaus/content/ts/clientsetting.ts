@@ -27,7 +27,7 @@ export var ClientSettingForm = {
 		"#title": "Spitzname",
 		"#type": "text",
 		"#maxlength": 16,
-		"#default": "",
+		"#default": "unnamed",
 	},
 	"mute_players": {
 		"#title": "Spieler stummschalten",
