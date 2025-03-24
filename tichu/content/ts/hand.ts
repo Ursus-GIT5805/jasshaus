@@ -1,1 +1,1 @@
-../../../content/ts/hand.ts
+../../../jasshaus/content/ts/hand.ts

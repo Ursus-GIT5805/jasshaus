@@ -1,1 +1,1 @@
-../../../content/ts/players.ts
+../../../jasshaus/content/ts/players.ts

@@ -1,1 +1,1 @@
-../../../content/ts/chat.ts
+../../../jasshaus/content/ts/chat.ts

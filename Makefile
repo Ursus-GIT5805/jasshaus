@@ -1,28 +1,33 @@
 host=""
-server_pwd="server/jasshaus_server"
+server_name=""
+server_pwd="server"
 target="aarch64-unknown-linux-gnu"
 
-
-b:
+build_web:
 	cd game && wasm-pack build --target web --dev
 	rsync -av game/pkg content/
 	mkdir -p content/js/
 	tsc -p content/tsdebug.json
 
-run:
-	make b
-	make build_serv
-	(trap 'kill 0' SIGINT; make cont & make serv)
+build_server:
+	cd $(server_pwd) && cargo build
 
 cont:
-	make b
+	make build_web
 	python3 -m http.server -d content
-
-build_serv:
-	cd $(server_pwd) && cargo build
 
 serv:
 	cd $(server_pwd) && cargo run
+
+server:
+	make serv
+	echo $(server_pwd)/target/$(target)/release/$(server_name)
+
+run:
+	make build_web
+	make build_server
+	(trap 'kill 0' SIGINT; make cont & make serv)
+
 
 clean:
 	find . -type f -name Cargo.toml -exec dirname {} \; | xargs -I {} bash -c "cd {} && pwd && cargo clean"
@@ -31,16 +36,9 @@ clean:
 release:
 	mkdir -p build
 	cd $(server_pwd) && cargo build --release --target $(target)
-	rsync -v $(server_pwd)/target/$(target)/release/jasshaus-server build/jasshaus-server
+	rsync -v $(server_pwd)/target/$(target)/release/$(server_name) build/$(server_name)
 	cd game && wasm-pack build --target web --release
 	mkdir -p content/js/
 	rsync -av game/pkg content/
 	rsync -av content build
 	find ./build/content/js/ -maxdepth 1 -type f -exec uglifyjs {} -m -c -o {} \;
-
-push:
-	rsync -av build/ $(host)
-
-deploy:
-	make install
-	make push

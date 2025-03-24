@@ -1,1 +1,1 @@
-../../../content/ts/comm.ts
+../../../jasshaus/content/ts/comm.ts

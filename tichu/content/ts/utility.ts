@@ -1,1 +1,1 @@
-../../../content/ts/utility.ts
+../../../jasshaus/content/ts/utility.ts

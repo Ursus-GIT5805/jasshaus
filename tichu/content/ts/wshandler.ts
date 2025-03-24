@@ -1,1 +1,1 @@
-../../../content/ts/wshandler.ts
+../../../jasshaus/content/ts/wshandler.ts

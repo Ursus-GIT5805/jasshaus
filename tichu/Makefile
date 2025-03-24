@@ -1,25 +1,3 @@
-server_pwd="server"
+server_name="tichu-server"
 
-b:
-	cd game && wasm-pack build --target web --dev
-	rsync -av game/pkg content/
-
-run:
-	make b
-	cd $(server_pwd) && cargo build
-	(trap 'kill 0' SIGINT; make cont & make serv)
-
-cont:
-	make b
-	tsc -p content/tsdebug.json
-	python3 -m http.server -d content
-
-
-serv:
-	cd $(server_pwd) && cargo run
-
-browser=xdg-open
-
-doc:
-	cd game && cargo doc
-	$(browser) "game/target/doc/tichu_game/index.html"
+include ../Makefile

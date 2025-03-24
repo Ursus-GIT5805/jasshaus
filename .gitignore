@@ -7,7 +7,6 @@ server/__pycache__
 server/Cargo.lock
 game/**Cargo.lock
 htmlform/**Cargo.lock
-content/js
-tichu/content/js
+**/content/js
 **/*.tsbuildinfo
 **/turn_credentials.json

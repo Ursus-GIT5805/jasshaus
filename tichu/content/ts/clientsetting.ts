@@ -1,1 +1,1 @@
-../../../content/ts/clientsetting.ts
+../../../jasshaus/content/ts/clientsetting.ts

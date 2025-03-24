@@ -1,1 +1,1 @@
-../../../content/ts/voting.ts
+../../../jasshaus/content/ts/voting.ts

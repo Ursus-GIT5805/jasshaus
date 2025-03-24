@@ -11,13 +11,13 @@ json = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 
 # For WASM
-htmlform = { path = "../htmlform" }
-htmlform-macros = { path = "../htmlform/macros" }
+htmlform = { path = "../../htmlform" }
+htmlform-macros = { path = "../../htmlform/macros" }
 tsify-next = { version = "0.5"  }
 wasm-bindgen = { version = "0.2" }
 
 # For the serer
-game-server = { path = "../server", optional = true }
+game-server = { path = "../../server", optional = true }
 async-trait = { version = "0.1", optional = true }
 rand = { version = "0.8", optional = true }
 serde-wasm-bindgen = "0.6.5"
