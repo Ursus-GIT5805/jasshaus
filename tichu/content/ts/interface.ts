@@ -30,7 +30,7 @@ export class UI {
 			() => false,
 		);
 		this.hand.indicate_new = true;
-		// this.hand.selectMode(true);
+		this.hand.allow_reshuffling = true;
 	}
 
 	// ---
