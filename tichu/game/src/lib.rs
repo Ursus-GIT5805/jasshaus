@@ -620,7 +620,7 @@ impl Game {
 	}
 
 	/// Checks whether the given player can announce grand tichu
-	pub fn can_annonuce_gt(&self, plr_id: usize) -> bool {
+	pub fn can_announce_gt(&self, plr_id: usize) -> bool {
 		self.phase == Phase::Distributing &&
 			self.players[plr_id].num_cards == self.setting.num_cards_gt
 	}

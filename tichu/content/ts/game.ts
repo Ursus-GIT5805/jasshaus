@@ -279,6 +279,8 @@ export class Main {
 			let cardset = Cardset.from_object( obj );
 			if(cardset === undefined) return;
 
+			this.game.start_new_round();
+
 			let num_players = this.game.players.length;
 			let num_cards = this.game.setting.num_cards_gt;
 			for(let i = 0 ; i < num_players ; ++i) {

@@ -193,8 +193,8 @@ impl ServerRoom<Event> for TichuRoom {
 		self.game = Game::new( self.game.setting.clone() );
 		self.starts += 1;
 
-		self.start_round(clients).await;
 		clients.ev_send_to_all(NewGame).await;
+		self.start_round(clients).await;
 
 		Ok(())
 	}

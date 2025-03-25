@@ -338,7 +338,7 @@ export class UI {
 	}
 
 	update_gt_buttons() {
-		let show = this.game.can_annonuce_gt(this.player_id);
+		let show = this.game.can_announce_gt(this.player_id);
 
 		$("#announceGTichu").display(show);
 		$("#cancelGTichu").display(show);
@@ -428,11 +428,8 @@ export class UI {
 
 	updateTichubutton(show?: boolean) {
 		if(show === undefined) {
-			let num_cards = this.game.players[this.player_id].num_cards;
-			let already_annonunced = this.game.players[this.player_id].tichu !== "None";
-			let can_announce = !already_annonunced && num_cards == this.game.cards_per_player();
-
-			$("#announceTichu").display(can_announce);
+			let display = this.game.can_announce(this.player_id);
+			$("#announceTichu").display(display);
 		} else {
 			$("#announceTichu").display(show);
 		}
