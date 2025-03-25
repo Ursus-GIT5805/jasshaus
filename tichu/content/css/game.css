@@ -206,12 +206,22 @@ body {
 .Trick {
 	display: flex;
 	flex-direction: row;
+
+	img {
+		object-fit: cover;
+		object-position: 0 0;
+
+		overflow: hidden;
+	}
+
+	img:last-child {
+		overflow: visible;
+	}
 }
 
 .TrickWrapper {
 	display: flex;
 	flex-direction: column;
-	justify-content: ;
 
 	> .Trick {
 		overflow: unset;
@@ -221,8 +231,6 @@ body {
 #carpet {
     width: min(50vw, 50vh);
     height: min(50vw, 50vh);
-
-	overflow: auto;
 
     background-color: #00BB00;
 
@@ -277,6 +285,10 @@ body > .PlayerMSG {
 .Finished {
 	color: gray !important;
 	background-color: #000022 !important;
+}
+
+.Disabled {
+	color: darkgray !important;
 }
 
 .AnnouncedTichu {

@@ -207,6 +207,7 @@ impl Trick {
 	}
 
 	/// Returns whether this trick can beat the given trick
+	// TODO there is a bug when a quadbomb was played that you can't beat with another quadbomb (further investigations are needed)
 	pub fn can_beat(&self, rhs: &Trick) -> bool {
 		// If one of them is a bomb, it's already determined
 		if self.is_bomb() != rhs.is_bomb() {

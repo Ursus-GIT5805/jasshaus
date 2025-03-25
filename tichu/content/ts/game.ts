@@ -164,6 +164,8 @@ export class Main {
 				this.ui.openEndwindow();
 			}
 		}, 2000);
+
+		this.ui.updatePoints();
 	}
 
 	gameMessage(msg: string, player_id: PlayerID) {
@@ -209,6 +211,13 @@ export class Main {
 			this.ui.updateOnTurn();
 
 			if(this.game.phase === 'GiveAway') {
+				let team_id = this.game.players[this.player_id].team_id;
+
+				for(let i = 0 ; i < this.game.players.length ; ++i) {
+					if(team_id != this.game.players[i].team_id) continue;
+					this.ui.players.setState("Disabled", i, true);
+				}
+
 				this.ui.updatePhase("GiveAway");
 				if(this.player_id == this.game.current_player) {
 					this.ui.hand.setIllegal();
@@ -234,6 +243,7 @@ export class Main {
 			if(text) this.gameMessage(text, plr_id);
 
 			if(plr_id == this.player_id) this.ui.updateTichubutton(false);
+			this.ui.updatePoints();
 		} else if("ExchangeCards" in data) {
 			let cards = data.ExchangeCards;
 
@@ -254,6 +264,10 @@ export class Main {
 		} else if("GiveAway" in data){
 			let target = data.GiveAway;
 			this.game.give_away(target);
+
+			for(let i = 0 ; i < this.game.players.length ; ++i) {
+				this.ui.players.setState("Disabled", i, false);
+			}
 
 			this.gameMessage("I received the dragon!", target);
 			this.ui.hand.setLegality(() => true);

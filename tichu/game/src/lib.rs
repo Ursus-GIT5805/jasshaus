@@ -13,6 +13,7 @@ use setting::*;
 use wasm_bindgen::prelude::*;
 use tsify_next::Tsify;
 use serde::{Serialize, Deserialize};
+use thiserror::Error;
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -149,6 +150,24 @@ pub struct Game {
 	pub teams: Vec<Team>,
 }
 
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(Clone, PartialEq)]
+#[derive(Error, Debug)]
+#[derive(Serialize, Deserialize)]
+pub enum LegalityError {
+	#[error("Can't do during this state")]
+	WrongTime,
+	#[error("The wish is not legal")]
+	IllegalWish,
+	#[error("The current wish is unfulfilled")]
+	UnfulfilledWish,
+	#[error("The trick can't beat the current one")]
+	TrickTooWeak,
+	#[error("Player does not own the needed cards")]
+	MissingCards,
+}
+
 #[wasm_bindgen]
 impl Game {
 	pub fn new(setting: Setting) -> Self {
@@ -202,12 +221,16 @@ impl Game {
 
 	/// Ends the round and handles the points
 	pub fn end_round(&mut self) {
+		if self.best_trick.is_some() {
+			self.take_cards();
+		}
+
 		// Give won cards of unfinished players to the player that finished first
 		if let Some(first_plr) = self.get_first_finished_player() {
 			let mut gain = Cardset::new();
 
 			let unfinished = self.players.iter_mut()
-				.filter(|plr| plr.finished());
+				.filter(|plr| !plr.finished());
 
 			for plr in unfinished {
 				gain.merge( &plr.won_cards );
@@ -226,25 +249,25 @@ impl Game {
 			v
 		};
 
-		for plr_id in 0..self.players.len() {
-			if !self.players[plr_id].finished() {
-				let team_id = self.players[plr_id].team_id;
-				let id = representant[ (team_id+1) % self.teams.len() ];
 
-				let cards = self.players[plr_id].cards.clone();
-				self.players[id].cards.merge( &cards );
-				self.players[plr_id].cards.clear();
+		for plr_id in 0..self.players.len() {
+			if self.players[plr_id].finished() {
+				continue;
 			}
+
+			let team_id = self.players[plr_id].team_id;
+			let next_team = (team_id+1) % self.teams.len();
+			let id = representant[next_team];
+
+			let cards = self.players[plr_id].cards.clone();
+			self.players[id].won_cards.merge( &cards );
+			self.players[plr_id].cards.clear();
 		}
 
 		// Add points to the team
-		for team_id in 0..self.teams.len() {
-			let plr_ids = self.get_players_of_team(team_id);
-
-			let points: i32 = plr_ids.into_iter()
-				.map(|id| self.players[id].won_cards.count_points())
-				.sum();
-
+		for plr in self.players.iter() {
+			let team_id = plr.team_id;
+			let points = plr.won_cards.count_points();
 			self.teams[team_id].points += points;
 		}
 	}
@@ -271,7 +294,8 @@ impl Game {
 			}
 		}
 
-		let plr = &mut self.players[self.current_player];
+		self.current_player = self.last_player;
+		let plr = &mut self.players[self.last_player];
 		plr.won_cards.merge( &self.played_cards );
 
 		self.played_cards.clear();
@@ -315,9 +339,11 @@ impl Game {
 			.filter(|(&total, &finished)| total == finished)
 			.count();
 
-		let num_at_least_one = num_plrs.iter()
+		let num_at_least_one = finished_plrs.iter()
 			.filter(|&x| *x != 0)
 			.count();
+
+		println!("Finish ratio: {} {}", num_finished_teams, num_at_least_one);
 
 		// One team finished and no other player of another team did!
 		if num_finished_teams == 1 && num_at_least_one == 1 {
@@ -474,6 +500,18 @@ impl Game {
 	/// This will not check if it's a legal move!
 	pub fn announce(&mut self, tichu: TichuState, plr_id: usize) {
 		self.players[plr_id].tichu = tichu;
+
+		// Immediately subtract points if someone already finished
+		if self.first_finished.is_some() {
+			let points = match tichu {
+				TichuState::Tichu => self.setting.tichu_points,
+				TichuState::GrandTichu => self.setting.grand_tichu_points,
+				_ => 0,
+			};
+
+			let team_id = self.players[plr_id].team_id;
+			self.teams[team_id].points -= points;
+		}
 	}
 
 	/// Gives away the current cards to the given player
@@ -501,29 +539,32 @@ impl Game {
 	}
 
 	/// Checks whether the given Trick (and wish) is legally playable by the plr
-	pub fn legal_to_play(&self, trick: &Trick, wish: Option<u8>, plr_id: usize) -> bool {
+	pub fn legal_to_play(&self, trick: &Trick, wish: Option<u8>, plr_id: usize) -> Result<(), LegalityError> {
 		let cards: Cardset = trick.get_cards();
+		let hand = &self.players[plr_id].cards;
 
 		if self.phase != Phase::Playing || self.players[plr_id].finished() {
-			return false;
+			return Err(LegalityError::WrongTime);
 		}
 		if !self.players[plr_id].cards.contains_set( cards.clone() ) {
 			println!("Player doesn't not have the cards!");
-			return false;
+			return Err(LegalityError::MissingCards);
 		}
-		if wish.is_some() && !self.players[plr_id].cards.contains(ONE) {
-			println!("Player cannot wish without the ONE");
-			return false;
+		if let Some(num) = wish {
+			let in_range = (1..NUM_NUMBERS as u8).contains(&num);
+
+			if !self.players[plr_id].cards.contains(ONE) || !in_range {
+				return Err(LegalityError::IllegalWish);
+			}
 		}
 		if plr_id != self.current_player && !trick.is_bomb() {
-			println!("Player cannot play this now!");
-			return false;
-		}
+			if !trick.is_bomb() {
+				return Err(LegalityError::WrongTime);
+			}
 
-		if plr_id != self.current_player {
-			// Can't play if nothing is played
+			// Player can't play bomb if no trick was already played
 			if self.best_trick.is_none() {
-				return false;
+				return Err(LegalityError::WrongTime);
 			}
 		}
 
@@ -532,12 +573,16 @@ impl Game {
 			None => {
 				// no best trick, so there might be a wish
 				let res = if let Some(wish) = self.wished_number {
-					cards.count_number(wish) == 0
+					cards.count_number(wish) != 0 || hand.count_number(wish) == 0
 				} else {
 					true
 				};
 
-				return res;
+				if res {
+					return Ok(());
+				} else {
+					return Err(LegalityError::UnfulfilledWish)
+				}
 			},
 		};
 
@@ -547,12 +592,16 @@ impl Game {
 				let hand = &self.players[plr_id].cards;
 
 				if can_fulfill(hand, best.clone(), wish) {
-					return false;
+					return Err(LegalityError::UnfulfilledWish);
 				}
 			}
 		}
 
-		trick.can_beat(best)
+		if trick.can_beat(best) {
+			Ok(())
+		} else {
+			Err(LegalityError::TrickTooWeak)
+		}
 	}
 
 	/// Checks whether the given player can legally exchange the given cards
@@ -623,7 +672,7 @@ impl Game {
 
 	/// Returns true if the round should end
 	pub fn should_round_end(&self) -> bool {
-		self.num_unfinished_teams() <= 1
+		self.phase == Phase::Playing && self.num_unfinished_teams() <= 1
 	}
 
 	/// Returns true if the game should end

@@ -49,7 +49,7 @@ impl Default for Setting {
 			num_players: 4,
 			end_condition: EndCondition::Points(1000),
 			num_cards_gt: 8,
-			skip_exchange: false,
+			skip_exchange: true,
 
 			tichu_points: 100,
 			grand_tichu_points: 200,

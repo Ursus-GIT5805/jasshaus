@@ -2,8 +2,6 @@ use crate::card::*;
 
 use super::*;
 
-// use serde_big_array::BigArray;
-
 /// A trick containing consecutive N-tuples of the same number
 /// The trick contains at least L such N-tuples
 #[derive(Clone)]
@@ -13,6 +11,8 @@ pub struct Consecutive<const N: usize, const L: usize> {
 	colors: Vec<Vec<u8>>,
 	number: u8,
 }
+
+// TODO on a street with length 5 and a phoenix, there OXXXXX and XXXXXO should be parsed.
 
 impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 	fn get_power(&self) -> Power {

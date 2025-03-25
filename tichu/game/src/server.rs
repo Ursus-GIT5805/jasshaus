@@ -43,27 +43,33 @@ impl TichuRoom {
 
 	// ---
 
-	pub async fn handle_play(&mut self, clients: &mut ClientHandler, trick: Trick, plr: usize) {
-		if !self.game.legal_to_play(&trick, None, plr) {
+	pub async fn handle_trick (
+		&mut self, clients: &mut ClientHandler,
+		trick: Trick,
+		wish: Option<u8>,
+		plr: usize
+	) {
+
+		if let Err(e) = self.game.legal_to_play(&trick, wish, plr) {
+			eprintln!("Error on play: {}", e);
 			return;
 		}
 
 		self.game.play_trick(trick.clone(), plr);
-		clients.ev_send_to_all(Play(trick, plr)).await;
+
+		match wish {
+			Some(num) => {
+				self.game.wish(num);
+				clients.ev_send_to_all(WishPlay(trick, num, plr)).await;
+			},
+			None => {
+				clients.ev_send_to_all(Play(trick, plr)).await;
+			},
+		}
 
 		if self.game.should_round_end() {
 			self.end_round(clients).await;
 		}
-	}
-
-	pub async fn handle_wish(&mut self, clients: &mut ClientHandler, trick: Trick, wish: u8, plr: usize) {
-		if !self.game.legal_to_play(&trick, Some(wish), plr) {
-			return;
-		}
-
-		self.game.play_trick(trick.clone(), plr);
-		self.game.wish(wish);
-		clients.ev_send_to_all(WishPlay(trick, wish, plr)).await;
 	}
 
 	pub async fn handle_announce(&mut self, clients: &mut ClientHandler, announce: TichuState, plr: usize) {
@@ -122,6 +128,10 @@ impl TichuRoom {
 
 		self.game.give_away(plr);
 		clients.ev_send_to_all(GiveAway(target)).await;
+
+		if self.game.should_round_end() {
+			self.end_round(clients).await;
+		}
 	}
 
 	pub async fn handle_gt(&mut self, clients: &mut ClientHandler, announce: bool, plr: usize) {
@@ -206,8 +216,8 @@ impl ServerRoom<Event> for TichuRoom {
 				-> Result<(), Self::Err>
 	{
 		match event {
-			Play(cards, _) => self.handle_play(clients, cards, plr_id).await,
-			WishPlay(cards, wish, _) => self.handle_wish(clients, cards, wish, plr_id).await,
+			Play(cards, _) => self.handle_trick(clients, cards, None, plr_id).await,
+			WishPlay(cards, wish, _) => self.handle_trick(clients, cards, Some(wish), plr_id).await,
 			Pass(_) => self.handle_pass(clients, plr_id).await,
 			Announce(tichu, _) => self.handle_announce(clients, tichu, plr_id).await,
 
