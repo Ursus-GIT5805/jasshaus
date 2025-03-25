@@ -28,6 +28,8 @@ run:
 	make build_server
 	(trap 'kill 0' SIGINT; make cont & make serv)
 
+todos:
+	git grep TODO
 
 clean:
 	find . -type f -name Cargo.toml -exec dirname {} \; | xargs -I {} bash -c "cd {} && pwd && cargo clean"

@@ -104,6 +104,7 @@ export class Main {
 
 		this.ui.setupButtons();
 		this.ui.players.click_callback = (plr: number) => {
+			if(this.game.phase !== "GiveAway") return;
 			this.ev_send({ "GiveAway": plr });
 		};
 
@@ -210,21 +211,7 @@ export class Main {
 
 			this.ui.updateOnTurn();
 
-			if(this.game.phase === 'GiveAway') {
-				let team_id = this.game.players[this.player_id].team_id;
-
-				for(let i = 0 ; i < this.game.players.length ; ++i) {
-					if(team_id != this.game.players[i].team_id) continue;
-					this.ui.players.setState("Disabled", i, true);
-				}
-
-				this.ui.updatePhase("GiveAway");
-				if(this.player_id == this.game.current_player) {
-					this.ui.hand.setIllegal();
-					this.ui.displayInfo("Choose an opponent to give the dragon.");
-				}
-			}
-
+			if(this.game.phase === 'GiveAway') this.ui.indicateGiveAwayPhase();
 			if(this.game.should_round_end()) this.end_round();
 		} else if("Announce" in data) {
 			let [ann, plr_id] = data.Announce;
@@ -265,16 +252,8 @@ export class Main {
 			let target = data.GiveAway;
 			this.game.give_away(target);
 
-			for(let i = 0 ; i < this.game.players.length ; ++i) {
-				this.ui.players.setState("Disabled", i, false);
-			}
-
 			this.gameMessage("I received the dragon!", target);
-			this.ui.hand.setLegality(() => true);
-			this.ui.updatePhase("Playing");
-			this.ui.displayInfo(undefined);
-			this.ui.updateOnTurn();
-			this.ui.clean_carpet();
+			this.ui.indicateGiveAwayPhase(false);
 		} else if("AddCards" in data) {
 			let obj = data.AddCards as any;
 			let cardset = Cardset.from_object( obj );
@@ -317,7 +296,7 @@ export class Main {
 				this.ui.updateHandsize();
 				this.ui.updatePoints();
 				this.ui.clean_carpet();
-				this.ui.decide_gt();
+				this.ui.update_gt_buttons();
 			}, delay);
 		} else if("DecideGrandTichu" in data) {
 			let [announce, plr] = data.DecideGrandTichu;
@@ -330,7 +309,8 @@ export class Main {
 
 			let num_cards = this.game.cards_per_player();
 			this.game.set_num_cards(num_cards, plr);
-			console.log(this.game.players[plr].num_cards);
+
+			if(this.player_id == plr) this.ui.update_gt_buttons();
 
 			this.ui.indicateFinished(plr);
 			this.ui.indicateActive(plr, false);
@@ -363,10 +343,14 @@ export class Main {
 			} else if(this.game.phase === "Distributing") {
 				this.ui.updatePhase("Distributing");
 				this.ui.hand.selectMode(false);
-				this.ui.decide_gt();
+				this.ui.update_gt_buttons();
+			} else if(this.game.phase === "GiveAway") {
+				this.ui.indicateGiveAwayPhase();
+			} else if(this.game.should_game_end()){
+				this.ui.openEndwindow();
 			} else {
-				this.ui.updatePhase("Playing");
 				this.ui.showInfos();
+				this.ui.updatePhase("Playing");
 				this.ui.updateHandsize();
 				this.ui.hand.selectMode(true);
 			}

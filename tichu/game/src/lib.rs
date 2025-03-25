@@ -619,6 +619,12 @@ impl Game {
 			p.num_cards == self.cards_per_player()
 	}
 
+	/// Checks whether the given player can announce grand tichu
+	pub fn can_annonuce_gt(&self, plr_id: usize) -> bool {
+		self.phase == Phase::Distributing &&
+			self.players[plr_id].num_cards == self.setting.num_cards_gt
+	}
+
 	/// Checks whether the given 'plr_id' can give the cards away to 'target'.
 	pub fn can_give_away(&self, target: usize, plr_id: usize) -> bool {
 		let tid1 = self.players[plr_id].team_id;

@@ -153,11 +153,9 @@ export class UI {
 		$("#announceTichu").click(ontichu);
 		$("#announceGTichu").click(() => {
 			ongtdecision(true);
-			this.decide_gt(false);
 		});
 		$("#cancelGTichu").click(() => {
 			ongtdecision(false);
-			this.decide_gt(false);
 		});
 	}
 
@@ -339,13 +337,11 @@ export class UI {
 		});
 	}
 
-	// remove_cards(cardset: Cardset) {
+	update_gt_buttons() {
+		let show = this.game.can_annonuce_gt(this.player_id);
 
-	// }
-
-	decide_gt(decide=true) {
-		$("#announceGTichu").display(decide);
-		$("#cancelGTichu").display(decide);
+		$("#announceGTichu").display(show);
+		$("#cancelGTichu").display(show);
 	}
 
 	play_trick(trick: Trick) {
@@ -379,6 +375,33 @@ export class UI {
 		for(let plr = 0 ; plr < this.game.players.length ; ++plr) {
 			this.players.setState("Active", plr, false);
 			this.players.setState("Finished", plr, false);
+		}
+	}
+
+	indicateGiveAwayPhase(active: boolean = true) {
+		if(active) {
+			let team_id = this.game.players[this.player_id].team_id;
+
+			for(let i = 0 ; i < this.game.players.length ; ++i) {
+				if(team_id != this.game.players[i].team_id) continue;
+				this.players.setState("Disabled", i, true);
+			}
+
+			this.updatePhase("GiveAway");
+			if(this.player_id == this.game.current_player) {
+				this.hand.setIllegal();
+				this.displayInfo("Choose an opponent to give the dragon.");
+			}
+		} else {
+			for(let i = 0 ; i < this.game.players.length ; ++i) {
+				this.players.setState("Disabled", i, false);
+			}
+
+			this.updatePhase("Playing");
+			this.hand.setLegality(() => true);
+			this.displayInfo(undefined);
+			this.updateOnTurn();
+			this.clean_carpet();
 		}
 	}
 
