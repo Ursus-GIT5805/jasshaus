@@ -18,7 +18,7 @@ export class CirclePlayer {
 		div.click(() => div.remove());
 		if(delay > 0) setTimeout(() => div.remove(), delay);
 
-		let parent = $("#player" + plr_id);
+		let parent = $(`#wrapper_player${plr_id}`);
 
 		if(parent.length == 0) $("body").append( div );
 		else parent.append(div);
@@ -30,8 +30,12 @@ export class CirclePlayer {
 		this.curplr = plr;
 	}
 
-	setState(st: string, plr: PlayerID, state: boolean) {
+	toggleClass(st: string, plr: PlayerID, state?: boolean) {
 		$(`#player${plr}`).toggleClass(st, state);
+	}
+
+	addEle(ele: JQuery<HTMLElement>, plr: PlayerID) {
+		$(`#wrapper_player${plr}`).append(ele);
 	}
 
 	// ---
@@ -44,18 +48,26 @@ export class CirclePlayer {
 
 		let shift = player_id;
 		for(let i = 1 ; i < num_players ; ++i) {
-			let r = (shift + i) % num_players;
-			let id = `player${r}`;
+			let id = (shift + i) % num_players;
 
-			let ele = $('<div>')
-				.attr("id", id)
-				.attr("text", id)
+
+			let container = $('<div class="PlayerContainer">')
+				.attr('id', `wrapper_player${id}`);
+
+			let name = $('<div>')
+				.attr("id", `player${id}`)
+				.attr("text", `player${id}`)
 				.addClass("Player")
-				.click(() => this.click_callback?.(r));
+				.click(() => this.click_callback?.(id));
 
-			if(i < num_players / 3) $("#pright").append(ele);
-			else if(i < num_players / 3*2) $("#pup").append(ele);
-			else if(i < num_players) $("#pleft").append(ele);
+			let indicators = $('<div class="IndicatorRow">');
+
+			container.append(name)
+				.append(indicators);
+
+			if(i < num_players / 3) $("#pright").append(container);
+			else if(i < num_players / 3*2) $("#pup").append(container);
+			else if(i < num_players) $("#pleft").append(container);
 		}
 
 		this.players.set(client_id, player_id);

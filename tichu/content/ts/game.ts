@@ -118,13 +118,20 @@ export class Main {
 	}
 
 	play_trick(trick: Trick, plr_id: PlayerID, wish?: number) {
+		this.ui.players.toggleClass("Best", this.game.last_player, false);
 		this.game.play_trick(trick, plr_id);
+
+		if(trick !== 'Dog') {
+			this.ui.players.toggleClass("Best", plr_id, true);
+		}
+
 		if(wish !== undefined) {
 			this.game.wish(wish);
 
 			let name = number_name(wish);
 			this.gameMessage(`I wish: ${name}`, plr_id);
 		}
+		this.ui.indicateWish(wish);
 
 		if(plr_id == this.player_id) {
 			let cardset = Cardset.from_trick(trick);
@@ -146,6 +153,7 @@ export class Main {
 		this.ui.play_trick(trick);
 		this.ui.updateOnTurn();
 		this.ui.updateHandsize(plr_id);
+		this.ui.clearPassInfo();
 
 		if(this.game.should_round_end()) this.end_round();
 	}
@@ -207,9 +215,18 @@ export class Main {
 			let [trick, wish, plr_id] = data.WishPlay;
 			this.play_trick(trick, plr_id, wish);
 		} else if("Pass" in data) {
+			let plr = data.Pass;
+
 			this.game.pass();
 
+			this.ui.indicatePass(plr);
 			this.ui.updateOnTurn();
+
+			// Best trick got taken away
+			if(this.game.get_best_trick() === undefined) {
+				this.ui.clearPassInfo();
+				this.ui.players.toggleClass("Best", this.game.last_player, false);
+			}
 
 			if(this.game.phase === 'GiveAway') this.ui.indicateGiveAwayPhase();
 			if(this.game.should_round_end()) this.end_round();
@@ -316,6 +333,7 @@ export class Main {
 
 			this.ui.indicateFinished(plr);
 			this.ui.indicateActive(plr, false);
+			this.ui.updateHandsize(plr);
 		} else if("State" in data) {
 			// TODO retrieve cards from exchange
 			// TODO handle end window
@@ -334,9 +352,11 @@ export class Main {
 
 			this.setupUI();
 
+			this.ui.indicateWish(this.game.wished_number);
 			this.ui.updateOnTurn();
 			this.ui.updatePoints();
 			this.ui.updateTichubutton();
+			this.ui.updateHandsize();
 
 			if(this.game.phase === "Exchange") {
 				this.ui.updatePhase("Exchange");
@@ -353,7 +373,6 @@ export class Main {
 			} else {
 				this.ui.showInfos();
 				this.ui.updatePhase("Playing");
-				this.ui.updateHandsize();
 				this.ui.hand.selectMode(true);
 			}
 

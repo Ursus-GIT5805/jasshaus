@@ -59,8 +59,21 @@ export class UI {
 		this.setupPoints();
 		this.setupPlayerinfo();
 
+		for(let i = 0 ; i < this.game.players.length ; ++i) {
+			let ele = $('<div class="PlayerInfo"></div>')
+
+			let cards = $(`<div>Cards: <span text="num_cards${i}">0</span></div>`)
+			let pass_info = $(`<div id="passInfo${i}"></div>`)
+
+			ele.append(cards)
+				.append(pass_info);
+
+			this.players.addEle(ele, i);
+		}
+
 		let end = this.game.setting.end_condition;
 		$("#goal").text(`Tichu ${end.Points}`);
+		$("#wishIndicator").display(false);
 	}
 
 	setupPlayerinfo() {
@@ -69,7 +82,7 @@ export class UI {
 		for(let plr = 0 ; plr < this.game.players.length ; ++plr) {
 			let ele = $('<div>')
 				.append( $(`<span text="short_player${plr}">`) )
-				.append( $(`<span> (Cards: <span text="num_cards${plr}"></span>)</span> `) )
+				.append( $(`<span> (Cards: <span text="num_cards${plr}">0</span>)</span> `) )
 				.append( $(`<span id="infoPlayer">`) );
 
 			container.append(ele);
@@ -355,26 +368,46 @@ export class UI {
 
 	// ---
 
+	indicatePass(plr: PlayerID) {
+		$(`#passInfo${plr}`).text("Passed");
+		this.players.toggleClass("Passed", plr, true);
+	}
+
+	indicateWish(wish: number | undefined) {
+		$("#wishIndicator").display(wish !== undefined)
+		if(wish !== undefined) {
+			let name = number_name(wish);
+			$("#wishedNumber").text(name);
+		}
+	}
+
+	clearPassInfo() {
+		for(let i = 0 ; i < this.game.players.length ; ++i) {
+			$(`#passInfo${i}`).text("");
+			this.players.toggleClass("Passed", i, false);
+		}
+	}
+
 	indicateActive(plr: PlayerID, indicate=true) {
-		this.players.setState("Active", plr, indicate);
+		this.players.toggleClass("Active", plr, indicate);
 	}
 
 	indicateFinished(plr: PlayerID, indicate=true) {
-		this.players.setState("Finished", plr, indicate);
+		this.players.toggleClass("Finished", plr, indicate);
 	}
 
 	indicateTichu(plr: PlayerID, indicate=true) {
-		this.players.setState("AnnouncedTichu", plr, indicate);
+		this.players.toggleClass("AnnouncedTichu", plr, indicate);
 	}
 
 	indicateGrandTichu(plr: PlayerID, indicate=true) {
-		this.players.setState("AnnouncedGrandTichu", plr, indicate);
+		this.players.toggleClass("AnnouncedGrandTichu", plr, indicate);
 	}
 
 	clearPlayerStates() {
 		for(let plr = 0 ; plr < this.game.players.length ; ++plr) {
-			this.players.setState("Active", plr, false);
-			this.players.setState("Finished", plr, false);
+			this.players.toggleClass("Active", plr, false);
+			this.players.toggleClass("Finished", plr, false);
 		}
 	}
 
@@ -382,19 +415,19 @@ export class UI {
 		if(active) {
 			let team_id = this.game.players[this.player_id].team_id;
 
-			for(let i = 0 ; i < this.game.players.length ; ++i) {
-				if(team_id != this.game.players[i].team_id) continue;
-				this.players.setState("Disabled", i, true);
-			}
-
 			this.updatePhase("GiveAway");
 			if(this.player_id == this.game.current_player) {
 				this.hand.setIllegal();
 				this.displayInfo("Choose an opponent to give the dragon.");
+
+				for(let i = 0 ; i < this.game.players.length ; ++i) {
+					if(team_id != this.game.players[i].team_id) continue;
+					this.players.toggleClass("Disabled", i, true);
+				}
 			}
 		} else {
 			for(let i = 0 ; i < this.game.players.length ; ++i) {
-				this.players.setState("Disabled", i, false);
+				this.players.toggleClass("Disabled", i, false);
 			}
 
 			this.updatePhase("Playing");

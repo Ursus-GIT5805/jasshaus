@@ -1,3 +1,7 @@
+:root {
+	font-family: Roboto, sans-serif;
+}
+
 #background,
 body {
 	position: absolute;
@@ -265,6 +269,8 @@ body {
 }
 
 body > .PlayerMSG {
+	position: absolute;
+
 	left: 50%;
 	bottom: 22.5vh;
 
@@ -289,6 +295,14 @@ body > .PlayerMSG {
 
 .Disabled {
 	color: darkgray !important;
+}
+
+.Passed {
+	color: blueviolet !important;
+}
+
+.Best {
+	color: yellow !important;
 }
 
 .AnnouncedTichu {
@@ -353,4 +367,13 @@ body > .PlayerMSG {
 
 	font-size: 2rem;
 	font-weight: bold;
+}
+
+.PlayerInfo {
+	color: white;
+	background-color: black;
+
+	font-size: 1.5rem;
+
+	padding: 0.2rem;
 }

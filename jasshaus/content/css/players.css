@@ -27,6 +27,17 @@
 	.PlayerMSG { left: 50%; transform: translateX(-50%); }
 }
 
+.PlayerContainer {
+	display: flex;
+	flex-direction: column;
+
+    max-width: 12rem;
+}
+
+.PlayerContainer:has(> .Player:empty) {
+	display: none;
+}
+
 .Player {
     text-align: center;
     font-size: 2rem;
@@ -34,7 +45,6 @@
 	padding: 0.5rem;
 
 	min-width: 6rem;
-    max-width: 12rem;
 
 	overflow: hidden;
     text-overflow: ellipsis;
@@ -57,17 +67,11 @@
 	border-style: solid;
 }
 
-.Player:empty {
-	display: none;
-}
-
 .PlayerMSG {
-    position: absolute;
-
-    min-width: 10rem;
+	width: auto;
 	max-width: 20rem;
 
-	font-size: 2rem;
+	font-size: 1.5rem;
 
     padding: 0.3rem;
     border-radius: 0.3rem;
@@ -87,8 +91,12 @@
     background-color: #CCCCCC;
 }
 
+.PlayerContainer > .PlayerMSG {
+    position: absolute;
+	top: 100%;
+}
+
 .PlayerMSG:hover {
 	max-width: 30rem;
-    height: max-content;
-    white-space: inherit;
+    white-space: normal;
 }
