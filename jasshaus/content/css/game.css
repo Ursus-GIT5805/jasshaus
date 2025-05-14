@@ -117,6 +117,12 @@ body {
     background-color: #363636;
 }
 
+.ActionButton.Active {
+	border-style: solid;
+	border-width: 0.25em;
+	border-color: lime;
+}
+
 #botrightbuttons,
 #botleftbuttons,
 .ActionButtonContainer {
@@ -179,6 +185,8 @@ body {
 }
 
 body > .PlayerMSG {
+	position: absolute;
+
 	left: 50%;
 	bottom: var(--hand-height);
 

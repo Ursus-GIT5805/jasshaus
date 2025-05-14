@@ -1,3 +1,3 @@
-server_name="jasshaus-server"
+server_name=jasshaus-server
 
 include ../Makefile

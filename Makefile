@@ -1,7 +1,6 @@
 host=""
-server_name=""
-server_pwd="server"
-target="aarch64-unknown-linux-gnu"
+server_pwd=server
+target=aarch64-unknown-linux-gnu
 
 build_web:
 	cd game && wasm-pack build --target web --dev
@@ -38,7 +37,7 @@ clean:
 release:
 	mkdir -p build
 	cd $(server_pwd) && cargo build --release --target $(target)
-	rsync -v $(server_pwd)/target/$(target)/release/$(server_name) build/$(server_name)
+	rsync $(server_pwd)/target/$(target)/release/$(server_name) build/
 	cd game && wasm-pack build --target web --release
 	mkdir -p content/js/
 	rsync -av game/pkg content/
