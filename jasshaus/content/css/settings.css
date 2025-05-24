@@ -1,5 +1,10 @@
-.SettingList,
-.SettingGroup {
+.Form h3 {
+	font-size: 1.2rem;
+	font-weight: bold;
+	margin: 0.2rem;
+}
+
+.Form .Form {
 	align-items: center;
 
 	margin: 0.5rem;
@@ -7,35 +12,21 @@
 	border: 1px solid;
 }
 
-.Descriptionpair {
-	padding: 0.5rem;
-	margin: 0.5rem;
-	border: 1px solid;
-
-	> .SettingGroup, .SettingList {
-		border: 1px none;
-	}
+.Form.PrimitiveForm {
+	margin: 0rem;
+	border: 0px solid;
 }
 
-.SingleSetting {
-	margin: 0.5rem;
-}
-
-.Title {
-	font-size: 1.2rem;
-	font-weight: bold;
-}
-
-.SettingListEntry {
+.ListFormEntry {
 	display: flex;
 	justify-content: center;
 	padding: 0.5rem;
 
-	.Buttons {
+	.ListFormButtons {
 		display: flex;
 		flex-direction: column;
 	}
-	.SettingGroup {
+	.Form {
 		margin: 0;
 		width: max-content;
 	}

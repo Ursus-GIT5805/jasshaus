@@ -1,30 +1,29 @@
-const NULL_FORM: Form = {
-	ele: undefined,
-	set: () => undefined,
-	get: () => {},
-};
-
-var form_type_handler: any = {
-	'checkbox': createCheckbox,
-	'number': createNumber,
-	'list': createList,
-	'none': () => NULL_FORM,
-};
-
 interface Form {
 	ele?: JQuery<HTMLElement>;
 	get: () => any;
 	set: (val: any) => void;
 }
 
-function createGeneral(type: string): Form {
-	let input = $("<input>").attr("type", type);
-	return {
-		ele: input,
-		get: () => input.val(),
-		set: (val) => input.val(val),
-	};
-}
+const NULL_FORM: Form = {
+	ele: undefined,
+	get: () => undefined,
+	set: () => {},
+};
+
+const PROPERTY_PREFIX = "#";
+
+const PROP_NAME = "#name";
+const PROP_DESC = "#desc";
+const PROP_TYPE = "#type";
+const PROP_DEFAULT = "#default";
+
+// Dictionary containing the handler of Type-Form
+var form_type_handler: { [key: string]: () => Form } = {
+	'int': createInt,
+	'string': createString,
+	'bool': createCheckbox,
+	'none': () => NULL_FORM,
+};
 
 function createCheckbox(): Form {
 	let input = $("<input>").attr("type", "checkbox");
@@ -35,7 +34,16 @@ function createCheckbox(): Form {
 	};
 }
 
-function createNumber(): Form {
+function createString(): Form {
+    let input = $("<input>").attr("type", "text");
+    return {
+        ele: input,
+        get: () => input.val(),
+        set: (val) => input.val(val),
+    };
+}
+
+function createInt(): Form {
 	let input = $("<input>").attr("type", "number");
 	return {
 		ele: input,
@@ -44,219 +52,29 @@ function createNumber(): Form {
 	};
 }
 
-function createList(entry: any, ident?: string): Form {
-	let list: Form[] = [];
-	let eles = $("<div>")
-		.css("display", "flex")
-		.css("flex-direction", "column");
-	let input = $("<div>").addClass("SettingList");
-	if(ident) input.append( $("<div>").addClass("Title").text(ident) );
-	input.append(eles);
-
-	let resizable = true;
-	let movable = true;
-
-	if(entry.hasOwnProperty('#id')) input.prop("id", entry["#id"]);
-	if(entry.hasOwnProperty('#resizable')) resizable = entry['#resizable'];
-	if(entry.hasOwnProperty('#movable')) movable = entry['#movable'];
-
-	let child = entry['#list'];
-
-	let createEle = () => {
-		let obj = createForm(child);
-
-		let ele = $("<div>").addClass("SettingListEntry");
-		let buttons = $("<div>").addClass("Buttons");
-		if(movable) {
-			let up = $("<button>")
-				.text("Up")
-				.click(() => {
-					let idx = ele.index();
-					if(idx == 0) return;
-					ele.insertBefore(ele.prev());
-					[list[idx-1], list[idx]] = [list[idx], list[idx-1]];
-				});
-			buttons.append(up);
-		}
-		if(resizable) {
-			let del = $("<button>")
-				.text("Remove")
-				.click(() => {
-					let idx = ele.index();
-					ele.remove();
-					list.splice(idx,1);
-				});
-			buttons.append(del);
-		}
-		if(movable) {
-			let down = $("<button>")
-				.text("Down")
-				.click(() => {
-					let idx = ele.index();
-					if(idx+1 >= list.length) return;
-					ele.insertAfter(ele.next());
-					[list[idx+1], list[idx]] = [list[idx], list[idx+1]];
-				});
-			buttons.append(down);
-		}
-
-		if(obj.ele) {
-			obj.ele = ele.append(buttons).append(obj.ele);
-			list.push(obj);
-			eles.append( obj.ele );
-		}
-	};
-
-	if(resizable) {
-		let add = $("<button>")
-			.text("Add")
-			.click(createEle);
-		input.append(add);
-	}
-
-	let getter = () => list.map((x) => x.get());
-	let setter = (val: any) => {
-		eles.html("");
-		list = [];
-		for(let i = 0 ; i < val.length ; ++i) {
-			createEle();
-			list[i].set(val[i]);
-		}
-	};
-
-	return {
-		ele: input,
-		get: getter,
-		set: setter,
-	}
-}
-
 // ===== Object/List handler =====
 
-function createListed(entry: any, ident?: string): Form {
-	let lst = [];
-	for(let i = 0 ; i < entry.length ; ++i) lst.push( createForm(entry[i], `${ident}${i}`) );
+/// Create a form from a string
+function create_primitive_form(str: string, ident?: string, desc?: string): Form {
+	if(!(str in form_type_handler)) throw new Error(`Form type '${str}' does not exist!`);
 
-	let ele = $("<div>");
-	for(let obj of lst) {
-		if(obj.ele) ele.append( obj.ele );
+	let div = $('<div>').addClass(["Form", "PrimitiveForm"]);
+	let inp = $('<div>');
+
+	if(ident) inp.append( $('<label>').text(`${ident}: `) );
+
+	// Create form
+	let form = form_type_handler[str]()
+
+	if(form.ele) {
+		inp.append( form.ele );
+		form.ele = div;
 	}
 
-	let getter = () => lst.map((obj) => obj.get());
-	let setter = (val: any) => {
-		for(let i = 0 ; i < lst.length ; ++i) lst[i].set(val[i]);
-	};
+	div.append(inp);
+	if(desc) div.append( $('<div>').append($('<i>').text(`(${desc})`)) );
 
-	return {
-		ele: ele,
-		get: getter,
-		set: setter,
-	};
-}
-
-function createFromObject(obj: any, ident?: string): Form {
-	let form = $("<div>").addClass("SettingGroup");
-	let children: any = {};
-
-	let title = ident;
-	let option = false;
-
-	if("#title" in obj) title = obj["#title"];
-	if("#option" in obj) option = obj["#option"];
-	if(obj.hasOwnProperty('#id')) form.prop("id", obj["#id"]);
-
-	if("#type" in obj) return createForm(obj['#type'], title);
-	if("#list" in obj) return createList(obj, title);
-
-	if(title) form.append( $("<div>").addClass("Title").text(title) );
-	let opts = $("<div>");
-
-	for(let key in obj) {
-		if(key.startsWith("#")) continue;
-
-		let input = createForm(obj[key], key);
-		children[key] = input;
-		if(input.ele) opts.append(input.ele);
-	}
-
-	let getter = (): any => {
-		let out: any = {};
-		for(let key in children) out[key] = children[key].get();
-		return out;
-	};
-	let setter = (val: any) => {
-		for(let key in children) children[key].set( val[key] );
-	}
-
-	if(option) {
-		let select = $('<select>');
-		for(let key in obj) {
-			if(key.startsWith("#")) continue;
-			let opt = $('<option>')
-				.attr('value', key);
-			if(obj[key].hasOwnProperty('#title')) opt.text(obj[key]['#title'] );
-			else opt.text(key);
-			select.append(opt);
-		}
-		select.change(() => {
-			let val = select.val();
-			for(let key in children) {
-				let ele = children[key].ele;
-
-				if(ele) {
-					if(val == key) ele.css('display', 'block');
-					else ele.css('display', 'none');
-				}
-			}
-		});
-
-		form.append(select)
-
-		getter = (): any => {
-			let val = select.val();
-			if(typeof val != 'string') return undefined;
-
-			if( children[val].ele ) {
-				let obj: any = {};
-				obj[val] = children[val].get();
-				return obj;
-			}
-			return val;
-		}
-		setter = (val) => {
-			if(typeof val === 'string') select.val(val);
-			else {
-				for(let key in val) {
-					select.val(key);
-					children[key].set(val[key]);
-				}
-			}
-			select.change();
-		};
-	}
-
-
-	form.append(opts);
-
-	return {
-		ele: form,
-		get: getter,
-		set: setter,
-	};
-}
-
-function createFromString(str: string, ident?: string): Form {
-	let div = $("<div>").addClass("SingleSetting");
-	if(ident) div.append( $("<label>").text(ident + ": ") );
-
-	let input = null;
-	if(str in form_type_handler) input = form_type_handler[str]();
-	else input = createGeneral(str);
-
-	if(!input.ele) return NULL_FORM;
-
-	input.ele = div.append( input.ele );
-	return input;
+	return form;
 }
 
 // ===== All this code, for these exports =====
@@ -277,41 +95,245 @@ export function extractDefault(entry: any): any {
 	return undefined;
 }
 
+function create_basic_form(
+	form: any,
+	ident?: string,
+) {
+	let ele = $('<div>').addClass("Form");
+	let children: { [id: string]: Form } = {};
 
-export function createForm(entry: any, ident?: string, def?: any): Form {
-	if(!entry) return NULL_FORM;
+	let name = form[PROP_NAME] || ident;
+	if(name) ele.append( $('<h3>').text(name) );
 
-	let input: any = null;
-	if(typeof entry === 'string') input = createFromString(entry, ident);
-	else if(Object.prototype.toString.call(entry) === '[object Object]') {
-		input = createFromObject(entry, ident);
+	let desc = form[PROP_DESC];
+	if(desc) ele.append( $('<i>').text(`(${desc})`) );
 
-		if('#disabled' in entry && entry['#disabled']) {
-			input.ele.find("input,select").each((_: number, e: any) => {
-				e.setAttribute("disabled", "true");
-			});
-		}
-		if('#onchange' in entry) {
-			input.ele.find("input,select").each((_: number, e: any) => {
-				e.addEventListener("change", () => entry['#onchange']( input.get() ))
-			});
+	if(PROP_TYPE in form) {
+		let is_primitive_form = typeof form[PROP_TYPE] === 'string';
+
+		if(is_primitive_form) {
+			return create_primitive_form(form[PROP_TYPE], name, desc);
+		} else {
+			return createForm(form[PROP_TYPE], name);;
 		}
 	}
-	else if(Object.prototype.toString.call(entry) === '[object Array]')
-		input = createListed(entry, ident);
 
-	if(entry.hasOwnProperty('#description')) {
-		let div = $("<div>").append(input.ele);
-		let desc = $("<i>").text("(" + entry['#description'] + ")");
-		div.addClass("Descriptionpair");
-		div.append(desc);
+	for(const key in form) {
+		if(key.startsWith(PROPERTY_PREFIX)) continue;
 
-		input.ele = div;
+		let child_form = createForm(form[key], key);
+		if(child_form.ele) ele.append( child_form.ele );
+
+		children[key] = child_form;
 	}
 
-	if(entry.hasOwnProperty('#default')) input.set(entry['#default']);
 
-	if(def) input.set(def);
-	if(!input) return NULL_FORM;
-	return input;
+	let get = () => {
+		let out: any = {};
+		for(const key in children) out[key] = children[key].get();
+		return out;
+	};
+
+	let set = (val: any) => {
+		for(const key in val) {
+			if(!children.hasOwnProperty(key)) {
+				throw new Error("Invalid property name on form set!");
+			}
+			children[key].set( val[key] );
+		}
+	};
+
+	return {ele, get, set};
+}
+
+function create_option_form(
+	form: any,
+	ident?: string
+) {
+	let ele = $('<div>').addClass(["Form", "OptionForm"]);
+	let children: { [id: string]: Form } = {};
+
+	let title = form[PROP_NAME] || ident;
+	if(title) ele.append( $('<h3>').text(title) );
+
+	let desc = form[PROP_DESC];
+	if(desc) ele.append( $('<i>').text(`(${desc})`) );
+
+	// Create a select element for the option form
+	let select = $('<select>');
+	select.change(() => {
+		let key = select.val();
+		if(typeof key !== 'string') return undefined;
+
+		for(const key in children) children[key].ele?.css('display', 'none');
+		if(typeof key === 'string') children[key].ele?.css('display', 'block')
+	});
+
+	ele.append(select);
+
+	let first = true;
+
+	for(const key in form) {
+		if(key.startsWith(PROPERTY_PREFIX)) continue;
+
+		let child_form = createForm(form[key], key);
+		if(child_form.ele) {
+			if(!first) child_form.ele.css('display', 'none');
+			ele.append( child_form.ele );
+		}
+
+		children[key] = child_form;
+
+		let opt_name = form[key][PROP_NAME] || key;
+		let option = $('<option>')
+			.text(opt_name)
+			.attr('value', key);
+		select.append( option );
+
+		first = false;
+	}
+
+	let get = () => {
+		let key = select.val();
+		if(typeof key !== 'string') return undefined;
+
+		let val = children[key].get();
+
+		if(val === undefined) return key;
+		return { key: val };
+	};
+
+	let set = (val: any) => {
+		if(typeof val === 'string') {
+			select.val(val);
+		} else {
+			let key = Object.keys(val)[0];
+			children[key].set( val[key] );
+		}
+	};
+
+	return {ele, get, set};
+}
+
+function create_list_form(
+	form: any,
+	ident?: string,
+) {
+	if(!form.hasOwnProperty(PROP_TYPE)) throw new Error("List Forms must provide a #type property!");
+
+	let ele = $('<div>').addClass(["Form", "ListForm"])
+
+	let title = form[PROP_NAME] || ident;
+	if(title) ele.append( $('<h3>').text(title) );
+
+	let desc = form[PROP_DESC];
+	if(desc) ele.append( $('<i>').text(`(${desc})`) );
+
+	let list = $('<div>');
+	ele.append(list);
+
+	let size = -1;
+	if(form.hasOwnProperty('#size')) size = form['#size'];
+
+	let name_handler = (_: any) => undefined;
+	if(form.hasOwnProperty('#name_handler')) name_handler = form['#name_handler'];
+
+	let resizable = (false || form['#resizable']) && (size == -1);
+	let moveable = false || form['#moveable'];
+
+	let children: Form[] = [];
+
+	let append_new = (def?: any) => {
+		let ele = $('<div>').addClass("ListFormEntry");
+
+		let nth = children.length;
+		let child = createForm(form['#type'], name_handler(nth));
+
+		let buttons = $('<div>').addClass("ListFormButtons");
+
+		if(moveable) {
+			let up = $("<button>")
+				.text("Up")
+				.click(() => {
+					let idx = ele.index();
+					if(idx == 0) return;
+					ele.insertBefore(ele.prev());
+					[children[idx-1], children[idx]] = [children[idx], children[idx-1]];
+				});
+			buttons.append(up);
+		}
+
+		if(resizable) {
+			let del = $("<button>")
+				.text("Remove")
+				.click(() => {
+					let idx = ele.index();
+					ele.remove();
+					children.splice(idx,1);
+				});
+
+			buttons.append(del);
+		}
+
+		if(moveable) {
+			let down = $("<button>")
+				.text("Down")
+				.click(() => {
+					let idx = ele.index();
+					if(children.length <= idx+1) return;
+					ele.insertAfter(ele.next());
+					[children[idx+1], children[idx]] = [children[idx], children[idx+1]];
+				});
+			buttons.append(down);
+		}
+
+		ele.append(buttons);
+
+		if(child.ele) ele.append( child.ele );
+		if(def !== undefined) child.set(def);
+
+		list.append(ele);
+		children.push(child);
+	};
+
+	if(size != -1) {
+		for(let i = 0 ; i < size ; ++i) append_new();
+	}
+
+	if(resizable) {
+		let create = $('<button>')
+			.text("Add")
+			.click(() => append_new());
+
+		ele.append(create);
+	}
+
+	let get = () => Array.from( children.map((child) => child.get()) );
+	let set = (val: any[]) => {
+		for(let def in val) append_new(def);
+	};
+
+	return {ele, get, set};
+}
+
+export function add_custom_type(name: string, handler: () => Form) {
+	form_type_handler[name] = handler;
+}
+
+export function createForm(form: any, ident?: string, def?: any): Form {
+	let is_option = false || form['#option'];
+	let is_list = false || form['#list'];
+	let is_type = typeof form === 'string';
+
+	if(is_option && is_list) throw new Error("Form can't be a list and option form at the same time!");
+
+	let data;
+	if(is_option) data = create_option_form(form, ident);
+	else if(is_list) data = create_list_form(form, ident);
+	else if(is_type) data = create_primitive_form(form, ident);
+	else data = create_basic_form(form, ident);
+
+	if(form.hasOwnProperty(PROP_DEFAULT)) data.set(form[PROP_DEFAULT]);
+
+	return data;
 }

@@ -47,18 +47,18 @@ function updateCardskin(res: any) {
 
 export var jass_settings: any = {
 	"card_skin": {
-		"#title": "Kartentyp",
+		"#name": "Kartentyp",
 		"#option": true,
-		"#default": "german",
+		"#default": "de",
 		"#onchange": updateCardskin,
 
-		"de": { "#title": "Deutsch", "#type": "none" },
-		"fr": { "#title": "Französisch", "#type": "none" },
+		"de": { "#name": "Deutsch", "#type": "none" },
+		"fr": { "#name": "Französisch", "#type": "none" },
 	},
 	"cardclicks": {
-		"#title": "Kartenklick",
-		"#description": "Entscheiden, ob das Klicken einer Karte sie spielen soll.",
-		"#type": "checkbox",
+		"#name": "Kartenklick",
+		"#desc": "Entscheiden, ob das Klicken einer Karte sie spielen soll.",
+		"#type": "bool",
 		"#default": true,
 	}
 };

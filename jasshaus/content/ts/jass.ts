@@ -135,11 +135,13 @@ const PlayTypes = [
 
 /// Returns the name of the given playtype
 export function get_pt_name(
-	pt: Playtype,
+	pt: Playtype | number,
 	misere: boolean = false,
 ): undefined | string {
-	let id = get_playtype_id(pt);
-	if(id === undefined) return undefined;
+	let id = pt;
+	if(typeof pt !== 'number') id = get_playtype_id(pt);;
+	if(typeof id !== 'number') return undefined;
+
 	if(!(id in PlayTypes)) return undefined;
 
 	let pref = "";

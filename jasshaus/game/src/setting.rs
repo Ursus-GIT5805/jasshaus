@@ -16,9 +16,9 @@ use htmlform_macros::*;
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum StartingCondition {
-	#[Form("#title": "Zufällig")]
+	#[Form("#name": "Zufällig")]
     Random,
-	#[Form("#title": "Karte")]
+	#[Form("#name": "Karte")]
     Card(Card),
 }
 
@@ -27,13 +27,13 @@ pub enum StartingCondition {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum PointRule {
-	#[Form("#title": "Stich")]
+	#[Form("#name": "Stich")]
     Play,
-	#[Form("#title": "Weis")]
+	#[Form("#name": "Weis")]
     Show,
-	#[Form("#title": "Stöck")]
+	#[Form("#name": "Stöck")]
     Marriage,
-	#[Form("#title": "Tischweis")]
+	#[Form("#name": "Tischweis")]
     TableShow,
 }
 
@@ -49,13 +49,13 @@ pub fn get_gamesettingform() -> String {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum TeamChoosing {
-	#[Form("#title": "Keine Teams")]
+	#[Form("#name": "Keine Teams")]
     None, // There are no teams, everyone vs everyone
-	#[Form("#title": "Periodisch")]
-	#[Form("#description": "Personen werden im gegenuhrzeigersinn bis n periodisch nummeriert.")]
+	#[Form("#name": "Periodisch")]
+	#[Form("#desc": "Personen werden im gegenuhrzeigersinn bis n periodisch nummeriert.")]
 	Periodic(usize), // Creates n teams, where player_id=(pid) has team (pid%n)
-	// #[Form("#title": "Block")]
-	// #[Form("#description": "Immer n spieler nacheinander werden gruppiert.")]
+	// #[Form("#name": "Block")]
+	// #[Form("#desc": "Immer n spieler nacheinander werden gruppiert.")]
     // Blocks(usize), // Creates blocks of n players each
 }
 
@@ -65,9 +65,9 @@ pub enum TeamChoosing {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum EndCondition {
-	#[Form("#title": "Auf Punkte")]
+	#[Form("#name": "Auf Punkte")]
 	Points(i32),
-	#[Form("#title": "Auf Runden")]
+	#[Form("#name": "Auf Runden")]
 	Rounds(i32),
 }
 
@@ -77,19 +77,19 @@ pub enum EndCondition {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum PointEval {
-	#[Form("#title": "Punkte Addieren")]
+	#[Form("#name": "Punkte Addieren")]
 	Add,
-	#[Form("#title": "Differenz nehmen")]
+	#[Form("#name": "Differenz nehmen")]
 	Difference {
-		#[Form("#title": "Weise berücksichtigen")]
+		#[Form("#name": "Weise berücksichtigen")]
 		include_shows: bool,
-		#[Form("#title": "Stöck berücksichtigen")]
+		#[Form("#name": "Stöck berücksichtigen")]
 		include_marriage: bool,
 
-		#[Form("#title": "Nulldifferenz Extrapunkte")]
+		#[Form("#name": "Nulldifferenz Extrapunkte")]
 		zero_diff_points: i32,
-		#[Form("#title": "Stich benötigt")]
-		#[Form("#description": "Entscheiden, ob mindestens ein Stich für die Extrapunkte benötigt wird.")]
+		#[Form("#name": "Stich benötigt")]
+		#[Form("#desc": "Entscheiden, ob mindestens ein Stich für die Extrapunkte benötigt wird.")]
 		needs_win: bool,
 	},
 }
@@ -100,9 +100,9 @@ pub enum PointEval {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub enum AnnounceRule {
-	#[Form("#title": "Manuelle Ansage")]
+	#[Form("#name": "Manuelle Ansage")]
 	Choose,
-	#[Form("#title": "Zufällig")]
+	#[Form("#name": "Zufällig")]
 	Random,
 }
 
@@ -112,11 +112,11 @@ pub enum AnnounceRule {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub struct PlaytypeSetting {
-	#[Form("#title": "Erlauben")]
+	#[Form("#name": "Erlauben")]
 	pub allow: bool,
-	#[Form("#title": "Multiplikator")]
+	#[Form("#name": "Multiplikator")]
 	pub multiplier: i32,
-	#[Form("#title": "Zugeschobener Spieler beginnt")]
+	#[Form("#name": "Zugeschobener Spieler beginnt")]
 	pub passed_player_begins: bool,
 }
 
@@ -126,70 +126,70 @@ pub struct PlaytypeSetting {
 #[non_exhaustive]
 #[derive(HtmlForm)]
 pub struct Setting {
-	#[Form("#title": "Anzahl Spieler")]
+	#[Form("#name": "Anzahl Spieler")]
 	pub num_players: usize,
-	#[Form("#title": "Teams")]
+	#[Form("#name": "Teams")]
 	pub team_choosing: TeamChoosing,
-	#[Form("#title": "Ziel")]
+	#[Form("#name": "Ziel")]
 	pub end_condition: EndCondition,
-	#[Form("#title": "Punkteauswertung")]
-	#[Form("#description": "Wie werden die Punkte ausgewertet?")]
+	#[Form("#name": "Punkteauswertung")]
+	#[Form("#desc": "Wie werden die Punkte ausgewertet?")]
 	pub point_eval: PointEval,
 
-	#[Form("#title": "Wenig Punkte")]
-	#[Form("#description": "Entscheiden, ob das Ziel ist, möglichst wenig Punkte zu erzielen.")]
+	#[Form("#name": "Wenig Punkte")]
+	#[Form("#desc": "Entscheiden, ob das Ziel ist, möglichst wenig Punkte zu erzielen.")]
 	pub less_points_win: bool,
-	#[Form("#title": "Punkteregelung")]
-	#[Form("#description": "Reihenfolge der Punkteverrechnung. Zuoberst wird zuerst verrechnet.")]
+	#[Form("#name": "Punkteregelung")]
+	#[Form("#desc": "Reihenfolge der Punkteverrechnung. Zuoberst wird zuerst verrechnet.")]
     pub point_recv_order: Vec<PointRule>,
 
 
-	#[Form("#title": "Weise erlauben")]
+	#[Form("#name": "Weise erlauben")]
 	pub allow_shows: bool,
-	#[Form("#title": "Weise geben Negativpunkte")]
+	#[Form("#name": "Weise geben Negativpunkte")]
 	pub show_gives_negative: bool,
 
-	#[Form("#title": "Tischweise erlauben")]
+	#[Form("#name": "Tischweise erlauben")]
 	pub allow_table_shows: bool,
-	#[Form("#title": "Tischweise geben Negativpunkte")]
+	#[Form("#name": "Tischweise geben Negativpunkte")]
 	pub table_show_gives_negative: bool,
 
-	#[Form("#title": "Maximale Weispunkte")]
+	#[Form("#name": "Maximale Weispunkte")]
     pub show_points_maximum: i32,
 
-	#[Form("#title": "Stöck erlauben")]
+	#[Form("#name": "Stöck erlauben")]
 	pub allow_marriage: bool,
-	#[Form("#title": "Stöckpunkte")]
+	#[Form("#name": "Stöckpunkte")]
     pub marriage_points: i32,
 
-	#[Form("#title": "Ansage")]
+	#[Form("#name": "Ansage")]
 	pub announce: AnnounceRule,
-	#[Form("#title": "Trumpfeinstellungen")]
+	#[Form("#name": "Trumpfeinstellungen")]
 	pub playtype: Vec<PlaytypeSetting>,
 
-	#[Form("#title": "Striktes Untertrumpfregel")]
-	#[Form("#description": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahll)")]
+	#[Form("#name": "Strikte Untertrumpfregel")]
+	#[Form("#desc": "Entscheiden, ob man nie untertrumpfen darf (ausser man hat keine andere Wahll)")]
 	pub strict_undertrumpf: bool,
-	#[Form("#title": "Misère erlauben")]
+	#[Form("#name": "Misère erlauben")]
 	pub allow_misere: bool,
 
-	#[Form("#title": "Matchpunkte")]
+	#[Form("#name": "Matchpunkte")]
 	pub match_points: i32,
-	#[Form("#title": "Punkte des letzten Stichs")]
+	#[Form("#name": "Punkte des letzten Stichs")]
 	pub last_points: i32,
 
-	#[Form("#title": "Schieben erlauben")]
+	#[Form("#name": "Schieben erlauben")]
     pub allow_pass: bool,
-	#[Form("#title": "Zurückschieben erlauben")]
+	#[Form("#name": "Zurückschieben erlauben")]
     pub allow_back_pass: bool,
-	#[Form("#title": "Zum gleichen Team schieben")]
-	#[Form("#description": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
+	#[Form("#name": "Zum gleichen Team schieben")]
+	#[Form("#desc": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
     pub pass_to_same_team: bool,
 
-	#[Form("#title": "Beginnender Spieler")]
-	#[Form("#description": "Entscheiden, wie der beginnende Spieler bestimmt wird.")]
+	#[Form("#name": "Beginnender Spieler")]
+	#[Form("#desc": "Entscheiden, wie der beginnende Spieler bestimmt wird.")]
     pub startcondition: StartingCondition,
-	#[Form("#title": "Diese Regel bei Revanche anwenden")]
+	#[Form("#name": "Diese Regel bei Revanche anwenden")]
     pub apply_startcondition_on_revanche: bool,
 }
 

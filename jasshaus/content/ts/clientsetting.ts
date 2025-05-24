@@ -24,21 +24,20 @@ export class ClientSetting {
 
 export var ClientSettingForm = {
 	"name": {
-		"#title": "Spitzname",
-		"#type": "text",
-		"#maxlength": 16,
+		"#name": "Spitzname",
+		"#type": "string",
 		"#default": "unnamed",
 	},
 	"mute_players": {
-		"#title": "Spieler stummschalten",
-		"#description": "Ob alle Spieler standardmässig stummgeschalten werden.",
-		"#type": "checkbox",
+		"#name": "Spieler stummschalten",
+		"#desc": "Ob alle Spieler standardmässig stummgeschalten werden.",
+		"#type": "bool",
 		"#default": false,
 	},
 	"allow_rtc": {
-		"#title": "WebRTC aktivieren",
-		"#description": "WebRTC wird benötigt, um den VoiceChat zu benutzen.",
-		"#type": "checkbox",
+		"#name": "WebRTC aktivieren",
+		"#desc": "WebRTC wird benötigt, um den VoiceChat zu benutzen.",
+		"#type": "bool",
 		"#default": true,
 	},
 };
