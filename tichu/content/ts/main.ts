@@ -2,6 +2,7 @@ import { ClientSetting, get_client_settings } from "./clientsetting.js";
 import { Main } from "./game.js";
 import init from "../pkg/tichu_game.js"
 import { determine_ws_url, DEV_MODE, ROOM_ID } from "./utility.js";
+import { get_setting_form, save_tichu_setting } from "./tichusettings.js";
 
 const WS_URL = `${determine_ws_url(7998)}/${ROOM_ID}`;
 
@@ -9,15 +10,15 @@ const WS_URL = `${determine_ws_url(7998)}/${ROOM_ID}`;
 
 const SettingWindow = $("#settingsWindow");
 
-/*function setupSettings() {
+function setupSettings() {
 	let form = get_setting_form();
 	if(!form.ele) return;
 
 	$("#settings").append(form.ele);
-	window.onbeforeunload = () => save_jass_setting(form.get());
+	window.onbeforeunload = () => save_tichu_setting(form.get());
 
 	let toggle = () => {
-		let visible = SettingWindow.css("display") != 'none';
+		let visible = SettingWindow.css("display") !== 'none';
 		let style = [ "flex", "none" ][ +visible ];
 		SettingWindow.css("display", style);
 	};
@@ -30,7 +31,7 @@ const SettingWindow = $("#settingsWindow");
 	SettingWindow.find("#closeSettings").click(toggle);
 
 	$("#botleftbuttons").append(button);
-}*/
+}
 
 // ---
 
@@ -67,7 +68,7 @@ window.onload = async () => {
 		});
  	}
 
-	//setupSettings();
+	setupSettings();
 
 	if(ROOM_ID) $(`*[text="room_id"]`).text(ROOM_ID);
 	if(DEV_MODE) console.log("Started WS");

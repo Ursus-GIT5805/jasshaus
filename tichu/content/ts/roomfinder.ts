@@ -1,0 +1,1 @@
+../../../jasshaus/content/ts/roomfinder.ts

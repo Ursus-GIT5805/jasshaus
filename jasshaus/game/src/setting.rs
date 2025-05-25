@@ -37,11 +37,6 @@ pub enum PointRule {
     TableShow,
 }
 
-#[wasm_bindgen]
-pub fn get_gamesettingform() -> String {
-	json::stringify(Setting::form_data())
-}
-
 /// Rules of how teams are chosen
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -345,4 +340,10 @@ pub fn legal_setting(setting: &Setting) -> bool {
 #[wasm_bindgen]
 pub fn must_bid(setting: &Setting) -> bool {
 	setting.must_bid()
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+pub fn get_gamesettingform() -> String {
+	json::stringify(Setting::form_data())
 }

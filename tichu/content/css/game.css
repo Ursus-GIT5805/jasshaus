@@ -377,3 +377,9 @@ body > .PlayerMSG {
 
 	padding: 0.2rem;
 }
+
+#settingsWindow {
+	flex-direction: column;
+
+	text-align: center;
+}

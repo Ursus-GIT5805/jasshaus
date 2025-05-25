@@ -14,6 +14,9 @@ tsify-next = { version = "0.5", features = ["js"] }
 serde-wasm-bindgen = "0.4"
 serde-big-array = "0.5"
 thiserror = "2"
+htmlform = { path = "../../htmlform" }
+htmlform-macros = { path = "../../htmlform/macros" }
+
 # serde_bytes = "0.11"
 # bit-set = { version = "0.8", features = ["serde"] }
 # bitvec = { version = "1", features = ["serde"] }

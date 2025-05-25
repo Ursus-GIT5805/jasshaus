@@ -2,6 +2,8 @@ import { createForm, extractDefault } from "./formcreator.js"
 
 const LOCALSTORAGE_KEY = "GAME_CLIENTSETTINGS";
 
+type Lang = "de" | "en";
+
 export function promptSettings(): ClientSetting {
 	let name = "";
 
@@ -22,7 +24,7 @@ export class ClientSetting {
 	}
 }
 
-export var ClientSettingForm = {
+export var ClientSettingForm_DE = {
 	"name": {
 		"#name": "Spitzname",
 		"#type": "string",
@@ -42,23 +44,48 @@ export var ClientSettingForm = {
 	},
 };
 
+export var ClientSettingForm_EN = {
+	"name": {
+		"#name": "Nickname",
+		"#type": "string",
+		"#default": "unnamed",
+	},
+	"mute_players": {
+		"#name": "Mute players",
+		"#desc": "Decide whether all players are muted by default.",
+		"#type": "bool",
+		"#default": false,
+	},
+	"allow_rtc": {
+		"#name": "Activate WebRTC",
+		"#desc": "WebRTC is necessary for the voice chat.",
+		"#type": "bool",
+		"#default": true,
+	},
+};
+
 function get_stored_client_settings(): any {
 	let item = localStorage.getItem(LOCALSTORAGE_KEY);
 	if(item) return JSON.parse(item);
 	return undefined;
 }
 
-export function get_client_settings(): any {
-	return get_stored_client_settings() || extractDefault(ClientSettingForm);
+function client_settings_formdata(lang: Lang = "en"): any {
+	if(lang === "en") return ClientSettingForm_EN;
+	if(lang === "de") return ClientSettingForm_DE;
+}
+
+export function get_client_settings(lang: Lang = "en"): any {
+	return get_stored_client_settings() || extractDefault( client_settings_formdata(lang) );
 }
 
 export function save_client_setting(data: any) {
 	localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(data));
 }
 
-export function getClientSettingForm() {
+export function getClientSettingForm(lang: Lang = "en") {
 	let def = get_client_settings();
-	let form = createForm(ClientSettingForm, "Personal Settings", def);
+	let form = createForm(client_settings_formdata(lang), "Personal Settings", def);
 	let bef = form.get;
 	form.get = () => {
 		let out = bef();

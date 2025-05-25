@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Tichu</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	</head>
+
+	<link rel="stylesheet" href="css/main.css">
+	<link rel="stylesheet" href="css/settings.css"/>
+	<link rel="stylesheet" href="css/roomfinder.css"/>
+
+	<body>
+		<img src="img/background.jpg" id="background"/>
+
+		<div id="settings">
+			<h1>Tichu</h1>
+			<h2>Welcome to Tichu!</h2>
+			<noscript>This website uses Javascript.</noscript>
+		</div>
+		<div>
+			<h1>Open rooms</h1>
+			<div id="rooms"></div>
+		</div>
+		<div>
+			<h1>Enter room</h1>
+			<p>
+				<label>Room Code: </label><input id="roomInput" type="text">
+			</p>
+			<button id="manualRoomEnter">Enter given room</button>
+		</div>
+		<div>
+			<h1>Create room</h1>
+			<noscript>This website uses Javascript.</noscript>
+			<div id="gameSettings"></div>
+			<div id="settingInfo"></div>
+			<div class="Button" id="createRoom">Create room</div>
+		</div>
+	</body>
+
+	<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+	<script type="module" src="js/home.js"></script>
+</html>
