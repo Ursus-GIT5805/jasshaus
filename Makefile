@@ -41,5 +41,5 @@ release:
 	cd game && wasm-pack build --target web --release
 	mkdir -p content/js/
 	rsync -av game/pkg content/
-	rsync -av content build
+	rsync -av --copy-links content build
 	find ./build/content/js/ -maxdepth 1 -type f -exec uglifyjs {} -m -c -o {} \;

@@ -98,7 +98,7 @@ export function extractDefault(entry: any): any {
 function create_basic_form(
 	form: any,
 	ident?: string,
-) {
+): Form {
 	let ele = $('<div>').addClass("Form");
 	let children: { [id: string]: Form } = {};
 
@@ -108,7 +108,7 @@ function create_basic_form(
 	let desc = form[PROP_DESC];
 	if(desc) ele.append( $('<i>').text(`(${desc})`) );
 
-	if(PROP_TYPE in form) {
+	if(form.hasOwnProperty(PROP_TYPE)) {
 		let is_primitive_form = typeof form[PROP_TYPE] === 'string';
 
 		if(is_primitive_form) {
@@ -149,7 +149,7 @@ function create_basic_form(
 function create_option_form(
 	form: any,
 	ident?: string
-) {
+): Form {
 	let ele = $('<div>').addClass(["Form", "OptionForm"]);
 	let children: { [id: string]: Form } = {};
 
@@ -200,7 +200,10 @@ function create_option_form(
 		let val = children[key].get();
 
 		if(val === undefined) return key;
-		return { key: val };
+
+		let out: any = {};
+		out[key] = val;
+		return out;
 	};
 
 	let set = (val: any) => {
@@ -218,7 +221,7 @@ function create_option_form(
 function create_list_form(
 	form: any,
 	ident?: string,
-) {
+): Form {
 	if(!form.hasOwnProperty(PROP_TYPE)) throw new Error("List Forms must provide a #type property!");
 
 	let ele = $('<div>').addClass(["Form", "ListForm"])
@@ -334,6 +337,7 @@ export function createForm(form: any, ident?: string, def?: any): Form {
 	else data = create_basic_form(form, ident);
 
 	if(form.hasOwnProperty(PROP_DEFAULT)) data.set(form[PROP_DEFAULT]);
+	if(def !== undefined) data.set(def);
 
 	return data;
 }

@@ -91,6 +91,9 @@ window.onload = async () => {
 		if(result === 'classic') data = setting_classic();
 		if(result.hasOwnProperty('custom')) data = result['custom'];
 
+		console.log(setting_classic());
+		console.log(result);
+		console.log(data);
 
 		let response = await request_room(URL, data);
 
