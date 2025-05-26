@@ -137,7 +137,7 @@ function create_basic_form(
 	let set = (val: any) => {
 		for(const key in val) {
 			if(!children.hasOwnProperty(key)) {
-				throw new Error("Invalid property name on form set!");
+				throw new Error(`Invalid property name on form set: ${key}`);
 			}
 			children[key].set( val[key] );
 		}
@@ -313,7 +313,10 @@ function create_list_form(
 
 	let get = () => Array.from( children.map((child) => child.get()) );
 	let set = (val: any[]) => {
-		for(let def in val) append_new(def);
+		list.html("");
+		children = [];
+
+		for(let c of val) append_new(c);
 	};
 
 	return {ele, get, set};

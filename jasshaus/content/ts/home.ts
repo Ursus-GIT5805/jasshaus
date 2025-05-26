@@ -75,6 +75,10 @@ export function createGameSettingForm(): object {
 	};
 
 	let form = createForm(entire_form, "Spielregeln");
+
+	form.set({ "custom": setting_schieber() });
+	form.set("classic");
+
 	return form;
 }
 

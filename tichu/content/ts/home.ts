@@ -26,7 +26,7 @@ async function update_rooms() {
 			.click(() => enter_room(room.id));
 
 		let ratio = `${room.players.length}/${room.max_players}`;
-		let text = `Raum ${room.id} (${ratio})`;
+		let text = `Room ${room.id} (${ratio})`;
 
 		let title = $('<h2>').text(text);
 		let names = $('<p>').text( room.players.join(", ") );
@@ -62,6 +62,10 @@ export function createGameSettingForm(): object {
 	};
 
 	let form = createForm(entire_form, "Game Settings");
+
+	form.set({ "custom": setting_classic() });
+	form.set("classic");
+
 	return form;
 }
 
@@ -90,10 +94,6 @@ window.onload = async () => {
 		let data;
 		if(result === 'classic') data = setting_classic();
 		if(result.hasOwnProperty('custom')) data = result['custom'];
-
-		console.log(setting_classic());
-		console.log(result);
-		console.log(data);
 
 		let response = await request_room(URL, data);
 
