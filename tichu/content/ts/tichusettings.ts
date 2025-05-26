@@ -27,6 +27,6 @@ export function save_tichu_setting(data: any) {
 
 export function get_setting_form() {
 	let def = get_tichu_settings();
-	let form = createForm(tichu_settings, "Einstellungen", def);
+	let form = createForm(tichu_settings, "Settings", def);
 	return form;
 }
