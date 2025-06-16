@@ -289,6 +289,11 @@ impl RuleSet {
             x => 50 * (x as i32 - 3),
         }
     }
+
+	/// Sets the current active playtype (for playtypes with active playtypes)
+	pub fn set_active_playtype(&mut self, pt: Playtype) {
+		self.active = pt;
+	}
 }
 
 #[cfg(target_family = "wasm")]

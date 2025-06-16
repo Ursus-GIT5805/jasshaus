@@ -14,6 +14,8 @@ $.fn.vis = function(v: boolean) {
 	return this.css("visibility", ["hidden", "visible"][+v]);
 }
 
+// TODO Extract ALL shows of a list of cards
+
 export class Main {
 	wshandler: Wshandler;
 
@@ -150,6 +152,7 @@ export class Main {
 			this.game.play_card(card);
 
 			this.ui.carpet.playCard(card, curplr, is_best);
+			this.ui.updateRoundDetails();
 
 			if( this.game.fresh_turn() ) {
 				if(this.game.setting.allow_table_shows) {
@@ -257,8 +260,15 @@ export class Main {
 		} else if("EverythingPlaytype" in data) {
 			let pt = data.EverythingPlaytype;
 
-			this.game.ruleset.active = pt;
+			let rs = this.game.ruleset;
+			rs.active = pt;
+
+			this.game.ruleset = rs;
+
 			this.ui.updateRoundDetails();
+
+			let msg = get_pt_name(pt, this.game.ruleset.misere);
+			this.ui.gameMessage(msg, this.game.current_player);
 		} else if("NewCards" in data) {
 			let cards = Cardset.from_object( data.NewCards );
 

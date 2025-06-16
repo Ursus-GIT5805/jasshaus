@@ -892,7 +892,7 @@ impl Game {
 					.filter(|&c| self.ruleset.is_card_stronger(bcrd, c))
 					.count();
 
-				let nothing_else = hand.only_has_color(card.color) && num_stronger_trumpf > 0;
+				let nothing_else = num_stronger_trumpf == 0 && hand.only_has_color(card.color);
 				let can_hold = hand.has_color(turncolor);
 				let can_undertrumpf = !can_hold && !self.setting.strict_undertrumpf;
 

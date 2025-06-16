@@ -150,6 +150,63 @@ pub enum ShowError {
     IsSubset,
 }
 
+/// If the list of cards form a union of a set of shows, it extracts the set with the most elements.
+/// If no valid set is found, it returns an empty vector.
+#[wasm_bindgen]
+pub fn extract_shows(cards: Vec<Card>) -> Vec<Show> {
+	let mut v = vec![];
+
+	let mut num_cnt = vec![0; NUM_NUMBERS];
+	for card in cards.iter() {
+		num_cnt[card.number as usize] += 1;
+	}
+
+	let mut can_break = true;
+	let mut row = 0u8;
+	let mut last = Card::new(NUM_COLORS as u8, NUM_NUMBERS as u8);
+
+	for card in cards {
+		let breaks = card.color != last.color ||
+			last.number + 1 != card.number;
+
+		if breaks {
+			if row < 3 && !can_break {
+				return vec![];
+			}
+
+
+			if 3 <= row {
+				let start = last.number + 1 - row;
+				v.push(Show::new(last.color, start, row));
+			}
+
+			row = 1;
+			can_break = num_cnt[card.number as usize] == NUM_COLORS;
+		} else {
+			row += 1;
+			can_break = can_break && num_cnt[card.number as usize] == NUM_COLORS;
+		}
+
+		last = card;
+	}
+
+	if 3 <= row {
+		let start = last.number + 1 - row;
+		v.push(Show::new(last.color, start, row));
+	}
+
+	let all_nums = num_cnt.into_iter()
+		.enumerate()
+		.filter(|(_, cnt)| *cnt == NUM_COLORS)
+		.map(|(num, _)| num);
+
+	for num in all_nums {
+		v.push( Show::new(0, num as u8, 1) );
+	}
+
+	v
+}
+
 /// A bitset containing cards info
 /// There are no duplicates.
 #[derive(Default, PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]

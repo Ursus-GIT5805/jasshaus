@@ -164,7 +164,7 @@ impl JassRoom {
 		clients.ev_send_to_all(PlayCard(card)).await;
 
 		if let Playtype::Everything = self.game.ruleset.playtype {
-			if self.game.num_played_cards() == 0 {
+			if self.game.num_played_cards() == 0 && !self.game.round_ended() {
 				let choices = vec![
 					Playtype::Updown,
 					Playtype::Downup,

@@ -25,9 +25,12 @@ serde-wasm-bindgen = "0.6.5"
 [features]
 server = ["dep:async-trait", "dep:game-server", "dep:rand"]
 
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
+
 [profile.release]
 lto = true
 strip = true
-opt-level = 's'
+opt-level = 3
 codegen-units = 1
 panic = 'abort'

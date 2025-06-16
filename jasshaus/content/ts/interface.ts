@@ -1,6 +1,6 @@
 import { Hand } from "./hand.js";
 import { MISERE_IMG, PASS_IMG, get_card_ele, get_pt_img_path, get_pt_name, show_to_ele } from "./jass.js";
-import { get_num_playtypes, get_playtype_id, must_bid, parse_show } from "../pkg/jasshaus_game.js";
+import { get_num_playtypes, get_playtype_id, must_bid, extract_shows } from "../pkg/jasshaus_game.js";
 import { Playtype, playtype_from_id, Card, Cardset, Game,  Show } from "../pkg/jasshaus_game.js";
 import { CirclePlayer } from "./players.js";
 import { objEquals } from "./utility.js";
@@ -173,23 +173,35 @@ export class UI {
 		showButton.click(() => {
 			if(this.hand.selecting) {
 				let cards = this.hand.get_selected();
-				let show = parse_show(cards);
+				let shows = extract_shows(cards);
 
-				if(!show) {
-					if(cards.length > 0) infoMessage("Dies ist kein Weis!");
+				if(shows.length == 0) {
+					infoMessage("Dies ist kein Weis!");
 				} else {
 					let cardset = Cardset.from_list( this.hand.getCards() );
 
-					let has_show = true;
-					let strshow = JSON.stringify(show);
-					try { cardset.has_show(show); }
-					catch(e) { has_show = false; }
+					let show_gained = 0;
+					let incomplete_shows = 0;
 
-					if(this.shown.has(strshow)) infoMessage("Schon gewiesen!");
-					else if( !has_show ) infoMessage("Du kannst noch mehr weisen ;)");
-					else {
-						this.indicateShow(show);
-						callback(show);
+					for(let show of shows) {
+						let has_show = true;
+						let strshow = JSON.stringify(show);
+
+						try { cardset.has_show(show); }
+						catch(e) { has_show = false; }
+
+						if(this.shown.has(strshow)) continue;
+
+						if( !has_show ) incomplete_shows += 1;
+						else {
+							this.indicateShow(show);
+							callback(show);
+							show_gained += 1;
+						}
+					}
+
+					if(show_gained == 0 && 0 < incomplete_shows) {
+						infoMessage("Du kannst noch mehr weisen ;)");
 					}
 				}
 			}
@@ -335,6 +347,7 @@ export class UI {
 		for(let team_id = 0 ; team_id < this.game.teams.length ; ++team_id) {
 			let team = this.game.teams[team_id];
 
+			let last_team = this.game.players[this.game.current_player].team_id == team_id;
 			let bef = team.points;
 
 			let plr_id = Array.from(this.game.get_players_of_team(team_id));
@@ -370,9 +383,16 @@ export class UI {
 			let result = ele.find("#result");
 
 			if(evaltype === "Add") {
-				if(team.won_points > 0) mods.append( ele_gain("Stich", team.won_points) );
+				let lastp = this.game.setting.last_points;
+				let won_points = team.won_points;
+				if(last_team) won_points -= lastp;
+
+				if(won_points > 0) mods.append( ele_gain("Stich", won_points) );
 				if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
 				if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+
+				if(last_team && lastp != 0) mods.append( ele_gain("Letzter Stich", lastp) );
+
 				let after = team.points + team.won_points + team.show_points + team.marriage_points;
 				result.text(after);
 			} else if("Difference" in evaltype) {
