@@ -214,8 +214,16 @@ pub fn setting_schieber() -> Setting {
 				multiplier: 1,
 				passed_player_begins: true,
 			}; NUM_PLAYTYPES];
+
 			for c in 0..NUM_COLORS {
 				if let Some(id) = Playtype::Color(c as u8).get_id() {
+					match v.get_mut(id) {
+						Some(c) => c.passed_player_begins = false,
+						None => {},
+					}
+				}
+
+				if let Some(id) = Playtype::ColorDownup(c as u8).get_id() {
 					match v.get_mut(id) {
 						Some(c) => c.passed_player_begins = false,
 						None => {},

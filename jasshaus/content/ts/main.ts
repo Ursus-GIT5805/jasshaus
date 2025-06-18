@@ -46,7 +46,6 @@ window.onload = async () => {
 	let name = client_setting['name'];
 
 	let setting = new ClientSetting(name);
-
 	let main = new Main(WS_URL, setting);
 
 	try {
@@ -67,10 +66,9 @@ window.onload = async () => {
 				cred.password,
 				(ice, id) => main.wshandler.sendICECandidate(ice, id)
 			);
-			main.wshandler.rtc_start();
 
 			$("#botrightbuttons").append( main.comm.createMicbutton() );
-		});
+		}, 0);
  	}
 
 	jass_settings['cardclicks']["#onchange"] = (val: boolean) => {

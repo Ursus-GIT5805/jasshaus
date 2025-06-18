@@ -344,10 +344,22 @@ export class UI {
 	updateSummary() {
 		roundSummary.html("");
 
+		let last_team = this.game.players[this.game.current_player].team_id;
+		let match_team = undefined;
+		if(this.game.teams[last_team].won.len() == this.game.cards_distributed()) match_team = last_team;
+
+		if(this.game.ruleset.misere) {
+			last_team = (last_team + 1) % this.game.teams.length;
+			if(match_team !== undefined) match_team = last_team;
+		}
+
+
 		for(let team_id = 0 ; team_id < this.game.teams.length ; ++team_id) {
 			let team = this.game.teams[team_id];
 
-			let last_team = this.game.players[this.game.current_player].team_id == team_id;
+			let is_last_team = team_id === last_team;
+			let has_match = team_id === match_team;
+
 			let bef = team.points;
 
 			let plr_id = Array.from(this.game.get_players_of_team(team_id));
@@ -384,14 +396,18 @@ export class UI {
 
 			if(evaltype === "Add") {
 				let lastp = this.game.setting.last_points;
+				let matchp = this.game.setting.match_points;
+
 				let won_points = team.won_points;
-				if(last_team) won_points -= lastp;
+				if(is_last_team) won_points -= lastp;
+				if(has_match) won_points -= matchp;
 
-				if(won_points > 0) mods.append( ele_gain("Stich", won_points) );
-				if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
-				if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+				if(won_points != 0) mods.append( ele_gain("Stich", won_points) );
+				if(team.show_points != 0) mods.append( ele_gain("Weis", team.show_points) );
+				if(team.marriage_points != 0) mods.append( ele_gain("Stöck", team.marriage_points) );
 
-				if(last_team && lastp != 0) mods.append( ele_gain("Letzter Stich", lastp) );
+				if(is_last_team && lastp != 0) mods.append( ele_gain("Letzter Stich", lastp) );
+				if(has_match && matchp != 0) mods.append( ele_gain("Match", matchp) );
 
 				let after = team.points + team.won_points + team.show_points + team.marriage_points;
 				result.text(after);

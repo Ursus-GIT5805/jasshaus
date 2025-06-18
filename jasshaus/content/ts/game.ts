@@ -129,7 +129,7 @@ export class Main {
 		if(typeof(data) === 'string') {
 			if(data === 'Pass') {
 				this.ui.closeAnnounceWindow();
-				this.ui.gameMessage("Ich Schiebe!", this.game.current_player);
+				this.ui.gameMessage("Ich schiebe!", this.game.current_player);
 				this.game.pass();
 
 				this.ui.updateCurrent(this.game.current_player);
@@ -195,9 +195,9 @@ export class Main {
 		} else if("Announce" in data) {
 			let [pt, misere] = data.Announce;
 
-			this.game.announce(pt, misere);
+			this.ui.gameMessage(get_pt_name(pt, misere), this.game.get_announcing_player());
 
-			this.ui.gameMessage(get_pt_name(pt, misere), this.game.current_player);
+			this.game.announce(pt, misere);
 
 			this.said_marriage = false;
 			this.ui.shown.clear();

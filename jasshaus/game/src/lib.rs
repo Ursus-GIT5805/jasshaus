@@ -850,7 +850,9 @@ impl Game {
 		if self.setting.pass_to_same_team {
 			let team = self.players[self.announce_player].team_id;
 			let plrs = self.get_players_of_team(team);
-			let pos = plrs.iter().position(|&plr| plr == self.announce_player).unwrap_or(0);
+			let pos = plrs.iter()
+				.position(|&plr| plr == self.announce_player)
+				.unwrap_or(0);
 
 			plrs[(pos + self.passed) % plrs.len()]
         } else {

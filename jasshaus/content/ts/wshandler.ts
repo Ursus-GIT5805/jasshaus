@@ -42,6 +42,7 @@ export class Wshandler {
 					"name": setting.name,
 				}
 			});
+			if(setting.allow_rtc) this.rtc_start();
 		}
 
 		this.socket.onmessage = async (e) => {
