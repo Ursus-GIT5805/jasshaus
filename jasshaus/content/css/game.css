@@ -167,17 +167,14 @@ body {
     right: 0;
 }
 
+.Show {
+	width: fit-content;
+	height: 3em;
+}
+
 #showqueue {
 	display: flex;
 	flex-direction: column;
-
-	.Show {
-		height: 3em;
-	}
-}
-
-.PlayerMSG .Show {
-	height: 3em;
 }
 
 .Misere {
