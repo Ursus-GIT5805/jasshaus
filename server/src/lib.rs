@@ -11,6 +11,8 @@ use axum::{
 	extract::Path,
 };
 
+use tower_http::cors;
+
 use futures::StreamExt;
 
 #[macro_use]
@@ -171,7 +173,7 @@ impl<'a> Server<'a> {
 		let rooms_binding = roomsref.clone();
 		let ws_binding = roomsref.clone();
 
-		let app = Router::new()
+		let mut app = Router::new()
 			.route("/rooms", post(|req: String| async move {
 				let mut rooms = post_binding.lock().await;
 
@@ -218,6 +220,16 @@ impl<'a> Server<'a> {
 					   })
 				   })
 			);
+
+        // Allow CORS for debugging
+        if cfg!(debug_assertions) {
+            let cors = cors::CorsLayer::new()
+                .allow_origin(cors::Any)
+                .allow_methods(cors::Any)
+                .allow_headers(cors::Any);
+
+            app = app.layer(cors);
+        }
 
 		// ===== Tasks =====
 
