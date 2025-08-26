@@ -1,15 +1,15 @@
 pub mod client;
 
+use rand::prelude::SliceRandom;
 use std::{ops::Deref, sync::Arc};
 use tokio::sync::Mutex;
-use rand::prelude::SliceRandom;
 
 use async_trait::async_trait;
 use std::{collections::HashMap, marker::PhantomData};
 
-use serde::*;
-use client::*;
 use crate::socket_message::{SocketMessage::*, *};
+use client::*;
+use serde::*;
 
 #[async_trait]
 pub trait ServerRoom<T> {
@@ -19,19 +19,23 @@ pub trait ServerRoom<T> {
 
 	async fn on_enter(&mut self, clients: &mut ClientHandler, plr_id: usize);
 	async fn on_leave(&mut self, clients: &mut ClientHandler, plr_id: usize);
-	async fn on_event(&mut self, clients: &mut ClientHandler, event: T, plr_id: usize) -> Result<(), Self::Err>;
+	async fn on_event(
+		&mut self,
+		clients: &mut ClientHandler,
+		event: T,
+		plr_id: usize,
+	) -> Result<(), Self::Err>;
 
 	fn get_player_bound(&self) -> (usize, usize);
 	fn should_end(&self) -> bool;
 }
 
-#[derive(Clone)]
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum RoomState {
 	Entering,
 	Teaming,
-    Playing,
-    Ending,
+	Playing,
+	Ending,
 }
 
 pub struct RoomSetting<Game> {
@@ -45,47 +49,45 @@ where
 	E: Clone,
 	G: ServerRoom<E> + TryFrom<S>,
 {
-    _marker: PhantomData<E>,
-    pub clients: ClientHandler,
+	_marker: PhantomData<E>,
+	pub clients: ClientHandler,
 
 	pub setting: RoomSetting<S>,
 	pub game: G,
-    pub state: RoomState,
+	pub state: RoomState,
 
 	pub num_votes: usize,
 	pub vote: Option<VotingType>,
 }
 
-pub type RoomRef<S,E,G> = Arc< Mutex< Room<S,E,G> > >;
+pub type RoomRef<S, E, G> = Arc<Mutex<Room<S, E, G>>>;
 
-impl<S,E,G> Room<S,E,G>
+impl<S, E, G> Room<S, E, G>
 where
 	S: Clone,
 	E: Clone + Serialize,
 	G: ServerRoom<E> + Send + TryFrom<S>,
 {
-    pub fn try_new(setting: RoomSetting<S>) -> Result<Self, ()> {
-		let game = G::try_from(setting.game_setting.clone())
-			.map_err(|_| ())?;
+	pub fn try_new(setting: RoomSetting<S>) -> Result<Self, ()> {
+		let game = G::try_from(setting.game_setting.clone()).map_err(|_| ())?;
 
 		let res = Room {
 			_marker: PhantomData,
-            clients: ClientHandler::default(),
+			clients: ClientHandler::default(),
 
-            game,
+			game,
 			setting,
-            state: RoomState::Entering,
+			state: RoomState::Entering,
 
 			num_votes: 0,
 			vote: None,
-        };
+		};
 
 		Ok(res)
-    }
+	}
 
 	pub async fn cleanup(&mut self) {
-		let futures = self.clients.iter_mut()
-			.map(|(_, client)| client.close());
+		let futures = self.clients.iter_mut().map(|(_, client)| client.close());
 
 		futures::future::join_all(futures).await;
 		self.clients.clear();
@@ -96,8 +98,8 @@ where
 		let mut futures = vec![];
 
 		for (id, client) in self.clients.iter_mut() {
-			ids.push( *id );
-			futures.push( client.is_active() );
+			ids.push(*id);
+			futures.push(client.is_active());
 		}
 
 		let results = futures::future::join_all(futures).await;
@@ -110,23 +112,23 @@ where
 	}
 
 	/// Returns a player ID, if one exists
-    fn get_unused_player_id(&self) -> Option<usize> {
+	fn get_unused_player_id(&self) -> Option<usize> {
 		let (_, num_players) = self.game.get_player_bound();
 
-        let mut mex = vec![true; num_players];
-        for (_, client) in self.clients.iter() {
-            mex[client.player_id] = false;
-        }
+		let mut mex = vec![true; num_players];
+		for (_, client) in self.clients.iter() {
+			mex[client.player_id] = false;
+		}
 		mex.into_iter().position(|r| r)
-    }
+	}
 
 	/// Register a new client given the SplitSink
-    pub async fn register(
+	pub async fn register(
 		&mut self,
 		client: ClientData,
 		ws_tx: WsWriter,
 	) -> Option<(ConnectionRef, usize)> {
-        let plr_id = match self.get_unused_player_id() {
+		let plr_id = match self.get_unused_player_id() {
 			Some(id) => id,
 			None => {
 				self.check_active_clients().await;
@@ -141,25 +143,36 @@ where
 			return None;
 		}
 
-		let joined_clients = self.clients.iter()
-			.map(|(i,client)| (client.data.clone(), *i, client.player_id))
+		let joined_clients = self
+			.clients
+			.iter()
+			.map(|(i, client)| (client.data.clone(), *i, client.player_id))
 			.collect();
 
 		let (conn, id) = self.clients.register(client.clone(), plr_id, ws_tx);
 		let (_, num_players) = self.game.get_player_bound();
 
-		self.clients.send_to(id, PlayerID::<E>(id, plr_id, num_players)).await;
-        self.clients.send_to_all_except(id, ClientJoined::<E>(client, id, plr_id))
-            .await;
+		self.clients
+			.send_to(id, PlayerID::<E>(id, plr_id, num_players))
+			.await;
+		self.clients
+			.send_to_all_except(id, ClientJoined::<E>(client, id, plr_id))
+			.await;
 
-		self.clients.send_to(id, JoinedClients::<E>(joined_clients)).await;
+		self.clients
+			.send_to(id, JoinedClients::<E>(joined_clients))
+			.await;
 
 		if let Some(vote) = self.vote.clone() {
-			let votes = self.clients.iter()
+			let votes = self
+				.clients
+				.iter()
 				.filter(|(_, c)| c.vote.is_some())
 				.map(|(i, c)| (c.vote.unwrap(), *i))
 				.collect();
-			self.clients.send_to(id, CurrentVote::<E>(vote, votes)).await;
+			self.clients
+				.send_to(id, CurrentVote::<E>(vote, votes))
+				.await;
 		}
 
 		self.game.on_enter(&mut self.clients, plr_id).await;
@@ -177,11 +190,11 @@ where
 			}
 		}
 
-        Some((conn, id))
-    }
+		Some((conn, id))
+	}
 
 	/// Unregister the client with the given id
-    pub async fn unregister(&mut self, client_id: usize) {
+	pub async fn unregister(&mut self, client_id: usize) {
 		if self.vote.is_some() {
 			if let Some(client) = self.clients.get(&client_id) {
 				if client.vote.is_some() {
@@ -202,9 +215,10 @@ where
 		if let Some(id) = pid {
 			let _ = self.game.on_leave(&mut self.clients, id).await;
 		}
-        self.clients.send_to_all(ClientDisconnected::<E>(client_id))
-            .await;
-    }
+		self.clients
+			.send_to_all(ClientDisconnected::<E>(client_id))
+			.await;
+	}
 
 	/// Start a new vote
 	async fn start_vote(&mut self, vote: VotingType) {
@@ -214,7 +228,7 @@ where
 			client.vote = None;
 		}
 		self.clients.send_to_all(NewVote::<E>(vote)).await;
-    }
+	}
 
 	/// Quit the current vote
 	async fn quit_vote(&mut self) {
@@ -225,15 +239,15 @@ where
 	}
 
 	/// Ends the current game
-    async fn end_game(&mut self) {
+	async fn end_game(&mut self) {
 		if self.state != RoomState::Ending {
 			debug!("End game");
 			self.start_vote(VotingType::Revanche).await;
 			self.state = RoomState::Ending;
 		}
-    }
+	}
 
-	async fn evaluate_vote( &mut self ) {
+	async fn evaluate_vote(&mut self) {
 		let vote = match &self.vote {
 			Some(v) => v,
 			None => return,
@@ -247,11 +261,15 @@ where
 
 		match vote {
 			VotingType::Revanche => {
-				let agree: usize = self.clients.iter()
-					.filter(|(_,c)| c.vote == Some(0))
+				let agree: usize = self
+					.clients
+					.iter()
+					.filter(|(_, c)| c.vote == Some(0))
 					.count();
-				let decline: usize = self.clients.iter()
-					.filter(|(_,c)| c.vote == Some(1))
+				let decline: usize = self
+					.clients
+					.iter()
+					.filter(|(_, c)| c.vote == Some(1))
 					.count();
 
 				if agree > decline {
@@ -268,43 +286,51 @@ where
 		self.quit_vote().await;
 	}
 
-	async fn handle_vote( &mut self, vote: usize, client_id: usize ) {
+	async fn handle_vote(&mut self, vote: usize, client_id: usize) {
 		match self.clients.get_mut(&client_id) {
 			Some(client) => {
-				if client.vote.is_some() { return; }
+				if client.vote.is_some() {
+					return;
+				}
 				client.vote = Some(vote);
-			},
+			}
 			None => return,
 		}
 
-		self.clients.send_to_all_except(client_id, Vote::<E>(vote, client_id)).await;
+		self.clients
+			.send_to_all_except(client_id, Vote::<E>(vote, client_id))
+			.await;
 
 		self.num_votes += 1;
 		self.evaluate_vote().await;
 	}
 
-    async fn handle_team_choosing(&mut self) {
-        if self.state != RoomState::Teaming { return; }
+	async fn handle_team_choosing(&mut self) {
+		if self.state != RoomState::Teaming {
+			return;
+		}
 		let (_, num_players) = self.game.get_player_bound();
 
 		// TODO Correctly handle team choosing
 		// TODO This is merely shuffling, actually handle the requests
 		let players = {
-            let mut rng = rand::thread_rng();
+			let mut rng = rand::thread_rng();
 			let mut v: Vec<usize> = (0..num_players).collect();
 			v.shuffle(&mut rng);
 			v
 		};
 
-		let order = self.clients.iter()
-			.map(|(i,_)| *i)
+		let order = self
+			.clients
+			.iter()
+			.map(|(i, _)| *i)
 			.enumerate()
-			.map(|(i,cid)| (cid, players[i]))
+			.map(|(i, cid)| (cid, players[i]))
 			.collect();
 
-        self.clients.send_to_all(PlayerOrder::<E>(order)).await;
+		self.clients.send_to_all(PlayerOrder::<E>(order)).await;
 		let _ = self.game.start(&mut self.clients).await;
-    }
+	}
 
 	pub fn is_full(&self) -> bool {
 		self.clients.len() == self.game.get_player_bound().1
@@ -316,37 +342,45 @@ where
 
 	async fn handle_event(&mut self, ev: E, plr_id: usize) {
 		let _ = self.game.on_event(&mut self.clients, ev, plr_id).await;
-		if self.game.should_end() { self.end_game().await; }
+		if self.game.should_end() {
+			self.end_game().await;
+		}
 	}
 
-    pub async fn handle_input(&mut self, input: SocketMessage<E>, client_id: usize) {
-        let plr_id = match self.clients.get(&client_id) {
-            Some(client) => client.player_id,
-            None => return,
-        };
+	pub async fn handle_input(&mut self, input: SocketMessage<E>, client_id: usize) {
+		let plr_id = match self.clients.get(&client_id) {
+			Some(client) => client.player_id,
+			None => return,
+		};
 
-        match input {
+		match input {
 			Event(ev) => self.handle_event(ev, plr_id).await,
-			RtcStart(_) => self.clients.send_to_all_except(client_id, RtcStart::<E>(client_id)).await,
-            RtcSignaling(s, signal, recv) => {
-                self.clients.send_to(recv, RtcSignaling::<E>(s, signal, client_id))
-                    .await
-            }
+			RtcStart(_) => {
+				self.clients
+					.send_to_all_except(client_id, RtcStart::<E>(client_id))
+					.await
+			}
+			RtcSignaling(s, signal, recv) => {
+				self.clients
+					.send_to(recv, RtcSignaling::<E>(s, signal, client_id))
+					.await
+			}
 			ChatMessage(text, _) => {
-				self.clients.send_to_all(ChatMessage::<E>(text, client_id)).await;
-			},
+				self.clients
+					.send_to_all(ChatMessage::<E>(text, client_id))
+					.await;
+			}
 			Vote(opt, _) => self.handle_vote(opt, client_id).await,
-            _ => {
-                error!("Invalid header!");
-            }
-        }
-    }
+			_ => {
+				error!("Invalid header!");
+			}
+		}
+	}
 }
 
 pub type RoomID = String;
 
-#[derive(Serialize, Deserialize)]
-#[derive(Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum ServerRequest {
 	CloseRoom(RoomID),
 
@@ -364,34 +398,34 @@ pub enum ServerAnswer {
 	RoomList(Vec<RoomIndex>),
 }
 
-pub struct RoomManager<S,E,G>
+pub struct RoomManager<S, E, G>
 where
 	S: Clone + Send,
 	E: Clone + Send,
 	G: ServerRoom<E> + TryFrom<S> + Send,
 {
 	room_next: u32,
-	rooms: HashMap<RoomID, RoomRef<S,E,G> >,
+	rooms: HashMap<RoomID, RoomRef<S, E, G>>,
 }
 
-#[derive(Serialize, Deserialize)]
-#[derive(Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct RoomIndex {
 	pub players: Vec<String>,
 	pub id: RoomID,
 	pub max_players: usize,
 }
 
-impl RoomIndex
-{
-	fn new<S,E,G>(id: RoomID, item: &Room<S,E,G>) -> Self
+impl RoomIndex {
+	fn new<S, E, G>(id: RoomID, item: &Room<S, E, G>) -> Self
 	where
 		S: Clone,
 		E: Clone,
 		G: ServerRoom<E> + TryFrom<S>,
 	{
-		let names: Vec<_> = item.clients.iter()
-			.map(|(_,client)| client.data.name.clone())
+		let names: Vec<_> = item
+			.clients
+			.iter()
+			.map(|(_, client)| client.data.name.clone())
 			.collect();
 
 		Self {
@@ -402,7 +436,7 @@ impl RoomIndex
 	}
 }
 
-impl<S,E,G> RoomManager<S,E,G>
+impl<S, E, G> RoomManager<S, E, G>
 where
 	S: Clone + Send,
 	E: Clone + Serialize + Send,
@@ -415,13 +449,14 @@ where
 		}
 	}
 
-	pub fn create_room(&mut self, setting: RoomSetting<S>)
-		-> Option<(String, RoomRef<S,E,G>)> {
-
+	pub fn create_room(&mut self, setting: RoomSetting<S>) -> Option<(String, RoomRef<S, E, G>)> {
 		// TODO create a decent room id generator
 		let id: RoomID = {
 			let number = {
-				const ORDER: [usize; 32] = [8, 19, 2, 13, 1, 17, 7, 0, 4, 11, 12, 9, 15, 18, 16, 5, 14, 3, 6, 10, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+				const ORDER: [usize; 32] = [
+					8, 19, 2, 13, 1, 17, 7, 0, 4, 11, 12, 9, 15, 18, 16, 5, 14, 3, 6, 10, 20, 21,
+					22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+				];
 
 				let mut x: u32 = 0;
 				for (i, &j) in ORDER.iter().enumerate() {
@@ -436,7 +471,7 @@ where
 
 				let bytes: Vec<_> = (0..4)
 					.map(|x| {
-						let idx = (number >> 5*x) & 0x1F;
+						let idx = (number >> 5 * x) & 0x1F;
 						BASE[idx as usize]
 					})
 					.collect();
@@ -449,14 +484,16 @@ where
 		};
 
 		// Handle if rooms are
-		let room = match Room::<S,E,G>::try_new(setting) {
+		let room = match Room::<S, E, G>::try_new(setting) {
 			Ok(r) => r,
 			Err(_) => return None,
 		};
 
-		let roomref = Arc::from( Mutex::from(room) );
+		let roomref = Arc::from(Mutex::from(room));
 
-		if self.rooms.contains_key(&id) { return None; }
+		if self.rooms.contains_key(&id) {
+			return None;
+		}
 		self.rooms.insert(id.clone(), roomref.clone());
 
 		debug!("Create room {}", id);
@@ -473,8 +510,8 @@ where
 				} else {
 					false
 				}
-			},
-			None => false
+			}
+			None => false,
 		};
 
 		debug!("Close room {}", id);
@@ -484,27 +521,26 @@ where
 	}
 
 	pub async fn maintain(&mut self) {
-		let rooms_futures = self.rooms.iter()
-			.map(|(id, room)| async move {
-				let mut rlock = room.lock().await;
-				if rlock.should_close() {
-					rlock.cleanup().await;
-					Some(id.clone())
-				} else {
-					None
-				}
-			});
+		let rooms_futures = self.rooms.iter().map(|(id, room)| async move {
+			let mut rlock = room.lock().await;
+			if rlock.should_close() {
+				rlock.cleanup().await;
+				Some(id.clone())
+			} else {
+				None
+			}
+		});
 
 		let rooms = futures::future::join_all(rooms_futures).await;
 
-		let to_close = rooms.into_iter()
+		let to_close = rooms
+			.into_iter()
 			.filter(|c| c.is_some())
 			.map(|c| c.unwrap());
 
 		for id in to_close {
 			self.rooms.remove(&id);
 		}
-
 	}
 
 	pub async fn index_rooms(&self) -> Vec<RoomIndex> {
@@ -512,7 +548,7 @@ where
 		for (id, room) in self.rooms.iter() {
 			let rlock = room.lock().await;
 			if !rlock.is_full() {
-				v.push( RoomIndex::new( id.clone(), rlock.deref() ) );
+				v.push(RoomIndex::new(id.clone(), rlock.deref()));
 
 				if v.len() >= 32 {
 					break;
@@ -522,7 +558,7 @@ where
 		v
 	}
 
-	pub fn get_room(&self, id: &RoomID) -> Option< RoomRef<S,E,G> > {
+	pub fn get_room(&self, id: &RoomID) -> Option<RoomRef<S, E, G>> {
 		match self.rooms.get(id) {
 			Some(c) => Some(c.clone()),
 			None => None,
@@ -531,33 +567,28 @@ where
 
 	pub async fn process_request(&mut self, req: ServerRequest) -> ServerAnswer {
 		match req {
-			ServerRequest::CloseRoom(room_id) => {
-				match self.rooms.remove(&room_id) {
-					Some(room) => {
-						let mut lock = room.lock().await;
-						lock.cleanup().await;
-						ServerAnswer::Successful
-					},
-					None => ServerAnswer::Unsuccessful,
+			ServerRequest::CloseRoom(room_id) => match self.rooms.remove(&room_id) {
+				Some(room) => {
+					let mut lock = room.lock().await;
+					lock.cleanup().await;
+					ServerAnswer::Successful
 				}
+				None => ServerAnswer::Unsuccessful,
 			},
 			ServerRequest::CleanUnused => {
 				self.maintain().await;
 				ServerAnswer::Successful
-			},
+			}
 			ServerRequest::ListRooms => {
-				let futures = self.rooms.iter()
-					.map(|(id, room)| {
-						async move {
-							let lock = room.lock().await;
-							RoomIndex::new(id.clone(), lock.deref())
-						}
-					});
+				let futures = self.rooms.iter().map(|(id, room)| async move {
+					let lock = room.lock().await;
+					RoomIndex::new(id.clone(), lock.deref())
+				});
 
 				let results = futures::future::join_all(futures).await;
 				ServerAnswer::RoomList(results)
-			},
-			_ => todo!()
+			}
+			_ => todo!(),
 		}
 	}
 }

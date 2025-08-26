@@ -1,22 +1,19 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct ClientData {
 	pub name: String,
 }
 
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 pub enum RTCSignal {
 	Offer,
 	Answer,
 	ICECandidate,
 }
 
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum VotingType {
 	Kick(usize),
@@ -25,15 +22,14 @@ pub enum VotingType {
 	Revanche,
 }
 
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum SocketMessage<T> {
 	Event(T), // Contains a Game Event
 
-    Vote(usize,usize),
-    NewVote(VotingType),
-	CurrentVote(VotingType, Vec<(usize,usize)>),
+	Vote(usize, usize),
+	NewVote(VotingType),
+	CurrentVote(VotingType, Vec<(usize, usize)>),
 	QuitVote,
 
 	RtcStart(usize),
@@ -41,17 +37,17 @@ pub enum SocketMessage<T> {
 
 	Introduction(ClientData),
 
-	ClientJoined(ClientData, usize,usize),
+	ClientJoined(ClientData, usize, usize),
 	ClientDisconnected(usize),
-	JoinedClients(Vec<(ClientData,usize,usize)>),
+	JoinedClients(Vec<(ClientData, usize, usize)>),
 
 	PlayerID(usize, usize, usize),
-	ChatMessage(String,usize),
+	ChatMessage(String, usize),
 
-    PlayerOrder(Vec<(usize,usize)>),
+	PlayerOrder(Vec<(usize, usize)>),
 
 	StartMating,
-    Mate(usize),
+	Mate(usize),
 
 	Ping,
 	Pong,

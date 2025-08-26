@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
-use serde::{Serialize, Deserialize};
+use wasm_bindgen::prelude::*;
 
 use htmlform::*;
 use htmlform_macros::*;
@@ -9,20 +9,14 @@ use crate::card::NUM_CARDS;
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[derive(Clone)]
-#[derive(PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
-#[derive(HtmlForm)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, HtmlForm)]
 pub enum EndCondition {
 	Points(i32),
 }
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[derive(Clone)]
-#[derive(PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
-#[derive(HtmlForm)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize, HtmlForm)]
 pub struct Setting {
 	// Number of players in the game
 	#[Form("#name": "Number of players")]
@@ -57,13 +51,11 @@ pub struct Setting {
 	pub fast_finish_points: i32,
 }
 
-#[derive(PartialEq, Eq)]
-#[derive(Clone, Copy)]
+#[derive(PartialEq, Eq, Clone, Copy)]
 pub enum LegalityError {
 	MorePlayerThanCards,
 	TooManyGTCards,
 }
-
 
 impl Setting {
 	pub fn is_legal(&self) -> Result<(), LegalityError> {

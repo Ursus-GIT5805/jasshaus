@@ -1,8 +1,8 @@
 pub mod card;
 pub mod ruleset;
-pub mod setting;
 #[cfg(feature = "server")]
 pub mod server;
+pub mod setting;
 
 use card::*;
 use ruleset::*;
@@ -14,25 +14,24 @@ use wasm_bindgen::prelude::*;
 
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[derive(Clone)]
-#[derive(PartialEq, std::fmt::Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, std::fmt::Debug, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum Event {
-    PlayCard(Card),
+	PlayCard(Card),
 	PlayShow(Show),
 
 	Announce(Playtype, bool),
 	Pass,
 
-	ShowPoints(i32,usize),
-    ShowList(Vec<Vec<Show>>),
-    HasMarriage(usize),
+	ShowPoints(i32, usize),
+	ShowList(Vec<Vec<Show>>),
+	HasMarriage(usize),
 
-    GameState(Game, Cardset, Vec<Show>),
-    GameSetting(Setting),
+	GameState(Game, Cardset, Vec<Show>),
+	GameSetting(Setting),
 	EverythingPlaytype(Playtype),
 
-    NewCards(Cardset),
+	NewCards(Cardset),
 	StartGame(usize),
 
 	Bid(i32),
@@ -42,22 +41,21 @@ pub enum Event {
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 pub enum MarriageState {
-    #[default]
+	#[default]
 	None,
 	PlayedOne(usize),
 	PlayedBoth(usize),
 }
-
 
 pub type PlayerID = usize;
 
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 #[wasm_bindgen]
 pub struct Player {
-    pub team_id: TeamID,
-    pub hand: Cardset,
+	pub team_id: TeamID,
+	pub hand: Cardset,
 	#[wasm_bindgen(skip)]
-    pub shows: Vec<Show>,
+	pub shows: Vec<Show>,
 }
 
 impl Player {
@@ -83,9 +81,9 @@ pub type TeamID = usize;
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
 #[wasm_bindgen]
 pub struct Team {
-    pub points: i32,
-    pub won_points: i32,
-    pub show_points: i32,
+	pub points: i32,
+	pub won_points: i32,
+	pub show_points: i32,
 	pub marriage_points: i32,
 	pub target: i32, // Used for Difference
 	pub won: Cardset,
@@ -115,34 +113,34 @@ impl Team {
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Serialize, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
 pub struct Game {
-    // History
-    pub passed: usize,
+	// History
+	pub passed: usize,
 	pub cards_played: usize,
 	pub played_cards: Vec<Card>,
 	pub best_player: usize,
 
 	pub turncolor: Option<u8>,
-    pub bestcard: Option<Card>,
+	pub bestcard: Option<Card>,
 
 	pub marriage: MarriageState,
 	pub last_bid_player: Option<usize>,
 
-    pub players: Vec<Player>,
-    pub teams: Vec<Team>,
+	pub players: Vec<Player>,
+	pub teams: Vec<Team>,
 
-    pub ruleset: RuleSet,
-    pub announce_player: usize,
-    pub current_player: usize,
+	pub ruleset: RuleSet,
+	pub announce_player: usize,
+	pub current_player: usize,
 
 	pub round: usize,
 
-    pub setting: Setting,
+	pub setting: Setting,
 }
 
 #[wasm_bindgen]
 impl Game {
 	#[wasm_bindgen(constructor)]
-    pub fn new(setting: Setting) -> Self {
+	pub fn new(setting: Setting) -> Self {
 		let mut plrs = vec![Player::default(); setting.num_players];
 
 		let num_teams = match setting.team_choosing {
@@ -151,22 +149,21 @@ impl Game {
 					plr.team_id = id;
 				}
 				setting.num_players
-			},
+			}
 			TeamChoosing::Periodic(n) => {
 				for (id, plr) in plrs.iter_mut().enumerate() {
 					plr.team_id = id % n;
 				}
 				std::cmp::min(n, setting.num_players)
-			}
-			// TeamChoosing::Blocks(n) => {
-				// for (id, plr) in plrs.iter_mut().enumerate() {
-					// plr.team_id = id / n;
-				// }
-				// (n as f32 / setting.num_players as f32).ceil() as usize
-			// }
+			} // TeamChoosing::Blocks(n) => {
+			  // for (id, plr) in plrs.iter_mut().enumerate() {
+			  // plr.team_id = id / n;
+			  // }
+			  // (n as f32 / setting.num_players as f32).ceil() as usize
+			  // }
 		};
 
-        Game {
+		Game {
 			round: 0,
 			cards_played: 0,
 			played_cards: vec![],
@@ -176,20 +173,20 @@ impl Game {
 			marriage: MarriageState::None,
 			last_bid_player: None,
 
-            players: plrs,
-            teams: vec![Team::default(); num_teams],
+			players: plrs,
+			teams: vec![Team::default(); num_teams],
 
-            ruleset: RuleSet::default(),
-            announce_player: 0,
-            current_player: 0,
+			ruleset: RuleSet::default(),
+			announce_player: 0,
+			current_player: 0,
 
 			passed: 0,
 
-            setting,
-        }
-    }
+			setting,
+		}
+	}
 
-    // Events ------
+	// Events ------
 
 	/// Update results from the current round
 	pub fn update_round_results(&mut self) {
@@ -198,8 +195,13 @@ impl Game {
 				for team in self.teams.iter_mut() {
 					team.points += team.gain_points();
 				}
-			},
-			PointEval::Difference { include_shows, include_marriage, zero_diff_points, needs_win } => {
+			}
+			PointEval::Difference {
+				include_shows,
+				include_marriage,
+				zero_diff_points,
+				needs_win,
+			} => {
 				for team in self.teams.iter_mut() {
 					let points = {
 						let mut p = team.won_points;
@@ -237,43 +239,45 @@ impl Game {
 		// Rotate to the next player who must announce
 		self.round += 1;
 		self.announce_player = (self.announce_player + 1) % self.players.len();
-        self.current_player = self.announce_player;
+		self.current_player = self.announce_player;
 	}
 
-    pub fn start_new_round(&mut self, cards: Vec<Cardset>) {
-        for plr in self.players.iter_mut() {
-            plr.shows.clear();
-        }
+	pub fn start_new_round(&mut self, cards: Vec<Cardset>) {
+		for plr in self.players.iter_mut() {
+			plr.shows.clear();
+		}
 		for (i, hand) in cards.into_iter().enumerate().take(self.players.len()) {
 			self.players[i].hand = hand;
 		}
 
-        for team in self.teams.iter_mut() {
+		for team in self.teams.iter_mut() {
 			team.clear_round_data();
-        }
+		}
 
-        self.ruleset = RuleSet::default();
+		self.ruleset = RuleSet::default();
 		self.cards_played = 0;
 		self.played_cards.clear();
 		self.turncolor = None;
 		self.bestcard = None;
 		self.passed = 0;
 		self.marriage = MarriageState::None;
-    }
+	}
 
 	/// Play the marriage for th given player
-    pub fn play_marriage(&mut self, plr: usize) {
-        self.marriage = MarriageState::PlayedBoth(plr);
+	pub fn play_marriage(&mut self, plr: usize) {
+		self.marriage = MarriageState::PlayedBoth(plr);
 
 		let gain = self.setting.marriage_points;
-        let team = self.team_of(plr);
-        team.marriage_points += gain;
-    }
+		let team = self.team_of(plr);
+		team.marriage_points += gain;
+	}
 
 	/// Returns true if the given team would win with the marriage
 	pub fn marriage_would_win(&self, team_id: usize) -> bool {
 		match self.setting.end_condition {
-			EndCondition::Points(maxp) => maxp <= self.teams[team_id].cur_points() + self.setting.marriage_points,
+			EndCondition::Points(maxp) => {
+				maxp <= self.teams[team_id].cur_points() + self.setting.marriage_points
+			}
 			_ => false,
 		}
 	}
@@ -304,9 +308,10 @@ impl Game {
 		let king = Card::new(trumpf, 7);
 
 		match self.marriage {
-			MarriageState::None => {
-				self.players.iter().position(|p| p.hand.contains(queen) && p.hand.contains(king))
-			},
+			MarriageState::None => self
+				.players
+				.iter()
+				.position(|p| p.hand.contains(queen) && p.hand.contains(king)),
 			MarriageState::PlayedOne(plr) => {
 				let hand = &self.players[plr].hand;
 				if hand.contains(queen) || hand.contains(king) {
@@ -314,7 +319,7 @@ impl Game {
 				} else {
 					None
 				}
-			},
+			}
 			_ => None,
 		}
 	}
@@ -328,8 +333,10 @@ impl Game {
 	}
 
 	/// Handles marriage
-    pub fn handle_marriage(&mut self) {
-		if !self.setting.allow_marriage { return; }
+	pub fn handle_marriage(&mut self) {
+		if !self.setting.allow_marriage {
+			return;
+		}
 
 		let plr = match self.player_with_marriage() {
 			Some(c) => c,
@@ -363,10 +370,10 @@ impl Game {
 			};
 
 			if is_better {
-                bestshow = Some(*show);
-                plr_id = idx;
-            }
-        }
+				bestshow = Some(*show);
+				plr_id = idx;
+			}
+		}
 
 		match bestshow {
 			Some(_) => Some(plr_id),
@@ -375,23 +382,25 @@ impl Game {
 	}
 
 	/// Determines the best show and gives point to the respective team
-    pub fn handle_shows(&mut self) {
-		if self.get_turn() > 1 { return; }
+	pub fn handle_shows(&mut self) {
+		if self.get_turn() > 1 {
+			return;
+		}
 
 		let team_id = match self.get_plr_with_best_show() {
 			Some(plr) => self.players[plr].team_id,
 			None => return,
 		};
 
-        // Handle shows
-        for plr in 0..self.players.len() {
-            if self.players[plr].team_id != team_id {
+		// Handle shows
+		for plr in 0..self.players.len() {
+			if self.players[plr].team_id != team_id {
 				self.players[plr].shows.clear();
 				continue;
-            }
+			}
 
-            for show in self.players[plr].shows.iter() {
-                let sp = {
+			for show in self.players[plr].shows.iter() {
+				let sp = {
 					let mut val = std::cmp::min(
 						self.ruleset.get_show_value(*show),
 						self.setting.show_points_maximum,
@@ -403,10 +412,10 @@ impl Game {
 					val
 				};
 
-                self.teams[team_id].show_points += sp;
-            }
-        }
-    }
+				self.teams[team_id].show_points += sp;
+			}
+		}
+	}
 
 	// Handle events at the end of a round
 	fn end_round(&mut self) {
@@ -417,7 +426,7 @@ impl Game {
 		if let Playtype::Molotow = self.ruleset.playtype {
 			// It's important to add the points of eights if no trumpf has been decided
 			match self.ruleset.get_active_trumpf_color() {
-				Some(_) => {},
+				Some(_) => {}
 				_ => {
 					for tid in 0..self.teams.len() {
 						let num = self.teams[tid].won.count_number(2) as i32;
@@ -434,39 +443,44 @@ impl Game {
 	}
 
 	// Handle events at the end of a turn
-    fn end_turn(&mut self) {
-		let points = self.played_cards
+	fn end_turn(&mut self) {
+		let points = self
+			.played_cards
 			.iter()
-            .map(|&card| self.ruleset.get_card_value(card))
-            .sum();
+			.map(|&card| self.ruleset.get_card_value(card))
+			.sum();
 
-        let best_team = self.players[self.best_player].team_id;
+		let best_team = self.players[self.best_player].team_id;
 
 		self.current_player = self.best_player;
-		self.teams[best_team].won.merge(Cardset::from(self.played_cards.clone()));
+		self.teams[best_team]
+			.won
+			.merge(Cardset::from(self.played_cards.clone()));
 
-        for rule in self.setting.point_recv_order.clone() {
-			if self.should_end() { break; }
-            match rule {
-                PointRule::Play => self.add_points(best_team, points),
-                PointRule::Show => self.handle_shows(),
-                PointRule::Marriage => self.handle_marriage(),
-                PointRule::TableShow => self.handle_table_show(),
-            }
-        }
+		for rule in self.setting.point_recv_order.clone() {
+			if self.should_end() {
+				break;
+			}
+			match rule {
+				PointRule::Play => self.add_points(best_team, points),
+				PointRule::Show => self.handle_shows(),
+				PointRule::Marriage => self.handle_marriage(),
+				PointRule::TableShow => self.handle_table_show(),
+			}
+		}
 
 		self.played_cards.clear();
 		self.bestcard = None;
 		self.turncolor = None;
 
-        if !self.should_end() {
+		if !self.should_end() {
 			if self.round_ended() {
 				self.end_round();
 			} else {
 				self.update_ruletype();
 			}
 		}
-    }
+	}
 
 	fn handle_molotow(&mut self, card: Card) {
 		if let Some(_) = self.ruleset.get_active_trumpf_color() {
@@ -479,7 +493,9 @@ impl Game {
 		};
 
 		// Switch the active Playtype, only if it's the first color not kept
-		if card.color == turncolor { return; }
+		if card.color == turncolor {
+			return;
+		}
 
 		let trumpf = card.color;
 		for tid in 0..self.teams.len() {
@@ -498,7 +514,9 @@ impl Game {
 	}
 
 	fn handle_table_show(&mut self) {
-		if !self.setting.allow_table_shows { return; }
+		if !self.setting.allow_table_shows {
+			return;
+		}
 
 		let cards = Cardset::from(self.played_cards.clone());
 		let tid = self.players[self.best_player].team_id;
@@ -519,9 +537,9 @@ impl Game {
 		}
 	}
 
-    // Action functions ------
+	// Action functions ------
 
-    pub fn play_card(&mut self, card: Card) {
+	pub fn play_card(&mut self, card: Card) {
 		if let Playtype::Molotow = self.ruleset.playtype {
 			self.handle_molotow(card);
 		}
@@ -531,7 +549,7 @@ impl Game {
 			None => {
 				self.turncolor = Some(card.color);
 				true
-			},
+			}
 		};
 
 		if newbest {
@@ -540,121 +558,126 @@ impl Game {
 		}
 
 		// Play the card
-        self.played_cards.push(card);
+		self.played_cards.push(card);
 		self.cards_played += 1;
-        self.players[self.current_player].hand.erase(card);
+		self.players[self.current_player].hand.erase(card);
 
 		// Rules regaring trumpf
-        if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
+		if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
 			// If the given card is a trumpf queen or king, handle marriage
-			if card.color == trumpf && (card.number == 6 || card.number == 7) &&
-				Playtype::Everything != self.ruleset.playtype
+			if card.color == trumpf
+				&& (card.number == 6 || card.number == 7)
+				&& Playtype::Everything != self.ruleset.playtype
 			{
 				let plr = self.current_player;
 
 				match self.marriage {
 					MarriageState::None => self.marriage = MarriageState::PlayedOne(plr),
-					MarriageState::PlayedOne(p) => if p == plr {
-						self.play_marriage(p);
-					},
+					MarriageState::PlayedOne(p) => {
+						if p == plr {
+							self.play_marriage(p);
+						}
+					}
 					_ => {}
 				}
-            }
-        }
+			}
+		}
 
-        if self.cards_played % self.players.len() == 0 { // All players played!
-            self.end_turn();
-        } else if self.should_end() {
-            //self.end_game();
-        } else {
+		if self.cards_played % self.players.len() == 0 {
+			// All players played!
+			self.end_turn();
+		} else if self.should_end() {
+			//self.end_game();
+		} else {
 			// Increment to next player
 			self.current_player = (self.current_player + 1) % self.players.len();
 		}
-    }
+	}
 
-    pub fn play_show(&mut self, show: Show, plr_id: usize) {
+	pub fn play_show(&mut self, show: Show, plr_id: usize) {
 		if self.setting.allow_shows {
 			self.players[plr_id].shows.push(show);
 		}
-    }
+	}
 
 	/// Updates the current active playtype (such as slalom)
-    pub fn update_ruletype(&mut self) {
-        self.ruleset.active = match self.ruleset.playtype {
-            Playtype::SlalomUpdown => {
-                if self.get_turn() & 1 == 0 {
-                    Playtype::Updown
-                } else {
-                    Playtype::Downup
-                }
-            }
-            Playtype::SlalomDownup => {
-                if self.get_turn() & 1 == 0 {
-                    Playtype::Downup
-                } else {
-                    Playtype::Updown
-                }
-            }
-            Playtype::Guschti => {
-                if self.get_turn() < 4 {
-                    Playtype::Updown
-                } else {
-                    Playtype::Downup
-                }
-            }
-            Playtype::Mary => {
-                if self.get_turn() < 4 {
-                    Playtype::Downup
-                } else {
-                    Playtype::Updown
-                }
-            }
+	pub fn update_ruletype(&mut self) {
+		self.ruleset.active = match self.ruleset.playtype {
+			Playtype::SlalomUpdown => {
+				if self.get_turn() & 1 == 0 {
+					Playtype::Updown
+				} else {
+					Playtype::Downup
+				}
+			}
+			Playtype::SlalomDownup => {
+				if self.get_turn() & 1 == 0 {
+					Playtype::Downup
+				} else {
+					Playtype::Updown
+				}
+			}
+			Playtype::Guschti => {
+				if self.get_turn() < 4 {
+					Playtype::Updown
+				} else {
+					Playtype::Downup
+				}
+			}
+			Playtype::Mary => {
+				if self.get_turn() < 4 {
+					Playtype::Downup
+				} else {
+					Playtype::Updown
+				}
+			}
 			Playtype::BigSlalomUpdown => {
 				if (self.get_turn() / 3) & 1 == 1 {
 					Playtype::Downup
 				} else {
 					Playtype::Updown
 				}
-			},
+			}
 			Playtype::BigSlalomDownup => {
 				if (self.get_turn() / 3) & 1 == 1 {
 					Playtype::Updown
 				} else {
 					Playtype::Downup
 				}
-			},
+			}
 			// These playtypes are handled externally
 			Playtype::Everything => Playtype::Updown,
 			Playtype::Molotow => self.ruleset.active,
-            x => x,
-        };
-    }
+			x => x,
+		};
+	}
 
 	pub fn pass(&mut self) {
 		self.passed += 1;
 		self.current_player = self.get_announcing_player();
 	}
 
-    pub fn announce(&mut self, pt: Playtype, misere: bool) {
+	pub fn announce(&mut self, pt: Playtype, misere: bool) {
 		self.ruleset = RuleSet::new(pt, misere);
-        self.current_player = self.get_startplayer();
+		self.current_player = self.get_startplayer();
 
 		if let Playtype::Molotow = pt {
 			self.ruleset.active = Playtype::Updown;
 		}
-        self.update_ruletype();
+		self.update_ruletype();
 
 		if self.setting.must_bid() {
 			let plr = self.get_startplayer();
 			self.last_bid_player = Some(plr);
 		}
-    }
+	}
 
 	fn get_next_bid_player(&self) -> usize {
 		let team = self.players[self.current_player].team_id;
 		let plrs = self.get_players_of_team(team);
 
-		let idx = plrs.iter()
+		let idx = plrs
+			.iter()
 			.position(|&x| x == self.current_player)
 			.unwrap_or(0);
 		let next_idx = (idx + 1) % plrs.len();
@@ -664,7 +687,7 @@ impl Game {
 
 	fn proceed_bid(&mut self) {
 		let team = self.players[self.current_player].team_id;
-		let next_team = (team+1) % self.teams.len();
+		let next_team = (team + 1) % self.teams.len();
 
 		let start_player = self.get_startplayer();
 
@@ -674,8 +697,9 @@ impl Game {
 		let next_player = {
 			let plrs = self.get_players_of_team(next_team);
 
-			let next = plrs.into_iter()
-				.map(|id| (id+mod_sub) % mod_class)
+			let next = plrs
+				.into_iter()
+				.map(|id| (id + mod_sub) % mod_class)
 				.min()
 				.unwrap_or(0);
 
@@ -693,7 +717,9 @@ impl Game {
 	}
 
 	pub fn bid(&mut self, bid: i32) {
-		if self.last_bid_player.is_none() { return; }
+		if self.last_bid_player.is_none() {
+			return;
+		}
 
 		let team = self.players[self.current_player].team_id;
 		let is_same = self.teams[team].target == bid;
@@ -722,12 +748,16 @@ impl Game {
 
 		match self.setting.announce {
 			AnnounceRule::Choose => {
-				if !self.setting.allow_misere && misere { return false; }
+				if !self.setting.allow_misere && misere {
+					return false;
+				}
 				if let Some(id) = pt.get_id() {
-					if !self.setting.playtype[id].allow { return false; }
+					if !self.setting.playtype[id].allow {
+						return false;
+					}
 				}
 				true
-			},
+			}
 			_ => false,
 		}
 	}
@@ -748,39 +778,39 @@ impl Game {
 		self.is_announced() && !self.is_biding()
 	}
 
-    #[inline]
-    /// Returns the number of currently played cards in the turn
-    pub fn num_played_cards(&self) -> usize {
+	#[inline]
+	/// Returns the number of currently played cards in the turn
+	pub fn num_played_cards(&self) -> usize {
 		self.played_cards.len()
-    }
+	}
 
-    /// Get the current turn count
-    pub fn get_turn(&self) -> usize {
-        self.cards_played / self.players.len()
-    }
+	/// Get the current turn count
+	pub fn get_turn(&self) -> usize {
+		self.cards_played / self.players.len()
+	}
 
-    /// Return a reference to the team of the plr_id
-    fn team_of(&mut self, plr_id: usize) -> &mut Team {
-        &mut self.teams[self.players[plr_id].team_id]
-    }
+	/// Return a reference to the team of the plr_id
+	fn team_of(&mut self, plr_id: usize) -> &mut Team {
+		&mut self.teams[self.players[plr_id].team_id]
+	}
 
-    /// Add points to a given team, automatically handling misere
-    fn add_points(&mut self, team_id: usize, points: i32) {
-        let real_team_id = if self.ruleset.misere {
-            (team_id + 1) % self.teams.len()
-        } else {
-            team_id
-        };
+	/// Add points to a given team, automatically handling misere
+	fn add_points(&mut self, team_id: usize, points: i32) {
+		let real_team_id = if self.ruleset.misere {
+			(team_id + 1) % self.teams.len()
+		} else {
+			team_id
+		};
 
-        let team = &mut self.teams[real_team_id];
+		let team = &mut self.teams[real_team_id];
 
-        let p = if let Some(id) = self.ruleset.playtype.get_id() {
+		let p = if let Some(id) = self.ruleset.playtype.get_id() {
 			points * self.setting.playtype[id].multiplier
 		} else {
 			points
 		};
-        team.won_points += p;
-    }
+		team.won_points += p;
+	}
 
 	/// Returns the number of cards that got distributed
 	pub fn cards_distributed(&self) -> usize {
@@ -797,74 +827,69 @@ impl Game {
 		self.turncolor.is_none()
 	}
 
-    /// Returns true if the round should end now
+	/// Returns true if the round should end now
 	pub fn should_end(&self) -> bool {
 		match self.setting.end_condition {
 			EndCondition::Points(maxp) => match self.setting.point_eval {
-				PointEval::Add => self.teams
-					.iter()
-					.any(|team| maxp <= team.cur_points()),
-				_ => self.teams
-					.iter()
-					.any(|team| maxp <= team.points)
+				PointEval::Add => self.teams.iter().any(|team| maxp <= team.cur_points()),
+				_ => self.teams.iter().any(|team| maxp <= team.points),
 			},
 			EndCondition::Rounds(r) => r as usize <= self.round,
 		}
-    }
+	}
 
-    /// The beginplayer is the player who began the current turn
-    pub fn get_beginplayer(&self) -> usize {
-        (self.current_player + self.players.len() - self.num_played_cards()) % self.players.len()
-    }
+	/// The beginplayer is the player who began the current turn
+	pub fn get_beginplayer(&self) -> usize {
+		(self.current_player + self.players.len() - self.num_played_cards()) % self.players.len()
+	}
 
-    // The startplayer is the player who started the turn the first turn
-    pub fn get_startplayer(&self) -> usize {
+	// The startplayer is the player who started the turn the first turn
+	pub fn get_startplayer(&self) -> usize {
 		if let Some(id) = self.ruleset.playtype.get_id() {
 			if self.setting.playtype[id].passed_player_begins {
 				return self.get_announcing_player();
 			}
 		}
 		self.announce_player
-    }
+	}
 
-    /// Returns the player_id in the given team_id
-    pub fn get_players_of_team(&self, team_id: usize) -> Vec<usize> {
-        self.players
-            .iter()
-            .enumerate()
-            .filter(|(_, plr)| plr.team_id == team_id)
-            .map(|(i, _)| i)
-            .collect()
-    }
-
-	/// Return for each team, which cards they got
-	pub fn cards_per_team(&self) -> Vec<Cardset> {
-		self.teams.iter()
-			.map(|team| team.won)
+	/// Returns the player_id in the given team_id
+	pub fn get_players_of_team(&self, team_id: usize) -> Vec<usize> {
+		self.players
+			.iter()
+			.enumerate()
+			.filter(|(_, plr)| plr.team_id == team_id)
+			.map(|(i, _)| i)
 			.collect()
 	}
 
-    /// The player who should announce now/or has announced.
-    /// It takes passing into account!
-    pub fn get_announcing_player(&self) -> usize {
+	/// Return for each team, which cards they got
+	pub fn cards_per_team(&self) -> Vec<Cardset> {
+		self.teams.iter().map(|team| team.won).collect()
+	}
+
+	/// The player who should announce now/or has announced.
+	/// It takes passing into account!
+	pub fn get_announcing_player(&self) -> usize {
 		if self.setting.pass_to_same_team {
 			let team = self.players[self.announce_player].team_id;
 			let plrs = self.get_players_of_team(team);
-			let pos = plrs.iter()
+			let pos = plrs
+				.iter()
 				.position(|&plr| plr == self.announce_player)
 				.unwrap_or(0);
 
 			plrs[(pos + self.passed) % plrs.len()]
-        } else {
+		} else {
 			(self.announce_player + self.passed) % self.players.len()
 		}
-    }
+	}
 
-    /// Returns true when the given card is legal to play
-    pub fn is_legal_card(&self, hand: &Cardset, card: Card) -> bool {
-        if !hand.contains(card) {
-            return false;
-        }
+	/// Returns true when the given card is legal to play
+	pub fn is_legal_card(&self, hand: &Cardset, card: Card) -> bool {
+		if !hand.contains(card) {
+			return false;
+		}
 		let turncolor = match self.turncolor {
 			Some(c) => c,
 			None => return true,
@@ -874,21 +899,22 @@ impl Game {
 			None => return true,
 		};
 
-        // First, check all additional rules from trumpf
-        if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
-            let trumpf_first = turncolor == trumpf;
-            let trumpf_card = card.color == trumpf;
+		// First, check all additional rules from trumpf
+		if let Some(trumpf) = self.ruleset.get_active_trumpf_color() {
+			let trumpf_first = turncolor == trumpf;
+			let trumpf_card = card.color == trumpf;
 
-            // Rule: you can't play a weaker trumpf than on the board
-            // You can play it if you have no other choice
-            if !trumpf_first && trumpf_card {
-                // If the first card wasn't a trumpf and the new card is a trumpf, it must be stronger
-                if self.ruleset.is_card_stronger(bcrd, card) {
-                    return true;
-                }
+			// Rule: you can't play a weaker trumpf than on the board
+			// You can play it if you have no other choice
+			if !trumpf_first && trumpf_card {
+				// If the first card wasn't a trumpf and the new card is a trumpf, it must be stronger
+				if self.ruleset.is_card_stronger(bcrd, card) {
+					return true;
+				}
 
 				// We know it's a weaker trumpf
-				let num_stronger_trumpf: usize = hand.as_vec()
+				let num_stronger_trumpf: usize = hand
+					.as_vec()
 					.into_iter()
 					.filter(|c| c.color == trumpf)
 					.filter(|&c| self.ruleset.is_card_stronger(bcrd, c))
@@ -899,18 +925,17 @@ impl Game {
 				let can_undertrumpf = !can_hold && !self.setting.strict_undertrumpf;
 
 				return nothing_else || can_undertrumpf;
-            }
+			}
 
-            // Rule: You are NEVER forced to play trumpf-boy
-            if trumpf_first && !trumpf_card && hand.has_color(trumpf) {
-                // You can play ANY card if you only possess the trumpf boy, since in this case you "must" hold trumpf
-                return hand.count_color(trumpf) == 1
-                    && hand.contains(Card::new(trumpf, 5));
-            }
-        }
-        // Basic: You must hold the color if you can
-        turncolor == card.color || !hand.has_color(turncolor)
-    }
+			// Rule: You are NEVER forced to play trumpf-boy
+			if trumpf_first && !trumpf_card && hand.has_color(trumpf) {
+				// You can play ANY card if you only possess the trumpf boy, since in this case you "must" hold trumpf
+				return hand.count_color(trumpf) == 1 && hand.contains(Card::new(trumpf, 5));
+			}
+		}
+		// Basic: You must hold the color if you can
+		turncolor == card.color || !hand.has_color(turncolor)
+	}
 
 	/// Returns true when the given card would beat the current best card
 	pub fn would_card_beat(&self, card: Card) -> bool {
@@ -930,11 +955,9 @@ impl Game {
 	}
 
 	/// Returns true when the given player can show
-    pub fn can_show(&self, player_id: usize) -> bool {
-        self.current_player == player_id
-            && self.get_turn() < 1
-            && self.is_playing()
-    }
+	pub fn can_show(&self, player_id: usize) -> bool {
+		self.current_player == player_id && self.get_turn() < 1 && self.is_playing()
+	}
 
 	/// Returns true when the given player can bid
 	pub fn can_bid(&self, player_id: usize) -> bool {
@@ -953,7 +976,8 @@ impl Game {
 
 		let max_passes = {
 			let passes = if self.setting.pass_to_same_team {
-				self.get_players_of_team(self.players[player_id].team_id).len()
+				self.get_players_of_team(self.players[player_id].team_id)
+					.len()
 			} else {
 				self.players.len()
 			};
@@ -965,32 +989,33 @@ impl Game {
 		self.passed < max_passes
 	}
 
-    /// Returns true when the given player can announce
-    pub fn can_announce(&self, player_id: usize) -> bool {
-        !self.is_announced() && self.get_announcing_player() == player_id
-    }
+	/// Returns true when the given player can announce
+	pub fn can_announce(&self, player_id: usize) -> bool {
+		!self.is_announced() && self.get_announcing_player() == player_id
+	}
 
-    /// Returns a vector of cards which are on the board
-    pub fn get_playedcards(&self) -> Vec<Card> {
+	/// Returns a vector of cards which are on the board
+	pub fn get_playedcards(&self) -> Vec<Card> {
 		self.played_cards.clone()
-    }
+	}
 
 	/// Returns the currently best team
-    pub fn get_winner_team(&self) -> usize {
-        self.teams
-            .iter()
-            .enumerate()
-            .max_by_key(|(_idx, &ref val)| val.points)
-            .map(|(idx, _val)| idx)
-            .expect("This should not happen...")
-    }
+	pub fn get_winner_team(&self) -> usize {
+		self.teams
+			.iter()
+			.enumerate()
+			.max_by_key(|(_idx, &ref val)| val.points)
+			.map(|(idx, _val)| idx)
+			.expect("This should not happen...")
+	}
 
 	/// Rank the teams from best to worst, starting with the best
 	pub fn rank_teams(&self) -> Vec<usize> {
-		let mut v: Vec<_> = self.teams
+		let mut v: Vec<_> = self
+			.teams
 			.iter()
 			.enumerate()
-			.map(|(i,t)| (t.points, i))
+			.map(|(i, t)| (t.points, i))
 			.collect();
 
 		v.sort();
@@ -998,9 +1023,7 @@ impl Game {
 			v.reverse();
 		}
 
-		v.iter()
-			.map(|(_,i)| *i)
-			.collect()
+		v.iter().map(|(_, i)| *i).collect()
 	}
 
 	pub fn public_clone(&self) -> Self {

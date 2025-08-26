@@ -1,9 +1,9 @@
-use std::iter::Iterator;
 use std::convert::TryInto;
+use std::iter::Iterator;
 
-use wasm_bindgen::prelude::*;
-use tsify_next::Tsify;
 use serde::{Deserialize, Serialize};
+use tsify_next::Tsify;
+use wasm_bindgen::prelude::*;
 
 use crate::trick::Trick;
 
@@ -19,11 +19,12 @@ pub const NUM_CARDS: usize = NUM_COLORS * NUM_NUMBERS + NUM_SPECIAL_CARDS;
 /// Contains a color and a number.
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
-#[derive(PartialOrd, Ord)]
+#[derive(
+	Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash, PartialOrd, Ord,
+)]
 pub struct Card {
-    pub color: u8,
-    pub number: u8,
+	pub color: u8,
+	pub number: u8,
 }
 
 pub const SPECIAL_COLOR: u8 = NUM_COLORS as u8;
@@ -35,46 +36,45 @@ pub const DOG: Card = Card::new(SPECIAL_COLOR, 3);
 
 /// The special cards in the game
 /// They all have SPECIAL_COLOR as their color.
-pub const SPECIAL_CARDS: [Card; NUM_SPECIAL_CARDS] = [
-	ONE, DRAGON, PHOENIX, DOG
-];
+pub const SPECIAL_CARDS: [Card; NUM_SPECIAL_CARDS] = [ONE, DRAGON, PHOENIX, DOG];
 
 impl Card {
-    pub const fn new(color: u8, number: u8) -> Self {
-        Card { color, number }
-    }
+	pub const fn new(color: u8, number: u8) -> Self {
+		Card { color, number }
+	}
 
-    pub fn from_id(card_id: u8) -> Self {
-        Card {
-            color: card_id / NUM_NUMBERS as u8,
-            number: card_id % NUM_NUMBERS as u8,
-        }
-    }
+	pub fn from_id(card_id: u8) -> Self {
+		Card {
+			color: card_id / NUM_NUMBERS as u8,
+			number: card_id % NUM_NUMBERS as u8,
+		}
+	}
 
-    pub fn get_id(&self) -> u8 {
-        self.color * NUM_NUMBERS as u8 + self.number
-    }
+	pub fn get_id(&self) -> u8 {
+		self.color * NUM_NUMBERS as u8 + self.number
+	}
 
 	pub fn is_legal(&self) -> bool {
-		let norm = (0..NUM_COLORS as u8).contains(&self.color) && (0..NUM_NUMBERS as u8).contains(&self.number);
+		let norm = (0..NUM_COLORS as u8).contains(&self.color)
+			&& (0..NUM_NUMBERS as u8).contains(&self.number);
 		let spec = self.color == SPECIAL_COLOR && (0..4).contains(&self.number);
 		norm || spec
 	}
 }
 
 impl Default for Card {
-    fn default() -> Self {
-        Card::new(5, 11)
-    }
+	fn default() -> Self {
+		Card::new(5, 11)
+	}
 }
 
 #[wasm_bindgen]
 /// Return a Vec<Card> containing all possible cards
 pub fn all_cards() -> Vec<Card> {
 	(0..NUM_COLORS)
-        .flat_map(|col| (1..NUM_NUMBERS).map(move |num| Card::new(col as u8, num as u8)))
-        .chain(SPECIAL_CARDS)
-        .collect()
+		.flat_map(|col| (1..NUM_NUMBERS).map(move |num| Card::new(col as u8, num as u8)))
+		.chain(SPECIAL_CARDS)
+		.collect()
 }
 
 #[wasm_bindgen]
@@ -91,15 +91,15 @@ const CARDSET_N: usize = (NUM_CARDS >> 3) + (NUM_CARDS & 0b111 > 0) as usize;
 #[repr(transparent)]
 pub struct Cardset {
 	// #[cfg_attr(feature = "server", serde(with = "serde_bytes"))]
-    bs: [u8; CARDSET_N],
+	bs: [u8; CARDSET_N],
 }
 
 #[wasm_bindgen]
 impl Cardset {
 	/// Creates an empty Cardset
-    pub fn new() -> Self {
+	pub fn new() -> Self {
 		Cardset { bs: [0; CARDSET_N] }
-    }
+	}
 
 	/// Creates an Cardset with all cards
 	pub fn full() -> Self {
@@ -107,10 +107,10 @@ impl Cardset {
 	}
 
 	/// Inserts the card (does nothing if the card is already in the set)
-    pub fn insert(&mut self, card: Card) {
+	pub fn insert(&mut self, card: Card) {
 		let id = card.get_id() as usize;
 		self.bs[id >> 3] |= 1 << (id & 0b111);
-    }
+	}
 
 	/// Merges the current set with another one
 	pub fn merge(&mut self, set: &Cardset) {
@@ -120,38 +120,36 @@ impl Cardset {
 	}
 
 	/// Erase a card from the set (does nothing if the card isn't in the set)
-    pub fn erase(&mut self, card: Card) {
+	pub fn erase(&mut self, card: Card) {
 		let id = card.get_id() as usize;
 		self.bs[id >> 3] &= !(1 << (id & 0b111));
-    }
+	}
 
 	/// Erase all cards which are in this set AND in the given set
-    pub fn erase_set(&mut self, set: &Cardset) {
+	pub fn erase_set(&mut self, set: &Cardset) {
 		for (i, byte) in self.bs.iter_mut().enumerate() {
 			*byte &= 0xFF ^ set.bs[i];
 		}
-    }
+	}
 
 	/// Clears all cards
-    pub fn clear(&mut self) {
+	pub fn clear(&mut self) {
 		self.bs = [0; CARDSET_N];
-    }
+	}
 
 	/// Returns the number of cards in the set
 	pub fn len(&self) -> usize {
-		self.bs.iter()
-			.map(|byte| byte.count_ones() as usize)
-			.sum()
+		self.bs.iter().map(|byte| byte.count_ones() as usize).sum()
 	}
 
 	pub fn is_empty(&self) -> bool {
 		self.bs.is_empty()
 	}
 
-    pub fn contains(&self, card: Card) -> bool {
+	pub fn contains(&self, card: Card) -> bool {
 		let id = card.get_id() as usize;
 		self.bs[id >> 3] & 1 << (id & 0b111) != 0
-    }
+	}
 
 	/// Count the points in this cardset
 	pub fn count_points(&self) -> i32 {
@@ -160,7 +158,7 @@ impl Cardset {
 		let phoenix = self.contains(PHOENIX) as i32;
 		let dragon = self.contains(DRAGON) as i32;
 
-		five*5 + ten*10 + 25*(dragon - phoenix)
+		five * 5 + ten * 10 + 25 * (dragon - phoenix)
 	}
 
 	pub fn count_number(&self, number: u8) -> usize {
@@ -172,11 +170,10 @@ impl Cardset {
 	/// Get one card in this set which has the given number
 	/// Return None if no such card exists
 	pub fn get_card_of_number(&self, number: u8) -> Option<Card> {
-		let col = (0..NUM_COLORS as u8)
-			.find(|&col| self.contains(Card::new(col, number)));
+		let col = (0..NUM_COLORS as u8).find(|&col| self.contains(Card::new(col, number)));
 
 		match col {
-			Some(c) => Some( Card::new(c, number) ),
+			Some(c) => Some(Card::new(c, number)),
 			None => None,
 		}
 	}
@@ -188,8 +185,7 @@ impl Cardset {
 		let mut rng = rand::thread_rng();
 
 		let cards = self.clone().as_vec();
-		let chosen = cards.into_iter()
-			.choose_multiple(&mut rng, k);
+		let chosen = cards.into_iter().choose_multiple(&mut rng, k);
 
 		Cardset::from(chosen)
 	}
@@ -199,7 +195,7 @@ impl From<Card> for Cardset {
 	fn from(item: Card) -> Self {
 		let mut set = Cardset::new();
 		set.insert(item);
-        set
+		set
 	}
 }
 
@@ -218,12 +214,15 @@ impl TryInto<Card> for Cardset {
 }
 
 impl<T> From<T> for Cardset
-where T: std::iter::IntoIterator<Item = Card>
+where
+	T: std::iter::IntoIterator<Item = Card>,
 {
 	fn from(item: T) -> Self {
 		let mut set = Cardset::new();
-        for card in item { set.insert(card) }
-        set
+		for card in item {
+			set.insert(card)
+		}
+		set
 	}
 }
 
@@ -237,37 +236,35 @@ impl Cardset {
 		item.into()
 	}
 
-    /// Return the cards in the set as Vec<Card>
-    pub fn as_vec(&self) -> Vec<Card> {
+	/// Return the cards in the set as Vec<Card>
+	pub fn as_vec(&self) -> Vec<Card> {
 		all_cards()
 			.into_iter()
 			.filter(|c| self.contains(*c))
 			.collect()
-    }
+	}
 
-    /// Return the cards in the set as Vec<Card> (without joker)
-    pub fn as_vec_no_jokers(&self) -> Vec<Card> {
+	/// Return the cards in the set as Vec<Card> (without joker)
+	pub fn as_vec_no_jokers(&self) -> Vec<Card> {
 		all_cards()
 			.into_iter()
 			.filter(|c| *c != PHOENIX)
 			.filter(|c| self.contains(*c))
 			.collect()
-    }
+	}
 
-    /// Return the cards in the set as Vec<Card> (without special cards)
-    pub fn as_nonspecial_vec(&self) -> Vec<Card> {
+	/// Return the cards in the set as Vec<Card> (without special cards)
+	pub fn as_nonspecial_vec(&self) -> Vec<Card> {
 		all_cards()
 			.into_iter()
 			.filter(|c| c.color != SPECIAL_COLOR)
 			.filter(|c| self.contains(*c))
 			.collect()
-    }
+	}
 
 	/// Returns true if the this set contains either a Dragon, Phoenix, or Dog
 	pub fn contains_an_animal(&self) -> bool {
-		self.contains(DOG) ||
-			self.contains(PHOENIX) ||
-			self.contains(DRAGON)
+		self.contains(DOG) || self.contains(PHOENIX) || self.contains(DRAGON)
 	}
 
 	#[cfg(target_family = "wasm")]
@@ -280,13 +277,16 @@ impl Cardset {
 	pub fn contains_set(&self, cards: impl Into<Cardset>) -> bool {
 		let set = cards.into();
 
-		!self.bs.iter()
+		!self
+			.bs
+			.iter()
 			.enumerate()
 			.any(|(i, &byte)| byte | set.bs[i] != byte)
 	}
 
 	pub fn contains_any<T>(&self, iter: T) -> bool
-	where T: std::iter::IntoIterator<Item = Card>
+	where
+		T: std::iter::IntoIterator<Item = Card>,
 	{
 		iter.into_iter().any(|c| self.contains(c))
 	}
@@ -302,7 +302,7 @@ impl Cardset {
 				continue;
 			}
 
-			hist[ card.number as usize ].push( card.color );
+			hist[card.number as usize].push(card.color);
 		}
 		hist
 	}

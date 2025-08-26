@@ -15,7 +15,8 @@ fn handle_field(item: Field) -> TokenStream {
 		_ => todo!(),
 	};
 
-	let v: Vec<_> = item.attrs
+	let v: Vec<_> = item
+		.attrs
 		.into_iter()
 		.map(handle_attr)
 		.filter(|c| c.is_some())
@@ -24,22 +25,22 @@ fn handle_field(item: Field) -> TokenStream {
 
 	match item.ident {
 		Some(ident) => match v.len() {
-			0 =>quote! { #ident: <#ty>::form_data() },
+			0 => quote! { #ident: <#ty>::form_data() },
 			_ => quote! {
 				#ident: {
 					"#type": <#ty>::form_data(),
 					#(#v),*
 				}
-			}
+			},
 		},
 		None => match v.len() {
-	 		0 => quote! { <#ty>::form_data() },
+			0 => quote! { <#ty>::form_data() },
 			_ => quote! {
 				{
 					"#type": <#ty>::form_data(),
 					#(#v),*
 				}
-			}
+			},
 		},
 	}
 }
@@ -47,20 +48,14 @@ fn handle_field(item: Field) -> TokenStream {
 fn handle_fields(item: Fields) -> TokenStream {
 	match item {
 		Fields::Named(fields) => {
-			let inpl: Vec<_> = fields.named
-				.into_iter()
-				.map(handle_field)
-				.collect();
+			let inpl: Vec<_> = fields.named.into_iter().map(handle_field).collect();
 
 			quote! {
 				json::object! { #(#inpl),* }
 			}
-		},
+		}
 		Fields::Unnamed(fields) => {
-			let inpl: Vec<_> = fields.unnamed
-				.into_iter()
-				.map(handle_field)
-				.collect();
+			let inpl: Vec<_> = fields.unnamed.into_iter().map(handle_field).collect();
 
 			let res = match inpl.len() {
 				1 => quote! { #(#inpl),* },
@@ -68,7 +63,7 @@ fn handle_fields(item: Fields) -> TokenStream {
 			};
 
 			res
-		},
+		}
 		Fields::Unit => quote! { "none" },
 	}
 }
@@ -80,7 +75,8 @@ fn handle_struct(item: DataStruct) -> TokenStream {
 fn handle_variant(item: Variant) -> TokenStream {
 	let ident = item.ident;
 
-	let v: Vec<_> = item.attrs
+	let v: Vec<_> = item
+		.attrs
 		.into_iter()
 		.map(handle_attr)
 		.filter(|c| c.is_some())
@@ -95,14 +91,10 @@ fn handle_variant(item: Variant) -> TokenStream {
 			#(#v),*
 		}
 	}
-
 }
 
 fn handle_enum(item: DataEnum) -> TokenStream {
-	let variants: Vec<_> = item.variants.
-		into_iter()
-		.map(handle_variant)
-		.collect();
+	let variants: Vec<_> = item.variants.into_iter().map(handle_variant).collect();
 
 	quote! {
 		json::object! {

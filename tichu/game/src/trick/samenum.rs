@@ -1,27 +1,22 @@
-use crate::card::*;
 use super::*;
+use crate::card::*;
 
 use serde_big_array::BigArray;
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct SameNum<const N: usize> {
-    #[serde(with = "BigArray")]
+	#[serde(with = "BigArray")]
 	colors: [u8; N],
 	number: u8,
 }
 
 impl<const N: usize> Tricktype for SameNum<N> {
 	fn get_power(&self) -> Power {
-		self.number+1
+		self.number + 1
 	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		if cardset.contains(DOG) ||
-			cardset.contains(DRAGON) ||
-			cardset.len() != N
-		{
+		if cardset.contains(DOG) || cardset.contains(DRAGON) || cardset.len() != N {
 			return vec![];
 		}
 
@@ -57,20 +52,19 @@ impl<const N: usize> Tricktype for SameNum<N> {
 	}
 
 	fn as_cardset(&self) -> Cardset {
-		let iter = self.colors.iter()
-			.map(|&col| {
-				if self.number == 0 || col != SPECIAL_COLOR {
-					Card::new(col, self.number)
-				} else {
-					PHOENIX
-				}
-			});
+		let iter = self.colors.iter().map(|&col| {
+			if self.number == 0 || col != SPECIAL_COLOR {
+				Card::new(col, self.number)
+			} else {
+				PHOENIX
+			}
+		});
 
 		Cardset::from(iter)
 	}
 
 	fn can_fulfill(cardset: &Cardset, power: Power, number: u8) -> bool {
-		if number+1 < power {
+		if number + 1 < power {
 			false
 		} else {
 			let cnt = cardset.count_number(number);
@@ -87,9 +81,7 @@ impl<const N: usize> Tricktype for SameNum<N> {
 //  ===== Wrapper structs =====
 // Due that wasm_bindgen doesn't support generics yet, this is necessary
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Single {
@@ -97,11 +89,16 @@ pub struct Single {
 }
 
 impl Tricktype for Single {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		SameNum::<1>::parse(cardset).into_iter()
+		SameNum::<1>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}
@@ -112,9 +109,7 @@ impl Tricktype for Single {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Double {
@@ -122,11 +117,16 @@ pub struct Double {
 }
 
 impl Tricktype for Double {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		SameNum::<2>::parse(cardset).into_iter()
+		SameNum::<2>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}
@@ -137,9 +137,7 @@ impl Tricktype for Double {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Triple {
@@ -147,11 +145,16 @@ pub struct Triple {
 }
 
 impl Tricktype for Triple {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		SameNum::<3>::parse(cardset).into_iter()
+		SameNum::<3>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}

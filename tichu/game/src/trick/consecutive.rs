@@ -4,9 +4,7 @@ use super::*;
 
 /// A trick containing consecutive N-tuples of the same number
 /// The trick contains at least L such N-tuples
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Consecutive<const N: usize, const L: usize> {
 	colors: Vec<Vec<u8>>,
 	number: u8,
@@ -53,7 +51,8 @@ impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 		let mut jokers = cardset.count_jokers() as i32;
 		let hist = cardset.get_number_histogram();
 
-		let start = hist.iter()
+		let start = hist
+			.iter()
 			.enumerate()
 			.find(|(_, v)| !v.is_empty())
 			.map(|(i, _)| i)
@@ -61,12 +60,10 @@ impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 			.min(NUM_NUMBERS - len);
 
 		let mut v = vec![];
-		for hs in &hist[start..start+len] {
+		for hs in &hist[start..start + len] {
 			let mut cols = vec![SPECIAL_COLOR; N];
 
-			let iter = hs.iter()
-				.enumerate()
-				.take(N);
+			let iter = hs.iter().enumerate().take(N);
 
 			for (i, col) in iter {
 				cols[i] = *col;
@@ -89,7 +86,7 @@ impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 	}
 
 	fn as_cardset(&self) -> Cardset {
-		Cardset::from( self.get_cards() )
+		Cardset::from(self.get_cards())
 	}
 
 	fn can_fulfill(cardset: &Cardset, len: usize, power: Power, number: u8) -> bool {
@@ -104,19 +101,19 @@ impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 
 		// Do a sliding window keeping track of jokers needed
 		let mut cnt = 0;
-		for v in &hist[start..start+len] {
+		for v in &hist[start..start + len] {
 			cnt += (N as i32 - v.len() as i32).max(0);
 		}
 
 		let num = number as usize;
 		let mut i = start;
 		while i + len <= NUM_NUMBERS {
-			if jokers <= cnt && (i..i+len).contains(&num) {
+			if jokers <= cnt && (i..i + len).contains(&num) {
 				return true;
 			}
 
 			cnt -= (N as i32 - hist[i].len() as i32).max(0);
-			if i+len+1 < NUM_NUMBERS {
+			if i + len + 1 < NUM_NUMBERS {
 				cnt += (N as i32 - hist[i].len() as i32).max(0);
 			}
 			i += 1;
@@ -128,15 +125,13 @@ impl<const N: usize, const L: usize> DynamicTricktype for Consecutive<N, L> {
 
 impl<const N: usize, const L: usize> Consecutive<N, L> {
 	pub fn get_cards(&self) -> Vec<Card> {
-		let iter = self.colors.iter()
-			.enumerate()
-			.flat_map(|(i, cols)| {
-				let num = self.number + i as u8;
+		let iter = self.colors.iter().enumerate().flat_map(|(i, cols)| {
+			let num = self.number + i as u8;
 
-				cols.iter()
-					.map(move |&col| (col, num))
-					.map(parse_col_num_pair)
-			});
+			cols.iter()
+				.map(move |&col| (col, num))
+				.map(parse_col_num_pair)
+		});
 
 		iter.collect()
 	}
@@ -144,22 +139,27 @@ impl<const N: usize, const L: usize> Consecutive<N, L> {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Street {
-	data: Consecutive<1,5>,
+	data: Consecutive<1, 5>,
 }
 
 impl DynamicTricktype for Street {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn get_length(&self) -> usize { self.data.get_length() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn get_length(&self) -> usize {
+		self.data.get_length()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		Consecutive::<1,5>::parse(cardset).into_iter()
+		Consecutive::<1, 5>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}
@@ -170,7 +170,9 @@ impl DynamicTricktype for Street {
 
 #[wasm_bindgen]
 impl Street {
-	pub fn get_cards(&self) -> Vec<Card> { self.data.get_cards() }
+	pub fn get_cards(&self) -> Vec<Card> {
+		self.data.get_cards()
+	}
 
 	#[cfg(target_family = "wasm")]
 	pub fn from_object(obj: JsValue) -> Self {
@@ -180,22 +182,27 @@ impl Street {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Stairs {
-	data: Consecutive<2,2>,
+	data: Consecutive<2, 2>,
 }
 
 impl DynamicTricktype for Stairs {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn get_length(&self) -> usize { self.data.get_length() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn get_length(&self) -> usize {
+		self.data.get_length()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		Consecutive::<2,2>::parse(cardset).into_iter()
+		Consecutive::<2, 2>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}
@@ -206,7 +213,9 @@ impl DynamicTricktype for Stairs {
 
 #[wasm_bindgen]
 impl Stairs {
-	pub fn get_cards(&self) -> Vec<Card> { self.data.get_cards() }
+	pub fn get_cards(&self) -> Vec<Card> {
+		self.data.get_cards()
+	}
 
 	#[cfg(target_family = "wasm")]
 	pub fn from_object(obj: JsValue) -> Self {

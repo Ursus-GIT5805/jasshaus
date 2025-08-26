@@ -4,9 +4,7 @@ use super::*;
 
 const MIN_LENGTH: usize = 5;
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 pub struct StreetBomb {
 	color: u8,
@@ -49,8 +47,8 @@ impl DynamicTricktype for StreetBomb {
 			return vec![];
 		}
 
-		for i in 0..cards.len()-1 {
-			if cards[i].number+1 != cards[i+1].number {
+		for i in 0..cards.len() - 1 {
+			if cards[i].number + 1 != cards[i + 1].number {
 				return vec![];
 			}
 		}
@@ -75,10 +73,10 @@ impl DynamicTricktype for StreetBomb {
 			let mut l = 0;
 
 			for i in low..NUM_NUMBERS as u8 {
-				if !cardset.contains( Card::new(col, i) ) {
-					l = i+1;
+				if !cardset.contains(Card::new(col, i)) {
+					l = i + 1;
 				} else {
-					let diff = (i-l) as usize;
+					let diff = (i - l) as usize;
 					if len < diff && (l..=i).contains(&number) {
 						return true;
 					}
@@ -99,10 +97,10 @@ impl StreetBomb {
 			let mut l = 0;
 
 			for i in 0..NUM_NUMBERS as u8 {
-				if !cardset.contains( Card::new(col, i) ) {
-					l = i+1;
+				if !cardset.contains(Card::new(col, i)) {
+					l = i + 1;
 				} else {
-					let diff = (i-l) as usize;
+					let diff = (i - l) as usize;
 					best = std::cmp::max(diff, best);
 				}
 			}
@@ -116,7 +114,7 @@ impl StreetBomb {
 	}
 
 	pub fn get_cards(&self) -> Vec<Card> {
-		(self.number..self.number+self.len)
+		(self.number..self.number + self.len)
 			.map(|num| Card::new(self.color, num))
 			.collect()
 	}

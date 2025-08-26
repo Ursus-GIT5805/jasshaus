@@ -1,5 +1,5 @@
-pub mod samenum;
 pub mod consecutive;
+pub mod samenum;
 
 pub mod fullhouse;
 
@@ -11,10 +11,10 @@ use wasm_bindgen::prelude::*;
 
 use crate::card::*;
 
-use samenum::*;
-use fullhouse::*;
 use consecutive::*;
+use fullhouse::*;
 use quadbomb::QuadBomb;
+use samenum::*;
 use streetbomb::StreetBomb;
 
 pub type Power = u8;
@@ -40,10 +40,7 @@ pub trait DynamicTricktype: Sized {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
-#[derive(tsify_next::Tsify)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize, tsify_next::Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[non_exhaustive]
 pub enum Trick {
@@ -75,25 +72,19 @@ fn parse_col_num_pair(data: (u8, u8)) -> Card {
 }
 
 fn parse_and_collect<T: Tricktype, F: FnMut(T) -> Trick>(
-    item: &Cardset,
-    collector: &mut Vec<Trick>,
-    mapper: F,
+	item: &Cardset,
+	collector: &mut Vec<Trick>,
+	mapper: F,
 ) {
-	collector.extend(
-		T::parse(item.clone()).into_iter()
-			.map(mapper)
-	);
+	collector.extend(T::parse(item.clone()).into_iter().map(mapper));
 }
 
 fn parse_dyn_and_collect<T: DynamicTricktype, F: FnMut(T) -> Trick>(
-    item: &Cardset,
-    collector: &mut Vec<Trick>,
-    mapper: F,
+	item: &Cardset,
+	collector: &mut Vec<Trick>,
+	mapper: F,
 ) {
-	collector.extend(
-		T::parse(item.clone()).into_iter()
-			.map(mapper)
-	);
+	collector.extend(T::parse(item.clone()).into_iter().map(mapper));
 }
 
 #[wasm_bindgen]
@@ -141,15 +132,19 @@ pub fn can_fulfill(cardset: &Cardset, trick: Trick, number: u8) -> bool {
 	}
 
 	let res = match &trick {
-		Trick::Phoenix(pow) => Single::can_fulfill(&cardset, *pow+1, number),
-		Trick::Single(data) => Single::can_fulfill(&cardset, data.get_power()+1, number),
+		Trick::Phoenix(pow) => Single::can_fulfill(&cardset, *pow + 1, number),
+		Trick::Single(data) => Single::can_fulfill(&cardset, data.get_power() + 1, number),
 
-		Trick::Double(data) => Double::can_fulfill(&cardset, data.get_power()+1, number),
-		Trick::Triple(data) => Triple::can_fulfill(&cardset, data.get_power()+1, number),
-		Trick::Fullhouse(data) => Fullhouse::can_fulfill(&cardset, data.get_power()+1, number),
+		Trick::Double(data) => Double::can_fulfill(&cardset, data.get_power() + 1, number),
+		Trick::Triple(data) => Triple::can_fulfill(&cardset, data.get_power() + 1, number),
+		Trick::Fullhouse(data) => Fullhouse::can_fulfill(&cardset, data.get_power() + 1, number),
 
-		Trick::Street(data) => Street::can_fulfill(&cardset, data.get_length(), data.get_power()+1, number),
-		Trick::Stairs(data) => Stairs::can_fulfill(&cardset, data.get_length(), data.get_power()+1, number),
+		Trick::Street(data) => {
+			Street::can_fulfill(&cardset, data.get_length(), data.get_power() + 1, number)
+		}
+		Trick::Stairs(data) => {
+			Stairs::can_fulfill(&cardset, data.get_length(), data.get_power() + 1, number)
+		}
 		_ => false,
 	};
 	if res {
@@ -159,17 +154,17 @@ pub fn can_fulfill(cardset: &Cardset, trick: Trick, number: u8) -> bool {
 	// Check if you can bomb
 	let can_bomb = match &trick {
 		Trick::QuadBomb(data) => {
-			QuadBomb::can_fulfill(&cardset, data.get_power()+1, number) ||
-				StreetBomb::can_fulfill(&cardset, 5, 0, number)
-		},
+			QuadBomb::can_fulfill(&cardset, data.get_power() + 1, number)
+				|| StreetBomb::can_fulfill(&cardset, 5, 0, number)
+		}
 		Trick::StreetBomb(data) => {
-			StreetBomb::can_fulfill(&cardset, data.get_length(), data.get_power()+1, number)
+			StreetBomb::can_fulfill(&cardset, data.get_length(), data.get_power() + 1, number)
 		}
 		Trick::Dog => false,
 		_ => {
-			QuadBomb::can_fulfill(&cardset, 0, number) ||
-				StreetBomb::can_fulfill(&cardset, 5, 0, number)
-		},
+			QuadBomb::can_fulfill(&cardset, 0, number)
+				|| StreetBomb::can_fulfill(&cardset, 5, 0, number)
+		}
 	};
 
 	can_bomb
@@ -179,8 +174,7 @@ pub fn can_fulfill(cardset: &Cardset, trick: Trick, number: u8) -> bool {
 #[wasm_bindgen]
 pub fn contains_bomb(cards: Vec<Card>) -> bool {
 	let cardset = Cardset::from(cards);
-	QuadBomb::createable_from(&cardset) ||
-		StreetBomb::createable_from(&cardset)
+	QuadBomb::createable_from(&cardset) || StreetBomb::createable_from(&cardset)
 }
 
 impl Trick {
@@ -218,12 +212,12 @@ impl Trick {
 		if discriminant(self) == discriminant(rhs) {
 			let legal_length = match self {
 				Trick::StreetBomb(data) => {
-					match data.get_length().cmp( &rhs.get_length() ) {
+					match data.get_length().cmp(&rhs.get_length()) {
 						std::cmp::Ordering::Less => return false, // is shorter: never beats
 						std::cmp::Ordering::Greater => return true, // is longer: always beats
-						_ => true, // is same: check for power
+						_ => true,                                // is same: check for power
 					}
-				},
+				}
 				_ => self.get_length() == rhs.get_length(),
 			};
 
@@ -250,7 +244,7 @@ impl Trick {
 			Trick::StreetBomb(_) => match &rhs {
 				Trick::QuadBomb(_) => true,
 				_ => false,
-			}
+			},
 			_ => false,
 		}
 	}
@@ -258,8 +252,7 @@ impl Trick {
 	/// Returns whether this trick is a bomb
 	pub fn is_bomb(&self) -> bool {
 		match self {
-			Trick::QuadBomb(_) |
-			Trick::StreetBomb(_) => true,
+			Trick::QuadBomb(_) | Trick::StreetBomb(_) => true,
 			_ => false,
 		}
 	}
@@ -291,7 +284,7 @@ impl TryFrom<Cardset> for Trick {
 		let v = parse_all_tricks(value);
 
 		if v.len() == 1 {
-			Ok( v[0].clone() )
+			Ok(v[0].clone())
 		} else {
 			Err(())
 		}
@@ -307,6 +300,6 @@ impl Into<Cardset> for Trick {
 impl TryFrom<Card> for Trick {
 	type Error = ();
 	fn try_from(value: Card) -> Result<Self, Self::Error> {
-		Self::try_from( Cardset::from(value) )
+		Self::try_from(Cardset::from(value))
 	}
 }

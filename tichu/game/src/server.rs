@@ -1,8 +1,5 @@
-use game_server::room::{
-	*,
-	client::*,
-};
 use crate::setting::Setting;
+use game_server::room::{client::*, *};
 
 use async_trait::*;
 
@@ -10,8 +7,7 @@ use crate::*;
 
 use Event::*;
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub struct TichuRoom {
 	starts: u32,
 	pile: Cardset,
@@ -26,8 +22,8 @@ impl TichuRoom {
 		let num = self.game.setting.num_cards_gt;
 		for (pid, plr) in self.game.players.iter_mut().enumerate() {
 			let cards = self.pile.choose_k(num);
-			self.pile.erase_set( &cards );
-			plr.cards.merge( &cards );
+			self.pile.erase_set(&cards);
+			plr.cards.merge(&cards);
 			plr.num_cards += cards.len();
 			clients.ev_send_to(pid, StartDistribution(cards)).await;
 		}
@@ -43,13 +39,13 @@ impl TichuRoom {
 
 	// ---
 
-	pub async fn handle_trick (
-		&mut self, clients: &mut ClientHandler,
+	pub async fn handle_trick(
+		&mut self,
+		clients: &mut ClientHandler,
 		trick: Trick,
 		wish: Option<u8>,
-		plr: usize
+		plr: usize,
 	) {
-
 		if let Err(e) = self.game.legal_to_play(&trick, wish, plr) {
 			eprintln!("Error on play: {}", e);
 			return;
@@ -61,10 +57,10 @@ impl TichuRoom {
 			Some(num) => {
 				self.game.wish(num);
 				clients.ev_send_to_all(WishPlay(trick, num, plr)).await;
-			},
+			}
 			None => {
 				clients.ev_send_to_all(Play(trick, plr)).await;
-			},
+			}
 		}
 
 		if self.game.should_round_end() {
@@ -72,7 +68,12 @@ impl TichuRoom {
 		}
 	}
 
-	pub async fn handle_announce(&mut self, clients: &mut ClientHandler, announce: TichuState, plr: usize) {
+	pub async fn handle_announce(
+		&mut self,
+		clients: &mut ClientHandler,
+		announce: TichuState,
+		plr: usize,
+	) {
 		if let TichuState::None = announce {
 			return;
 		}
@@ -97,7 +98,12 @@ impl TichuRoom {
 		}
 	}
 
-	pub async fn handle_exchange(&mut self, clients: &mut ClientHandler, cards: Vec<Card>, plr: usize) {
+	pub async fn handle_exchange(
+		&mut self,
+		clients: &mut ClientHandler,
+		cards: Vec<Card>,
+		plr: usize,
+	) {
 		if self.game.can_exchange(cards.clone(), plr) {
 			self.game.exchange(cards, plr);
 			clients.ev_send_to_all(DidExchange(plr)).await;
@@ -108,7 +114,7 @@ impl TichuRoom {
 
 				for id in 0..num_players {
 					let recv: Vec<Card> = (1..num_players)
-						.map(|i| matrix[(id+i) % num_players][id])
+						.map(|i| matrix[(id + i) % num_players][id])
 						.collect();
 
 					clients.ev_send_to(id, ExchangeCards(recv)).await;
@@ -116,12 +122,19 @@ impl TichuRoom {
 
 				self.game.handle_exchange();
 				self.game.start_playing();
-				clients.ev_send_to_all(StartPlaying(self.game.current_player)).await;
+				clients
+					.ev_send_to_all(StartPlaying(self.game.current_player))
+					.await;
 			}
 		}
 	}
 
-	pub async fn handle_give_away(&mut self, clients: &mut ClientHandler, target: usize, plr: usize) {
+	pub async fn handle_give_away(
+		&mut self,
+		clients: &mut ClientHandler,
+		target: usize,
+		plr: usize,
+	) {
 		if !self.game.can_give_away(target, plr) {
 			return;
 		}
@@ -150,19 +163,23 @@ impl TichuRoom {
 		};
 
 		let cards = self.pile.choose_k(num);
-		self.pile.erase_set( &cards );
+		self.pile.erase_set(&cards);
 
 		self.game.players[plr].finished = true;
 		self.game.players[plr].cards.merge(&cards);
 		self.game.players[plr].num_cards += cards.len();
 
 		clients.ev_send_to(plr, AddCards(cards)).await;
-		clients.ev_send_to_all( DecideGrandTichu(announce, plr) ).await;
+		clients
+			.ev_send_to_all(DecideGrandTichu(announce, plr))
+			.await;
 
 		if self.game.should_start_exchange() {
 			if self.game.setting.skip_exchange {
 				self.game.start_playing();
-				clients.ev_send_to_all(StartPlaying(self.game.current_player)).await;
+				clients
+					.ev_send_to_all(StartPlaying(self.game.current_player))
+					.await;
 			} else {
 				self.game.start_exchange();
 				clients.ev_send_to_all(StartExchange).await;
@@ -190,7 +207,7 @@ impl ServerRoom<Event> for TichuRoom {
 	type Err = ();
 
 	async fn start(&mut self, clients: &mut ClientHandler) -> Result<(), Self::Err> {
-		self.game = Game::new( self.game.setting.clone() );
+		self.game = Game::new(self.game.setting.clone());
 		self.starts += 1;
 
 		clients.ev_send_to_all(NewGame).await;
@@ -206,15 +223,20 @@ impl ServerRoom<Event> for TichuRoom {
 			let ev = State(self.game.public_clone(), hand);
 			clients.ev_send_to(plr_id, ev).await;
 		} else {
-			clients.ev_send_to(plr_id, Setting(self.game.setting.clone())).await;
+			clients
+				.ev_send_to(plr_id, Setting(self.game.setting.clone()))
+				.await;
 		}
 	}
 
 	async fn on_leave(&mut self, _clients: &mut ClientHandler, _plr_id: usize) {}
 
-	async fn on_event(&mut self, clients: &mut ClientHandler, event: Event, plr_id: usize)
-				-> Result<(), Self::Err>
-	{
+	async fn on_event(
+		&mut self,
+		clients: &mut ClientHandler,
+		event: Event,
+		plr_id: usize,
+	) -> Result<(), Self::Err> {
 		match event {
 			Play(cards, _) => self.handle_trick(clients, cards, None, plr_id).await,
 			WishPlay(cards, wish, _) => self.handle_trick(clients, cards, Some(wish), plr_id).await,
@@ -224,13 +246,13 @@ impl ServerRoom<Event> for TichuRoom {
 			ExchangeCards(cards) => self.handle_exchange(clients, cards, plr_id).await,
 			DecideGrandTichu(announce, _) => self.handle_gt(clients, announce, plr_id).await,
 			GiveAway(target) => self.handle_give_away(clients, target, plr_id).await,
-			_ => {},
+			_ => {}
 		}
 
 		Ok(())
 	}
 
-	fn get_player_bound(&self) -> (usize,usize) {
+	fn get_player_bound(&self) -> (usize, usize) {
 		let n = self.game.setting.num_players;
 		(n, n)
 	}

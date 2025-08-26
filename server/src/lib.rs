@@ -1,14 +1,17 @@
 use serde::*;
-use std::{future::Future, pin::Pin, sync::Arc};
 use socket_message::{ClientData, SocketMessage};
-use tokio::sync::Mutex;
 use std::marker::Send;
+use std::{future::Future, pin::Pin, sync::Arc};
+use tokio::sync::Mutex;
 
 use tokio::net::UnixListener;
 
 use axum::{
-    extract::ws::{Message, WebSocket, WebSocketUpgrade}, http::{Response, StatusCode}, routing::{get, post}, Router,
+	extract::ws::{Message, WebSocket, WebSocketUpgrade},
 	extract::Path,
+	http::{Response, StatusCode},
+	routing::{get, post},
+	Router,
 };
 
 use tower_http::cors;
@@ -23,10 +26,13 @@ pub mod socket_message;
 
 use room::*;
 
-type RoomHandlerRef<S,E,G> = Arc<Mutex<RoomManager<S,E,G>>>;
+type RoomHandlerRef<S, E, G> = Arc<Mutex<RoomManager<S, E, G>>>;
 
-async fn handle_ws_connection<S,E,G>(mut ws: WebSocket, id: String, rooms: RoomHandlerRef<S,E,G>)
-where
+async fn handle_ws_connection<S, E, G>(
+	mut ws: WebSocket,
+	id: String,
+	rooms: RoomHandlerRef<S, E, G>,
+) where
 	S: Default + Clone + Send + 'static,
 	E: Clone + Send + Serialize + for<'de> Deserialize<'de>,
 	G: ServerRoom<E> + Send + TryFrom<S>,
@@ -36,20 +42,21 @@ where
 
 		let res = tokio::time::timeout(timeout, ws.recv()).await;
 
-		let packet = res.expect("Connection timeout!")
+		let packet = res
+			.expect("Connection timeout!")
 			.expect("Connection closed!")
 			.expect("Error on packet!");
 
 		match packet {
 			Message::Text(text) => {
-				let msg: SocketMessage<E> = serde_json::from_str(text.as_str())
-					.expect("Error on handshake!");
+				let msg: SocketMessage<E> =
+					serde_json::from_str(text.as_str()).expect("Error on handshake!");
 
 				match msg {
 					SocketMessage::Introduction(c) => c,
-					_ => return
+					_ => return,
 				}
-			},
+			}
 			_ => return,
 		}
 	};
@@ -61,7 +68,7 @@ where
 			None => {
 				error!("Room {} is not available!", id);
 				return;
-			},
+			}
 		}
 	};
 
@@ -71,26 +78,26 @@ where
 	handler.maintain_room(&id).await;
 }
 
-async fn handle_room<Setting,Event,Game>(
+async fn handle_room<Setting, Event, Game>(
 	ws: WebSocket,
 	client: ClientData,
-	room: RoomRef<Setting,Event,Game>)
-where
+	room: RoomRef<Setting, Event, Game>,
+) where
 	Setting: Default + Clone + Send + 'static,
 	Game: ServerRoom<Event> + Send + TryFrom<Setting>,
 	Event: Clone + Serialize + for<'de> Deserialize<'de>,
 {
-    let (ws_tx, mut ws_rx) = ws.split();
-    let (conn, client_id) = room
-        .lock()
-        .await
-        .register(client, ws_tx)
-        .await
-        .expect("The room was already full!");
+	let (ws_tx, mut ws_rx) = ws.split();
+	let (conn, client_id) = room
+		.lock()
+		.await
+		.register(client, ws_tx)
+		.await
+		.expect("The room was already full!");
 
-    debug!("Client[{}] connected!", client_id);
+	debug!("Client[{}] connected!", client_id);
 
-    while let Some(message) = ws_rx.next().await {
+	while let Some(message) = ws_rx.next().await {
 		let message = match message {
 			Ok(msg) => msg,
 			Err(e) => {
@@ -109,25 +116,21 @@ where
 					Err(_) => {
 						error!("Could not parse message!");
 						continue;
-					},
+					}
 				};
 				room.lock().await.handle_input(msg, client_id).await;
-			},
+			}
 			Message::Close(_) => {
 				debug!("Client[{}] connection closed!", client_id);
 				break;
-			},
-			_ => {},
+			}
+			_ => {}
 		}
-    }
+	}
 
-	room.lock()
-		.await
-		.unregister(client_id)
-		.await;
-    debug!("Client[{}] disconnected!", client_id);
+	room.lock().await.unregister(client_id).await;
+	debug!("Client[{}] disconnected!", client_id);
 }
-
 
 pub struct Server<'a> {
 	addr: &'a str,
@@ -152,13 +155,13 @@ impl<'a> Server<'a> {
 		self
 	}
 
-	pub async fn build<S,E,G>(self)
+	pub async fn build<S, E, G>(self)
 	where
 		S: Default + Clone + for<'de> Deserialize<'de> + Send + 'static,
 		E: Clone + Serialize + for<'de> Deserialize<'de> + Send + 'static,
 		G: ServerRoom<E> + Send + 'static + TryFrom<S>,
 	{
-		let mut rooms = RoomManager::<S,E,G>::new();
+		let mut rooms = RoomManager::<S, E, G>::new();
 
 		if cfg!(debug_assertions) {
 			rooms.create_room(RoomSetting {
@@ -167,78 +170,88 @@ impl<'a> Server<'a> {
 			});
 		}
 
-		let roomsref = Arc::from( Mutex::from(rooms) );
+		let roomsref = Arc::from(Mutex::from(rooms));
 
 		let post_binding = roomsref.clone();
 		let rooms_binding = roomsref.clone();
 		let ws_binding = roomsref.clone();
 
 		let mut app = Router::new()
-			.route("/rooms", post(|req: String| async move {
-				let mut rooms = post_binding.lock().await;
+			.route(
+				"/rooms",
+				post(|req: String| async move {
+					let mut rooms = post_binding.lock().await;
 
-				let setting: S = match serde_json::from_str(req.as_str()) {
-					Ok(msg) => msg,
-					Err(_) => return Response::builder()
-						.status(StatusCode::FORBIDDEN)
-						.body(String::from("Invalid game settings"))
-						.unwrap()
-				};
-				let res = rooms.create_room(RoomSetting {
-					game_setting: setting,
-					public: true,
-				});
+					let setting: S = match serde_json::from_str(req.as_str()) {
+						Ok(msg) => msg,
+						Err(_) => {
+							return Response::builder()
+								.status(StatusCode::FORBIDDEN)
+								.body(String::from("Invalid game settings"))
+								.unwrap()
+						}
+					};
+					let res = rooms.create_room(RoomSetting {
+						game_setting: setting,
+						public: true,
+					});
 
-				match res {
-					Some((id, _)) => Response::builder()
+					match res {
+						Some((id, _)) => {
+							Response::builder().status(StatusCode::OK).body(id).unwrap()
+						}
+						None => Response::builder()
+							.status(StatusCode::FORBIDDEN)
+							.body(String::from("Could not create room"))
+							.unwrap(),
+					}
+				}),
+			)
+			.route(
+				"/rooms",
+				get(|_: String| async move {
+					let index = {
+						let handler = rooms_binding.lock().await;
+						handler.index_rooms().await
+					};
+
+					let body = serde_json::to_string(&index).unwrap();
+
+					Response::builder()
 						.status(StatusCode::OK)
-						.body(id)
-						.unwrap(),
-					None =>	Response::builder()
-						.status(StatusCode::FORBIDDEN)
-						.body(String::from("Could not create room"))
+						.body(body)
 						.unwrap()
-				}
-			}))
-			.route("/rooms", get(|_: String| async move {
-				let index = {
-					let handler = rooms_binding.lock().await;
-					handler.index_rooms().await
-				};
-
-				let body = serde_json::to_string(&index).unwrap();
-
-				Response::builder()
-					.status(StatusCode::OK)
-					.body(body)
-					.unwrap()
-			}))
-			.route("/ws/{room_id}",
-				   get(|ws: WebSocketUpgrade, Path(room_id): Path<String>| async move {
-					   ws.on_upgrade(|ws: WebSocket| async move {
-						   handle_ws_connection(ws, room_id, ws_binding).await;
-					   })
-				   })
+				}),
+			)
+			.route(
+				"/ws/{room_id}",
+				get(
+					|ws: WebSocketUpgrade, Path(room_id): Path<String>| async move {
+						ws.on_upgrade(|ws: WebSocket| async move {
+							handle_ws_connection(ws, room_id, ws_binding).await;
+						})
+					},
+				),
 			);
 
-        // Allow CORS for debugging
-        if cfg!(debug_assertions) {
-            let cors = cors::CorsLayer::new()
-                .allow_origin(cors::Any)
-                .allow_methods(cors::Any)
-                .allow_headers(cors::Any);
+		// Allow CORS for debugging
+		if cfg!(debug_assertions) {
+			let cors = cors::CorsLayer::new()
+				.allow_origin(cors::Any)
+				.allow_methods(cors::Any)
+				.allow_headers(cors::Any);
 
-            app = app.layer(cors);
-        }
+			app = app.layer(cors);
+		}
 
 		// ===== Tasks =====
 
 		let rooms = roomsref.clone();
 		let maintenance = async move {
-			let duration = tokio::time::Duration::from_secs( 3600 );
+			let duration = tokio::time::Duration::from_secs(3600);
 
 			loop {
-				tokio::time::sleep( duration ).await;
+				tokio::time::sleep(duration).await;
 				debug!("Room maintenance...");
 				rooms.lock().await.maintain().await;
 			}
@@ -246,14 +259,13 @@ impl<'a> Server<'a> {
 
 		let server = async move {
 			let listener = tokio::net::TcpListener::bind(self.addr).await.unwrap();
-			axum::serve(listener, app).await
+			axum::serve(listener, app)
+				.await
 				.expect("Could not start server!");
 		};
 
-		let mut tasks: Vec< Pin<Box<dyn Future<Output = ()> + Send>> > = vec![
-			Box::pin(maintenance),
-			Box::pin(server),
-		];
+		let mut tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send>>> =
+			vec![Box::pin(maintenance), Box::pin(server)];
 
 		// = futures::future::join(maintenance, server);
 
@@ -267,7 +279,6 @@ impl<'a> Server<'a> {
 						UnixListener::bind(&path).expect("Could not bind to socket!")
 					}
 				};
-
 
 				while let Ok((socket, _addr)) = listener.accept().await {
 					let roomsref = rooms.clone();
@@ -288,7 +299,7 @@ impl<'a> Server<'a> {
 				}
 			};
 
-			tasks.push( Box::pin(unix_socket) );
+			tasks.push(Box::pin(unix_socket));
 		}
 
 		println!("Started server {} at {}", self.name, self.addr);

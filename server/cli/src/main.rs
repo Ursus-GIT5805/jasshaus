@@ -1,34 +1,32 @@
 use clap::{Parser, Subcommand};
 
 use std::error::Error;
-use std::os::unix::net::UnixStream;
 use std::io::prelude::*;
+use std::os::unix::net::UnixStream;
 use std::path::PathBuf;
 
 use game_server::room::*;
 
 #[derive(Subcommand)]
 enum Commands {
-	Close {
-		room_id: RoomID,
-	},
+	Close { room_id: RoomID },
 	List,
 }
 
 #[derive(Parser)]
 struct Cli {
-    #[command(subcommand)]
-    command: Commands,
+	#[command(subcommand)]
+	command: Commands,
 
 	#[arg(long, default_value_t = String::from("default"))]
 	server: String,
 }
 
-use ServerRequest::*;
 use ServerAnswer::*;
+use ServerRequest::*;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let cli = Cli::parse();
+	let cli = Cli::parse();
 
 	let request = match cli.command {
 		Commands::Close { room_id } => CloseRoom(room_id),
@@ -55,7 +53,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 		Successful => println!("Success!"),
 		Unsuccessful => eprintln!("Error happened while doing operation!"),
 		RoomList(rooms) => {
-			let infos: Vec<_> = rooms.iter()
+			let infos: Vec<_> = rooms
+				.iter()
 				.map(|room| {
 					let plrs = room.players.join(", ");
 					format!("{}: {}", room.id, plrs)
@@ -67,5 +66,5 @@ fn main() -> Result<(), Box<dyn Error>> {
 		}
 	}
 
-    Ok(())
+	Ok(())
 }

@@ -1,7 +1,4 @@
-use crate::{
-	card::*,
-	ruleset::*,
-};
+use crate::{card::*, ruleset::*};
 
 use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
@@ -17,9 +14,9 @@ use htmlform_macros::*;
 #[derive(HtmlForm)]
 pub enum StartingCondition {
 	#[Form("#name": "Zufällig")]
-    Random,
+	Random,
 	#[Form("#name": "Karte")]
-    Card(Card),
+	Card(Card),
 }
 
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
@@ -28,13 +25,13 @@ pub enum StartingCondition {
 #[derive(HtmlForm)]
 pub enum PointRule {
 	#[Form("#name": "Stich")]
-    Play,
+	Play,
 	#[Form("#name": "Weis")]
-    Show,
+	Show,
 	#[Form("#name": "Stöck")]
-    Marriage,
+	Marriage,
 	#[Form("#name": "Tischweis")]
-    TableShow,
+	TableShow,
 }
 
 /// Rules of how teams are chosen
@@ -45,13 +42,13 @@ pub enum PointRule {
 #[derive(HtmlForm)]
 pub enum TeamChoosing {
 	#[Form("#name": "Keine Teams")]
-    None, // There are no teams, everyone vs everyone
+	None, // There are no teams, everyone vs everyone
 	#[Form("#name": "Periodisch")]
 	#[Form("#desc": "Personen werden im gegenuhrzeigersinn bis n periodisch nummeriert.")]
 	Periodic(usize), // Creates n teams, where player_id=(pid) has team (pid%n)
-	// #[Form("#name": "Block")]
-	// #[Form("#desc": "Immer n spieler nacheinander werden gruppiert.")]
-    // Blocks(usize), // Creates blocks of n players each
+	                 // #[Form("#name": "Block")]
+	                 // #[Form("#desc": "Immer n spieler nacheinander werden gruppiert.")]
+	                 // Blocks(usize), // Creates blocks of n players each
 }
 
 #[derive(Tsify)]
@@ -136,8 +133,7 @@ pub struct Setting {
 	pub less_points_win: bool,
 	#[Form("#name": "Punkteregelung")]
 	#[Form("#desc": "Reihenfolge der Punkteverrechnung. Zuoberst wird zuerst verrechnet.")]
-    pub point_recv_order: Vec<PointRule>,
-
+	pub point_recv_order: Vec<PointRule>,
 
 	#[Form("#name": "Weise erlauben")]
 	pub allow_shows: bool,
@@ -150,12 +146,12 @@ pub struct Setting {
 	pub table_show_gives_negative: bool,
 
 	#[Form("#name": "Maximale Weispunkte")]
-    pub show_points_maximum: i32,
+	pub show_points_maximum: i32,
 
 	#[Form("#name": "Stöck erlauben")]
 	pub allow_marriage: bool,
 	#[Form("#name": "Stöckpunkte")]
-    pub marriage_points: i32,
+	pub marriage_points: i32,
 
 	#[Form("#name": "Ansage")]
 	pub announce: AnnounceRule,
@@ -174,23 +170,23 @@ pub struct Setting {
 	pub last_points: i32,
 
 	#[Form("#name": "Schieben erlauben")]
-    pub allow_pass: bool,
+	pub allow_pass: bool,
 	#[Form("#name": "Zurückschieben erlauben")]
-    pub allow_back_pass: bool,
+	pub allow_back_pass: bool,
 	#[Form("#name": "Zum gleichen Team schieben")]
 	#[Form("#desc": "Entscheiden, falls zum gleichen Team, oder zum nächsten Spieler geschoben wird.")]
-    pub pass_to_same_team: bool,
+	pub pass_to_same_team: bool,
 
 	#[Form("#name": "Beginnender Spieler")]
 	#[Form("#desc": "Entscheiden, wie der beginnende Spieler bestimmt wird.")]
-    pub startcondition: StartingCondition,
+	pub startcondition: StartingCondition,
 	#[Form("#name": "Diese Regel bei Revanche anwenden")]
-    pub apply_startcondition_on_revanche: bool,
+	pub apply_startcondition_on_revanche: bool,
 }
 
 #[wasm_bindgen]
 pub fn setting_schieber() -> Setting {
-    Setting {
+	Setting {
 		num_players: 4,
 		team_choosing: TeamChoosing::Periodic(2),
 		end_condition: EndCondition::Points(1000),
@@ -198,7 +194,12 @@ pub fn setting_schieber() -> Setting {
 		point_eval: PointEval::Add,
 
 		less_points_win: false,
-        point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
+		point_recv_order: vec![
+			PointRule::Marriage,
+			PointRule::TableShow,
+			PointRule::Show,
+			PointRule::Play,
+		],
 
 		allow_shows: true,
 		allow_table_shows: false,
@@ -209,24 +210,27 @@ pub fn setting_schieber() -> Setting {
 
 		announce: AnnounceRule::Choose,
 		playtype: {
-			let mut v = vec![PlaytypeSetting {
-				allow: true,
-				multiplier: 1,
-				passed_player_begins: true,
-			}; NUM_PLAYTYPES];
+			let mut v = vec![
+				PlaytypeSetting {
+					allow: true,
+					multiplier: 1,
+					passed_player_begins: true,
+				};
+				NUM_PLAYTYPES
+			];
 
 			for c in 0..NUM_COLORS {
 				if let Some(id) = Playtype::Color(c as u8).get_id() {
 					match v.get_mut(id) {
 						Some(c) => c.passed_player_begins = false,
-						None => {},
+						None => {}
 					}
 				}
 
 				if let Some(id) = Playtype::ColorDownup(c as u8).get_id() {
 					match v.get_mut(id) {
 						Some(c) => c.passed_player_begins = false,
-						None => {},
+						None => {}
 					}
 				}
 			}
@@ -235,72 +239,80 @@ pub fn setting_schieber() -> Setting {
 
 		allow_marriage: true,
 
-        match_points: 100,
+		match_points: 100,
 		last_points: 5,
-        marriage_points: 20,
-        show_points_maximum: 300,
+		marriage_points: 20,
+		show_points_maximum: 300,
 
 		allow_pass: true,
-        allow_back_pass: false,
-        pass_to_same_team: true,
+		allow_back_pass: false,
+		pass_to_same_team: true,
 
 		strict_undertrumpf: true,
 
-        startcondition: StartingCondition::Card(Card::new(0, 4)),
-        apply_startcondition_on_revanche: false,
-    }
+		startcondition: StartingCondition::Card(Card::new(0, 4)),
+		apply_startcondition_on_revanche: false,
+	}
 }
 
 #[wasm_bindgen]
 pub fn setting_molotow() -> Setting {
-    Setting {
+	Setting {
 		num_players: 4,
 		team_choosing: TeamChoosing::None,
 		end_condition: EndCondition::Rounds(12),
 		point_eval: PointEval::Add,
 
 		less_points_win: true,
-        point_recv_order: vec![PointRule::Marriage, PointRule::TableShow, PointRule::Show, PointRule::Play],
+		point_recv_order: vec![
+			PointRule::Marriage,
+			PointRule::TableShow,
+			PointRule::Show,
+			PointRule::Play,
+		],
 
-		allow_shows: false,
+		allow_shows: true,
 		allow_table_shows: true,
-		show_gives_negative: false,
+		show_gives_negative: true,
 		table_show_gives_negative: false,
 
 		allow_misere: false,
 
 		announce: AnnounceRule::Random,
 		playtype: {
-			let mut v = vec![PlaytypeSetting {
-				allow: false,
-				multiplier: 1,
-				passed_player_begins: false,
-			}; NUM_PLAYTYPES];
+			let mut v = vec![
+				PlaytypeSetting {
+					allow: false,
+					multiplier: 1,
+					passed_player_begins: false,
+				};
+				NUM_PLAYTYPES
+			];
 
 			let pt_id = Playtype::Molotow.get_id().unwrap_or(0);
 			match v.get_mut(pt_id) {
 				Some(c) => c.allow = true,
-				None => {},
+				None => {}
 			}
 			v
 		},
 
 		allow_marriage: true,
 
-        match_points: 100,
+		match_points: 100,
 		last_points: 5,
-        marriage_points: -20,
-        show_points_maximum: 300,
+		marriage_points: -20,
+		show_points_maximum: 300,
 
 		allow_pass: false,
-        allow_back_pass: false,
-        pass_to_same_team: true,
+		allow_back_pass: false,
+		pass_to_same_team: true,
 
 		strict_undertrumpf: false,
 
-        startcondition: StartingCondition::Random,
-        apply_startcondition_on_revanche: false,
-    }
+		startcondition: StartingCondition::Random,
+		apply_startcondition_on_revanche: false,
+	}
 }
 
 impl Setting {
@@ -312,33 +324,29 @@ impl Setting {
 	}
 
 	pub fn num_allowed(&self) -> usize {
-		self.playtype.iter()
-			.map(|p| p.allow as usize)
-			.sum()
+		self.playtype.iter().map(|p| p.allow as usize).sum()
 	}
 }
 
 impl Default for Setting {
-	fn default() -> Self { setting_schieber() }
+	fn default() -> Self {
+		setting_schieber()
+	}
 }
 
 #[wasm_bindgen]
 /// Return true if it's a legal setting else, not
 pub fn legal_setting(setting: &Setting) -> bool {
 	// Some conditions which are illegal
-	let donts = vec![
-		setting.num_allowed() == 0,
-		setting.num_players > NUM_CARDS,
-	];
+	let donts = vec![setting.num_allowed() == 0, setting.num_players > NUM_CARDS];
 
 	match setting.startcondition {
 		StartingCondition::Card(c) => {
-			if c.color as usize >= NUM_COLORS ||
-				c.number as usize >= NUM_NUMBERS {
+			if c.color as usize >= NUM_COLORS || c.number as usize >= NUM_NUMBERS {
 				return false;
 			}
 		}
-		_ => {},
+		_ => {}
 	}
 
 	!donts.into_iter().any(|x| x)

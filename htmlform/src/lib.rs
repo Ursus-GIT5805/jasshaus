@@ -18,12 +18,14 @@ macro_rules! html_generic {
 	};
 }
 
-html_generic!{"int" for isize, usize, i32, u32, i16, u16, i8, u8}
-html_generic!{"string" for String, &str}
-html_generic!{"bool" for bool}
+html_generic! {"int" for isize, usize, i32, u32, i16, u16, i8, u8}
+html_generic! {"string" for String, &str}
+html_generic! {"bool" for bool}
 
 impl<T> HtmlForm for Vec<T>
-where T: HtmlForm {
+where
+	T: HtmlForm,
+{
 	fn form_data() -> JsonValue {
 		object! {
 			"#list": true,

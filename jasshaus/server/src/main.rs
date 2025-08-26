@@ -1,9 +1,5 @@
-use jasshaus_game::{
-	Event,
-	server::*,
-	setting::*,
-};
 use game_server::*;
+use jasshaus_game::{server::*, setting::*, Event};
 
 #[tokio::main]
 async fn main() {

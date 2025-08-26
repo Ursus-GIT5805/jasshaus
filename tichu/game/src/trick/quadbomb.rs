@@ -2,9 +2,7 @@ use crate::card::*;
 
 use super::*;
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(tsify_next::Tsify)]
+#[derive(Clone, Eq, PartialEq, tsify_next::Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct QuadBomb {
@@ -26,15 +24,12 @@ impl Tricktype for QuadBomb {
 		if cards.len() != 4 || cards.iter().any(|c| c.number != num) {
 			vec![]
 		} else {
-			vec![
-				QuadBomb { number: num }
-			]
+			vec![QuadBomb { number: num }]
 		}
 	}
 
 	fn as_cardset(&self) -> Cardset {
-		let iter = (0..NUM_COLORS as u8)
-			.map(|col| Card::new(col, self.number));
+		let iter = (0..NUM_COLORS as u8).map(|col| Card::new(col, self.number));
 
 		Cardset::from(iter)
 	}

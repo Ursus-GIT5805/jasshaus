@@ -4,9 +4,7 @@ use super::*;
 
 use serde_big_array::BigArray;
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct PairSameNum<const A: usize = 3, const B: usize = 2> {
 	num_a: u8,
 	num_b: u8,
@@ -20,11 +18,11 @@ fn parse_color_strips<const A: usize, const B: usize>(
 	jokers: i32,
 	strip_a: (usize, Vec<u8>),
 	strip_b: (usize, Vec<u8>),
-) -> Option< PairSameNum<A,B> > {
+) -> Option<PairSameNum<A, B>> {
 	let j_a = A as i32 - strip_a.1.len() as i32;
 	let j_b = B as i32 - strip_b.1.len() as i32;
 
-	let needed = j_a+j_b;
+	let needed = j_a + j_b;
 
 	if std::cmp::min(j_a, j_b) < 0 {
 		None
@@ -43,14 +41,16 @@ fn parse_color_strips<const A: usize, const B: usize>(
 			col_b[i] = col;
 		}
 
-		Some(PairSameNum::<A,B> {
-			num_a, num_b,
-			col_a, col_b,
+		Some(PairSameNum::<A, B> {
+			num_a,
+			num_b,
+			col_a,
+			col_b,
 		})
 	}
 }
 
-impl<const A: usize, const B: usize> Tricktype for PairSameNum<A,B> {
+impl<const A: usize, const B: usize> Tricktype for PairSameNum<A, B> {
 	fn get_power(&self) -> Power {
 		self.num_a
 	}
@@ -60,14 +60,15 @@ impl<const A: usize, const B: usize> Tricktype for PairSameNum<A,B> {
 			return vec![];
 		}
 
-		if cardset.len() != A+B {
+		if cardset.len() != A + B {
 			return vec![];
 		}
 
 		let jokers = cardset.count_jokers() as i32;
 		let hist = cardset.get_number_histogram();
 
-		let num_to_cols: Vec<_> = hist.into_iter()
+		let num_to_cols: Vec<_> = hist
+			.into_iter()
 			.enumerate()
 			.filter(|(_, v)| !v.is_empty())
 			.collect();
@@ -76,29 +77,21 @@ impl<const A: usize, const B: usize> Tricktype for PairSameNum<A,B> {
 			return vec![];
 		}
 
-		let opt_ab: Option<Self> = parse_color_strips(
-			jokers,
-			num_to_cols[0].clone(),
-			num_to_cols[1].clone(),
-		);
+		let opt_ab: Option<Self> =
+			parse_color_strips(jokers, num_to_cols[0].clone(), num_to_cols[1].clone());
 
-		let opt_ba: Option<Self> = parse_color_strips(
-			jokers,
-			num_to_cols[1].clone(),
-			num_to_cols[0].clone(),
-		);
+		let opt_ba: Option<Self> =
+			parse_color_strips(jokers, num_to_cols[1].clone(), num_to_cols[0].clone());
 
-
-		vec![opt_ab, opt_ba].into_iter()
+		vec![opt_ab, opt_ba]
+			.into_iter()
 			.filter(|x| x.is_some())
 			.map(|x| x.unwrap())
 			.collect()
 	}
 
 	fn as_cardset(&self) -> Cardset {
-		let iter = self.get_cards_a()
-			.into_iter()
-			.chain(self.get_cards_b());
+		let iter = self.get_cards_a().into_iter().chain(self.get_cards_b());
 
 		Cardset::from(iter)
 	}
@@ -113,7 +106,8 @@ impl<const A: usize, const B: usize> Tricktype for PairSameNum<A,B> {
 			return false;
 		}
 
-		let iter = hist.iter()
+		let iter = hist
+			.iter()
 			.enumerate()
 			.filter(|(num, _)| *num != number as usize);
 
@@ -144,15 +138,17 @@ impl<const A: usize, const B: usize> Tricktype for PairSameNum<A,B> {
 	}
 }
 
-impl<const A: usize, const B: usize> PairSameNum<A,B> {
+impl<const A: usize, const B: usize> PairSameNum<A, B> {
 	pub fn get_cards_a(&self) -> Vec<Card> {
-		self.col_a.iter()
+		self.col_a
+			.iter()
 			.map(|&col| (col, self.num_a))
 			.map(parse_col_num_pair)
 			.collect()
 	}
 	pub fn get_cards_b(&self) -> Vec<Card> {
-		self.col_b.iter()
+		self.col_b
+			.iter()
 			.map(|&col| (col, self.num_b))
 			.map(parse_col_num_pair)
 			.collect()
@@ -161,21 +157,24 @@ impl<const A: usize, const B: usize> PairSameNum<A,B> {
 
 // ---
 
-#[derive(Clone)]
-#[derive(Eq, PartialEq)]
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 #[repr(transparent)]
 pub struct Fullhouse {
-	data: PairSameNum<3,2>,
+	data: PairSameNum<3, 2>,
 }
 
 impl Tricktype for Fullhouse {
-	fn get_power(&self) -> Power { self.data.get_power() }
-	fn as_cardset(&self) -> Cardset { self.data.as_cardset() }
+	fn get_power(&self) -> Power {
+		self.data.get_power()
+	}
+	fn as_cardset(&self) -> Cardset {
+		self.data.as_cardset()
+	}
 
 	fn parse(cardset: Cardset) -> Vec<Self> {
-		PairSameNum::<3,2>::parse(cardset).into_iter()
+		PairSameNum::<3, 2>::parse(cardset)
+			.into_iter()
 			.map(|data| Self { data })
 			.collect()
 	}
