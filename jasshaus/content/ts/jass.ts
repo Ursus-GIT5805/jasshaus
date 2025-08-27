@@ -1,4 +1,11 @@
-import { Card, get_card_id, get_playtype_id, Playtype, Show, show_to_cards } from "../pkg/jasshaus_game.js"
+import {
+	Card,
+	get_card_id,
+	get_playtype_id,
+	Playtype,
+	Show,
+	show_to_cards,
+} from "../pkg/jasshaus_game.js";
 
 export const PASS_IMG = "img/pass.svg";
 export const MISERE_IMG = "img/misere.svg";
@@ -12,7 +19,7 @@ export function set_card_skin(lang: Language) {
 
 /// Helper function to get the image-path of a Color Playtype
 export function trumpf_img_path(color: number, updown = true): string {
-	let pref = [ "down", "" ][+updown];
+	let pref = ["down", ""][+updown];
 	return `img/${card_lang}/${pref}trumpf${color}.svg`;
 }
 
@@ -33,7 +40,7 @@ export function get_card_ele(card: Card): JQuery<HTMLElement> {
 const PlayTypes = [
 	{
 		name: "Obenabe",
-		img: "img/updown.svg"
+		img: "img/updown.svg",
 	},
 	{
 		name: "Undeufe",
@@ -41,28 +48,28 @@ const PlayTypes = [
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Schaufeln";
+			if (card_lang === "fr") return "Trumpf Schaufeln";
 			return "Trumpf Schilten";
 		},
 		img: () => trumpf_img_path(0),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Kreuz";
+			if (card_lang === "fr") return "Trumpf Kreuz";
 			return "Trumpf Eichle";
 		},
 		img: () => trumpf_img_path(1),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Herz";
+			if (card_lang === "fr") return "Trumpf Herz";
 			return "Trumpf Rose";
 		},
 		img: () => trumpf_img_path(2),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Ecken";
+			if (card_lang === "fr") return "Trumpf Ecken";
 			return "Trumpf Schellen";
 		},
 		img: () => trumpf_img_path(3),
@@ -105,28 +112,28 @@ const PlayTypes = [
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Undenufe Schaufeln";
+			if (card_lang === "fr") return "Trumpf Undenufe Schaufeln";
 			return "Trumpf Undenufe Schilten";
 		},
 		img: () => trumpf_img_path(0, false),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Undenufe Kreuz";
+			if (card_lang === "fr") return "Trumpf Undenufe Kreuz";
 			return "Trumpf Undenufe Eichle";
 		},
 		img: () => trumpf_img_path(1, false),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Undenufe Herz";
+			if (card_lang === "fr") return "Trumpf Undenufe Herz";
 			return "Trumpf Undenufe Rose";
 		},
 		img: () => trumpf_img_path(2, false),
 	},
 	{
 		name: () => {
-			if(card_lang === "fr") return "Trumpf Undenufe Ecken";
+			if (card_lang === "fr") return "Trumpf Undenufe Ecken";
 			return "Trumpf Undenufe Schellen";
 		},
 		img: () => trumpf_img_path(3, false),
@@ -134,34 +141,29 @@ const PlayTypes = [
 ];
 
 /// Returns the name of the given playtype
-export function get_pt_name(
-	pt: Playtype | number,
-	misere: boolean = false,
-): undefined | string {
+export function get_pt_name(pt: Playtype | number, misere: boolean = false): undefined | string {
 	let id = pt;
-	if(typeof pt !== 'number') id = get_playtype_id(pt);;
-	if(typeof id !== 'number') return undefined;
+	if (typeof pt !== "number") id = get_playtype_id(pt);
+	if (typeof id !== "number") return undefined;
 
-	if(!(id in PlayTypes)) return undefined;
+	if (!(id in PlayTypes)) return undefined;
 
 	let pref = "";
-	if(misere) pref = "Misère: ";
+	if (misere) pref = "Misère: ";
 
 	let name = PlayTypes[id].name;
-	if(typeof name === 'function') return pref + name();
+	if (typeof name === "function") return pref + name();
 	return pref + name;
 }
 
 /// Returns the image-path of the given playtype
-export function get_pt_img_path(
-	pt: Playtype
-): undefined | string {
+export function get_pt_img_path(pt: Playtype): undefined | string {
 	let id = get_playtype_id(pt);
-	if(id === undefined) return undefined;
-	if(!(id in PlayTypes)) return undefined;
+	if (id === undefined) return undefined;
+	if (!(id in PlayTypes)) return undefined;
 
 	let src = PlayTypes[id].img;
-	if(typeof src === 'function') return src();
+	if (typeof src === "function") return src();
 	return src;
 }
 
@@ -173,7 +175,7 @@ export function show_to_ele(show: Show) {
 		.css("flex-wrap", "nowrap");
 
 	let cards = show_to_cards(show);
-	for(let card of cards) row.append( get_card_ele(card) );
+	for (let card of cards) row.append(get_card_ele(card));
 
 	return row;
 }

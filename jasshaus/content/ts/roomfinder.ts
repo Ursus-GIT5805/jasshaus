@@ -1,7 +1,7 @@
 export function construct_fetch_url(port: number) {
 	let local = window.location.protocol == "file:" || window.location.protocol == "http:";
 
-	if(local) return `http://${location.hostname}:${port}/rooms`;
+	if (local) return `http://${location.hostname}:${port}/rooms`;
 	return `${location.origin}/rooms`;
 }
 

@@ -1,13 +1,25 @@
 import { Hand } from "./hand.js";
-import { MISERE_IMG, PASS_IMG, get_card_ele, get_pt_img_path, get_pt_name, show_to_ele } from "./jass.js";
-import { get_num_playtypes, get_playtype_id, must_bid, extract_shows } from "../pkg/jasshaus_game.js";
-import { Playtype, playtype_from_id, Card, Cardset, Game,  Show } from "../pkg/jasshaus_game.js";
+import {
+	MISERE_IMG,
+	PASS_IMG,
+	get_card_ele,
+	get_pt_img_path,
+	get_pt_name,
+	show_to_ele,
+} from "./jass.js";
+import {
+	get_num_playtypes,
+	get_playtype_id,
+	must_bid,
+	extract_shows,
+} from "../pkg/jasshaus_game.js";
+import { Playtype, playtype_from_id, Card, Cardset, Game, Show } from "../pkg/jasshaus_game.js";
 import { CirclePlayer } from "./players.js";
 import { objEquals } from "./utility.js";
 import { PlayerID } from "./wshandler.js";
 import { Carpet } from "./carpet.js";
 
-const announceWindow = $('#announceWindow');
+const announceWindow = $("#announceWindow");
 const roundSummary = $("#roundSummary");
 
 const I32_MIN = -2147483648;
@@ -20,14 +32,14 @@ function playtype_button(pt: Playtype, mult: number): JQuery<HTMLElement> {
 	let src = get_pt_img_path(pt) || "";
 
 	let text = "";
-	if(name) text = name;
-	if(mult != 1) text += ` (${mult})`;
+	if (name) text = name;
+	if (mult != 1) text += ` (${mult})`;
 
 	let imgsrc = `pt${id}`;
 
-	let ele = $('<div>')
-		.append( $('<img>').attr('src', src).attr("imgsrc", imgsrc) )
-		.append( $("<a>").text(text).attr("text", imgsrc) );
+	let ele = $("<div>")
+		.append($("<img>").attr("src", src).attr("imgsrc", imgsrc))
+		.append($("<a>").text(text).attr("text", imgsrc));
 
 	return ele;
 }
@@ -37,7 +49,7 @@ export class UI {
 
 	game: Game;
 	players: CirclePlayer = new CirclePlayer();
-	player_names = new Map<PlayerID, string>;
+	player_names = new Map<PlayerID, string>();
 
 	lock_updates: boolean = false;
 
@@ -47,23 +59,15 @@ export class UI {
 
 	shown = new Set<string>();
 
-	constructor(
-		onplay: (card: Card) => boolean,
-		game: Game
-	) {
+	constructor(onplay: (card: Card) => boolean, game: Game) {
 		this.game = game;
 
-		this.hand = new Hand<Card>(
-			$("#cards"),
-			get_card_ele,
-			onplay,
-		);
+		this.hand = new Hand<Card>($("#cards"), get_card_ele, onplay);
 		this.hand.indicate_new = false;
 
-
 		this.carpet.setDropAction((card) => {
-			if(this.hand.selecting) return;
-			if(onplay(card)) this.hand.erase(card);
+			if (this.hand.selecting) return;
+			if (onplay(card)) this.hand.erase(card);
 		});
 	}
 
@@ -81,7 +85,6 @@ export class UI {
 		this.setupSummary();
 	}
 
-
 	setupAnnounce(
 		announceCallback: (pt: Playtype, misere: boolean) => void,
 		passCallback: () => void,
@@ -90,12 +93,12 @@ export class UI {
 		let cpts = announceWindow.find("#announcePTCol").html("");
 
 		// Display Playtypes
-		for(let id = 0 ; id < get_num_playtypes() ; id++) {
+		for (let id = 0; id < get_num_playtypes(); id++) {
 			let setting = this.game.setting.playtype[id];
-			if(!setting.allow) continue;
+			if (!setting.allow) continue;
 
 			let pt = playtype_from_id(id);
-			if(pt === undefined) continue;
+			if (pt === undefined) continue;
 
 			let mult = setting.multiplier;
 
@@ -103,31 +106,31 @@ export class UI {
 			but.click(() => announceCallback(pt, announceWindow.hasClass("Misere")));
 
 			// Append it
-			if(pt.hasOwnProperty("Color")) cpts.append(but);
+			if (pt.hasOwnProperty("Color")) cpts.append(but);
 			else pts.append(but);
 		}
 
 		/// Display
 		let passmisere = announceWindow.find("#passmisere").html("");
 
-		if(this.game.setting.allow_misere) {
+		if (this.game.setting.allow_misere) {
 			let click = () => announceWindow.toggleClass("Misere");
 
 			let but = $("<div>")
 				.click(click)
-				.append( $("<img>").attr("src", MISERE_IMG) )
-				.append( $("<a>").text("Misère") );
+				.append($("<img>").attr("src", MISERE_IMG))
+				.append($("<a>").text("Misère"));
 
 			passmisere.append(but);
 		}
 
 		// Display Pass Button
-		if(this.game.setting.allow_pass) {
+		if (this.game.setting.allow_pass) {
 			let but = $("<div>")
 				.click(passCallback)
 				.attr("id", "passButton")
-				.append( $("<img>").attr("src", PASS_IMG) )
-				.append( $("<a>").text("Schieben") );
+				.append($("<img>").attr("src", PASS_IMG))
+				.append($("<a>").text("Schieben"));
 
 			passmisere.append(but);
 		}
@@ -137,14 +140,14 @@ export class UI {
 		$("#closeSummary").click(() => {
 			$("#roundWindow").css("display", "none");
 
-			if(!this.game.should_end()) this.updateRound();
+			if (!this.game.should_end()) this.updateRound();
 			this.updatePoints();
 			this.updateRoundDetails();
 			this.updateHand();
 
-			if(this.game.should_end()) this.openEndwindow();
+			if (this.game.should_end()) this.openEndwindow();
 			else {
-				this.updateCurrent( this.game.current_player );
+				this.updateCurrent(this.game.current_player);
 				this.updateOnturn();
 			}
 		});
@@ -153,11 +156,11 @@ export class UI {
 	setupBiding(callback: (bid: number) => void) {
 		$("#bidButton").click(() => {
 			let val = Number($("#bidInput").val());
-			if(isNaN(val)) return;
+			if (isNaN(val)) return;
 
 			let team = this.game.players[this.player_id].team_id;
-			if(val < this.game.teams[team].target) return;
-			if(I32_MAX < val) return;
+			if (val < this.game.teams[team].target) return;
+			if (I32_MAX < val) return;
 
 			callback(val);
 
@@ -172,28 +175,31 @@ export class UI {
 		let showButton = $("#showButton");
 
 		showButton.click(() => {
-			if(this.hand.selecting) {
+			if (this.hand.selecting) {
 				let cards = this.hand.get_selected();
 				let shows = extract_shows(cards);
 
-				if(shows.length == 0) {
+				if (shows.length == 0) {
 					infoMessage("Dies ist kein Weis!");
 				} else {
-					let cardset = Cardset.from_list( this.hand.getCards() );
+					let cardset = Cardset.from_list(this.hand.getCards());
 
 					let show_gained = 0;
 					let incomplete_shows = 0;
 
-					for(let show of shows) {
+					for (let show of shows) {
 						let has_show = true;
 						let strshow = JSON.stringify(show);
 
-						try { cardset.has_show(show); }
-						catch(e) { has_show = false; }
+						try {
+							cardset.has_show(show);
+						} catch (e) {
+							has_show = false;
+						}
 
-						if(this.shown.has(strshow)) continue;
+						if (this.shown.has(strshow)) continue;
 
-						if( !has_show ) incomplete_shows += 1;
+						if (!has_show) incomplete_shows += 1;
 						else {
 							this.indicateShow(show);
 							callback(show);
@@ -201,17 +207,17 @@ export class UI {
 						}
 					}
 
-					if(show_gained == 0 && 0 < incomplete_shows) {
+					if (show_gained == 0 && 0 < incomplete_shows) {
 						infoMessage("Du kannst noch mehr weisen ;)");
 					}
 				}
 			}
 
-			if(this.hand.selectMode()) {
+			if (this.hand.selectMode()) {
 				this.hand.setLegality(() => true);
 				showButton.text("Fertig");
 			} else {
-				let cardset = Cardset.from_list( this.hand.getCards() );
+				let cardset = Cardset.from_list(this.hand.getCards());
 				this.hand.setLegality((card: Card) => this.game.is_legal_card(cardset, card));
 				showButton.text("Weisen");
 			}
@@ -223,35 +229,35 @@ export class UI {
 		let setting = this.game.setting;
 
 		let end = setting.end_condition;
-		if('Points' in end) $("#gameTitle").text("Punkte " + end.Points);
-		if('Rounds' in end) {
+		if ("Points" in end) $("#gameTitle").text("Punkte " + end.Points);
+		if ("Rounds" in end) {
 			$("#gameTitle")
-				.append( $("<span>").text("Runde ") )
-				.append( $("<span>").attr('text', 'game_rounds') )
-				.append( $("<span>").text("/" + end.Rounds) );
+				.append($("<span>").text("Runde "))
+				.append($("<span>").attr("text", "game_rounds"))
+				.append($("<span>").text("/" + end.Rounds));
 		}
 
 		// Create an entry for each team
 		$("#gameTeams").html("");
-		for(let team = 0 ; team < num_teams ; team++) {
+		for (let team = 0; team < num_teams; team++) {
 			let plrs = this.game.get_players_of_team(team);
 
 			let ele = $("<div>");
 
-			for(const [i, pid] of plrs.entries()) {
-				ele.append( $(`<span text="short_player${pid}">???</span>`) )
-				if(i+1 < plrs.length) ele.append( $("<span>").text(" + ") );
+			for (const [i, pid] of plrs.entries()) {
+				ele.append($(`<span text="short_player${pid}">???</span>`));
+				if (i + 1 < plrs.length) ele.append($("<span>").text(" + "));
 			}
 
-			ele.append( $('<span>').text(": ") );
-			ele.append( $('<span>0</span>').attr("text", `points_team${team}`) );
+			ele.append($("<span>").text(": "));
+			ele.append($("<span>0</span>").attr("text", `points_team${team}`));
 
 			let gainpoints = $(`<span> (<span text="gainpoints_team${team}"></span>)</span>`);
 			ele.append(gainpoints);
 
-			if( must_bid(setting) ) {
+			if (must_bid(setting)) {
 				let bid = $(`<span> [<span text="target_team${team}"></span>]</span>`);
-				ele.append( bid );
+				ele.append(bid);
 			}
 
 			$("#gameTeams").append(ele);
@@ -271,19 +277,17 @@ export class UI {
 	}
 
 	setShowMessage(shows: Show[], plr: PlayerID) {
-		let rows = $("<div>")
-			.css("display", "flex")
-			.css("flex-direction", "column");
+		let rows = $("<div>").css("display", "flex").css("flex-direction", "column");
 
 		// Display each show on a new row
-		for(let show of shows) rows.append( show_to_ele(show) );
+		for (let show of shows) rows.append(show_to_ele(show));
 
 		// Display with longer delay
 		this.players.setMessage(rows, plr, 15000);
 	}
 
 	gameMessage(msg: string | undefined, plr: PlayerID) {
-		if(msg === undefined) return;
+		if (msg === undefined) return;
 
 		this.players.setMessage(msg, plr);
 	}
@@ -291,15 +295,14 @@ export class UI {
 	startAnnounce(can_pass: boolean) {
 		announceWindow.removeClass("Misere");
 		announceWindow.find("#passButton").vis(can_pass);
-		announceWindow.css('display', 'block');
+		announceWindow.css("display", "block");
 	}
 	closeAnnounceWindow() {
-		announceWindow.css('display', 'none');
+		announceWindow.css("display", "none");
 	}
 
-
 	openSummary() {
-		$("#roundWindow").css('display', 'block');
+		$("#roundWindow").css("display", "block");
 	}
 
 	openEndwindow() {
@@ -311,15 +314,15 @@ export class UI {
 
 		container.html("");
 
-		for(let i = 0 ; i < teams.length ; ++i) {
+		for (let i = 0; i < teams.length; ++i) {
 			let team_id = teams[i];
 			let points = this.game.teams[team_id].points;
 
-			let place = i+1;
-			let plr_ids = Array.from( this.game.get_players_of_team(team_id) );
+			let place = i + 1;
+			let plr_ids = Array.from(this.game.get_players_of_team(team_id));
 
 			// Update the title
-			if(plr_ids.includes(this.player_id)) $("#endResult").text("Du bist " + place + ". Platz!");
+			if (plr_ids.includes(this.player_id)) $("#endResult").text("Du bist " + place + ". Platz!");
 
 			let name = plr_ids.map((pid) => this.player_names.get(pid) || "???").join(", ");
 			let title = place + ". " + name + " (" + points + ")";
@@ -347,15 +350,15 @@ export class UI {
 
 		let last_team = this.game.players[this.game.current_player].team_id;
 		let match_team = undefined;
-		if(this.game.teams[last_team].won.len() == this.game.cards_distributed()) match_team = last_team;
+		if (this.game.teams[last_team].won.len() == this.game.cards_distributed())
+			match_team = last_team;
 
-		if(this.game.ruleset.misere) {
+		if (this.game.ruleset.misere) {
 			last_team = (last_team + 1) % this.game.teams.length;
-			if(match_team !== undefined) match_team = last_team;
+			if (match_team !== undefined) match_team = last_team;
 		}
 
-
-		for(let team_id = 0 ; team_id < this.game.teams.length ; ++team_id) {
+		for (let team_id = 0; team_id < this.game.teams.length; ++team_id) {
 			let team = this.game.teams[team_id];
 
 			let is_last_team = team_id === last_team;
@@ -378,16 +381,16 @@ export class UI {
 </div>
 </div>
 `);
-			ele.find("#names").text( plrs.join(" & ") );
+			ele.find("#names").text(plrs.join(" & "));
 
 			let ele_gain = (title: string, points: number | string) => {
 				let title_a = $("<a>").css("float", "left").text(title);
-				let plus = ["", "+"][ +(typeof points === 'number' && points > 0) ];
-				let points_a = $("<a>").css("float", "right").text(plus + points);
+				let plus = ["", "+"][+(typeof points === "number" && points > 0)];
+				let points_a = $("<a>")
+					.css("float", "right")
+					.text(plus + points);
 
-				return $('<div>')
-					.append(title_a)
-					.append(points_a);
+				return $("<div>").append(title_a).append(points_a);
 			};
 
 			let evaltype = this.game.setting.point_eval;
@@ -395,48 +398,52 @@ export class UI {
 			let mods = ele.find("#mods");
 			let result = ele.find("#result");
 
-			if(evaltype === "Add") {
+			if (evaltype === "Add") {
 				let lastp = this.game.setting.last_points;
 				let matchp = this.game.setting.match_points;
 
 				let won_points = team.won_points;
-				if(is_last_team) won_points -= lastp;
-				if(has_match) won_points -= matchp;
+				if (is_last_team) won_points -= lastp;
+				if (has_match) won_points -= matchp;
 
-				if(won_points != 0) mods.append( ele_gain("Stich", won_points) );
-				if(team.show_points != 0) mods.append( ele_gain("Weis", team.show_points) );
-				if(team.marriage_points != 0) mods.append( ele_gain("Stöck", team.marriage_points) );
+				if (won_points != 0) mods.append(ele_gain("Stich", won_points));
+				if (team.show_points != 0) mods.append(ele_gain("Weis", team.show_points));
+				if (team.marriage_points != 0) mods.append(ele_gain("Stöck", team.marriage_points));
 
-				if(is_last_team && lastp != 0) mods.append( ele_gain("Letzter Stich", lastp) );
-				if(has_match && matchp != 0) mods.append( ele_gain("Match", matchp) );
+				if (is_last_team && lastp != 0) mods.append(ele_gain("Letzter Stich", lastp));
+				if (has_match && matchp != 0) mods.append(ele_gain("Match", matchp));
 
 				let after = team.points + team.won_points + team.show_points + team.marriage_points;
 				result.text(after);
-			} else if("Difference" in evaltype) {
+			} else if ("Difference" in evaltype) {
 				let data = evaltype.Difference;
 				let p = team.won_points;
 				let after = team.points;
 
-				if(!data.include_shows) {
+				if (!data.include_shows) {
 					after += team.show_points;
-					if(team.show_points > 0) mods.append( ele_gain("Weis", team.show_points) );
-				} else { p += team.show_points; }
+					if (team.show_points > 0) mods.append(ele_gain("Weis", team.show_points));
+				} else {
+					p += team.show_points;
+				}
 
-				if(!data.include_marriage) {
+				if (!data.include_marriage) {
 					after += team.marriage_points;
-					if(team.marriage_points > 0) mods.append( ele_gain("Stöck", team.marriage_points) );
-				} else { p += team.marriage_points; }
+					if (team.marriage_points > 0) mods.append(ele_gain("Stöck", team.marriage_points));
+				} else {
+					p += team.marriage_points;
+				}
 
-				let diff = Math.abs( p - team.target );
+				let diff = Math.abs(p - team.target);
 				after += diff;
 
 				let text = "|" + p + "-" + team.target + "|";
 				text += " = " + diff;
-				mods.append( ele_gain("Differenz", text) );
+				mods.append(ele_gain("Differenz", text));
 
 				let extra_win = diff == 0 && (team.won.len() != 0 || !data.needs_win);
-				if(extra_win) {
-					mods.append( ele_gain("Extrapunkte", data.zero_diff_points) );
+				if (extra_win) {
+					mods.append(ele_gain("Extrapunkte", data.zero_diff_points));
 					after += data.zero_diff_points;
 				}
 				result.text(after);
@@ -445,13 +452,13 @@ export class UI {
 			let cardlist = $("<div>").addClass("SummaryCards");
 
 			// TODO remove these magic numbers
-			for(let color = 0 ; color < 4 ; color++) {
+			for (let color = 0; color < 4; color++) {
 				let div = $("<div>");
-				for(let num = 0 ; num < 9 ; num++){
-					let card = { "color": color, "number": num } as Card;
+				for (let num = 0; num < 9; num++) {
+					let card = { color: color, number: num } as Card;
 					let ele = get_card_ele(card);
 
-					if(!team.won.contains(card)) ele.css("filter", "brightness(50%)");
+					if (!team.won.contains(card)) ele.css("filter", "brightness(50%)");
 					div.append(ele);
 				}
 				cardlist.append(div);
@@ -463,24 +470,24 @@ export class UI {
 	}
 
 	updateName(player_id: PlayerID, name?: string) {
-		if(name !== undefined) this.player_names.set(player_id, name);
+		if (name !== undefined) this.player_names.set(player_id, name);
 
 		let pname = this.player_names.get(player_id) || "";
 		let shortname = pname.substring(0, 3) || "???";
 
 		$(`*[text="player${player_id}"]`).text(pname);
- 		$(`*[text="short_player${player_id}"]`).text(shortname);
+		$(`*[text="short_player${player_id}"]`).text(shortname);
 	}
 
 	updateNames() {
-		for(let i = 0 ; i < this.game.players.length ; ++i) this.updateName(i);
+		for (let i = 0; i < this.game.players.length; ++i) this.updateName(i);
 	}
 
 	updateHand(hand?: Cardset) {
-		if(hand) this.newcards = hand;
-		if(this.lock_updates) return;
+		if (hand) this.newcards = hand;
+		if (this.lock_updates) return;
 
-		if(this.newcards) {
+		if (this.newcards) {
 			let cards = this.newcards.as_vec();
 			this.hand.setCards(cards);
 			this.newcards = undefined;
@@ -488,7 +495,7 @@ export class UI {
 	}
 
 	updatePoints() {
-		if(this.lock_updates) return;
+		if (this.lock_updates) return;
 
 		this.game.teams.map((team, idx) => {
 			let gain = team.won_points + team.show_points + team.marriage_points;
@@ -499,32 +506,32 @@ export class UI {
 			$(`*[text="gainpoints_team${idx}"]`).text(gain);
 
 			let target = team.target;
-			if(target == I32_MIN) target = 0;
+			if (target == I32_MIN) target = 0;
 
 			$(`*[text="target_team${idx}"]`).text(target);
 		});
 	}
 
 	updateOnturn(on_turn?: boolean) {
-		if(this.lock_updates) return;
+		if (this.lock_updates) return;
 
 		let is_on_turn = this.player_id == this.game.current_player && !this.game.should_end();
-		if(on_turn !== undefined) is_on_turn = on_turn;
+		if (on_turn !== undefined) is_on_turn = on_turn;
 
-		if(is_on_turn) {
-			if(!this.game.is_announced()) {
+		if (is_on_turn) {
+			if (!this.game.is_announced()) {
 				this.hand.setLegality(() => true);
-				this.startAnnounce( this.game.can_pass(this.player_id) );
+				this.startAnnounce(this.game.can_pass(this.player_id));
 				return;
 			}
 
-			if(this.game.is_biding()) {
+			if (this.game.is_biding()) {
 				this.hand.setLegality(() => true);
 
 				let team = this.game.players[this.player_id].team_id;
 				let target = this.game.teams[team].target;
 
-				if(target == I32_MIN) target = 0;
+				if (target == I32_MIN) target = 0;
 
 				this.openBidWindow(target);
 				return;
@@ -532,31 +539,31 @@ export class UI {
 
 			this.hand.selectMode(false);
 
-			let cardset = Cardset.from_list( this.hand.getCards() );
+			let cardset = Cardset.from_list(this.hand.getCards());
 			this.hand.setLegality((card: Card) => this.game.is_legal_card(cardset, card));
 
 			let can_show = this.game.get_turn() == 0 && this.game.setting.allow_shows;
-			if(can_show) $("#showButton").css('display', 'block');
-			else $("#showButton").css('display', 'none');
+			if (can_show) $("#showButton").css("display", "block");
+			else $("#showButton").css("display", "none");
 
 			$("#showqueue").html("");
-			$("#turnindicator").css('display', 'block');
+			$("#turnindicator").css("display", "block");
 		} else {
-			$("#turnindicator").css('display', 'none');
-			$("#showButton").css('display', 'none');
+			$("#turnindicator").css("display", "none");
+			$("#showButton").css("display", "none");
 			this.hand.setIllegal();
 		}
 	}
 
-	updateRoundDetails(){
-		if(this.lock_updates) return;
+	updateRoundDetails() {
+		if (this.lock_updates) return;
 
 		let ruleset = this.game.ruleset;
 		let announced = this.game.is_announced();
 		let passes = this.game.passed;
 
-		let pt_id = get_playtype_id( ruleset.playtype );
-		let rt_id = get_playtype_id( ruleset.active );
+		let pt_id = get_playtype_id(ruleset.playtype);
+		let rt_id = get_playtype_id(ruleset.active);
 
 		// display the main playtype
 		let title = get_pt_name(ruleset.playtype, ruleset.misere) || "";
@@ -565,14 +572,14 @@ export class UI {
 		$("#roundPT").vis(announced);
 
 		let src = get_pt_img_path(ruleset.playtype);
-		if(src) $("#roundPT").attr("src", src).vis(announced).attr("imgsrc", `pt${pt_id}`);
+		if (src) $("#roundPT").attr("src", src).vis(announced).attr("imgsrc", `pt${pt_id}`);
 
-		let hasRT = !objEquals(ruleset.playtype, ruleset.active)
+		let hasRT = !objEquals(ruleset.playtype, ruleset.active);
 		let rt = $("#roundRT").vis(hasRT && announced);
 
 		// Handle Ruletype (if it differs the playtype)
 		let RTsrc = get_pt_img_path(ruleset.active);
-		if(RTsrc && hasRT) rt.attr("src", RTsrc).attr("imgsrc", `pt${rt_id}`);
+		if (RTsrc && hasRT) rt.attr("src", RTsrc).attr("imgsrc", `pt${rt_id}`);
 
 		// Handle Misere/Pass
 		$("#roundMisere").vis(ruleset.misere && announced);
@@ -581,13 +588,13 @@ export class UI {
 	}
 
 	updateRound() {
-		if(this.lock_updates) return;
+		if (this.lock_updates) return;
 
-		$('*[text="game_rounds"]').text(this.game.round+1);
+		$('*[text="game_rounds"]').text(this.game.round + 1);
 	}
 
 	updateCurrent(player_id?: PlayerID) {
-		if(this.lock_updates) return;
+		if (this.lock_updates) return;
 		this.players.setCurrent(player_id);
 	}
 
@@ -596,8 +603,8 @@ export class UI {
 			return $(ele).css("display") != "none";
 		});
 
-		for(let ele of iter) {
-			if(ele) return true;
+		for (let ele of iter) {
+			if (ele) return true;
 		}
 		return false;
 	}

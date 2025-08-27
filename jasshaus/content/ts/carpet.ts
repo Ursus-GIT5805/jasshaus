@@ -29,46 +29,42 @@ export class Carpet<Card> {
 		this.container[0].ondragenter = (e: MouseEvent) => {
 			e.preventDefault();
 			this.container.addClass("DragOver");
-		}
+		};
 		this.container[0].ondragleave = (e: MouseEvent) => {
 			let rt = e.relatedTarget as HTMLElement;
-			if( this.container[0].contains( rt ) ) return;
+			if (this.container[0].contains(rt)) return;
 
 			this.container.removeClass("DragOver");
-		}
+		};
 
 		this.container[0].ondragover = (e) => e.preventDefault();
 		this.container[0].ondrop = (e) => {
 			this.container.removeClass("DragOver");
 
 			let data = e.dataTransfer?.getData("card");
-			if(data === undefined) return;
+			if (data === undefined) return;
 
 			let obj = JSON.parse(data) as Card;
 			callback(obj);
 		};
 	}
 
-	playCard(
-		card: Card,
-		player: PlayerID,
-		newbestcard: boolean,
-	) {
-		if(this.autoclean) {
-			if(this.autoclean <= this.container.children().length) this.clean();
+	playCard(card: Card, player: PlayerID, newbestcard: boolean) {
+		if (this.autoclean) {
+			if (this.autoclean <= this.container.children().length) this.clean();
 		}
 
 		let ele = this.content_handler(card);
 
-		let angle = this.rotate - (2*Math.PI / this.total_player * player);
+		let angle = this.rotate - ((2 * Math.PI) / this.total_player) * player;
 
 		let x = -50 + Math.cos(angle) * this.radiusX;
 		let y = -50 + Math.sin(angle) * this.radiusY;
 		let transform = `translateX(${x}%) translateY(${y}%)`;
 
-		ele.css('transform', transform);
-		if(newbestcard) {
-			if(this.bestcard) this.bestcard.removeClass("BestCard");
+		ele.css("transform", transform);
+		if (newbestcard) {
+			if (this.bestcard) this.bestcard.removeClass("BestCard");
 			this.bestcard = ele;
 			ele.addClass("BestCard");
 		}
@@ -77,11 +73,11 @@ export class Carpet<Card> {
 	}
 
 	rotate_by_players(shift: number) {
-		this.rotate = Math.PI / 2.0 + (2*Math.PI / this.total_player * shift);
+		this.rotate = Math.PI / 2.0 + ((2 * Math.PI) / this.total_player) * shift;
 	}
 
 	set_cards(cards: Card[], begin_player: PlayerID, bestcard?: Card) {
-		for(let i = 0 ; i < cards.length ; ++i) {
+		for (let i = 0; i < cards.length; ++i) {
 			let card = cards[i];
 			let best = objEquals(card, bestcard);
 			let plr = (begin_player + i) % this.total_player;
@@ -95,5 +91,7 @@ export class Carpet<Card> {
 		this.container.html("");
 		this.bestcard = undefined;
 	}
-	get_num_cards() { return this.container.children.length; }
+	get_num_cards() {
+		return this.container.children.length;
+	}
 }

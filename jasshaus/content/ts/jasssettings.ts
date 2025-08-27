@@ -1,4 +1,4 @@
-import { createForm, extractDefault } from "./formcreator.js"
+import { createForm, extractDefault } from "./formcreator.js";
 import { card_img_path, get_pt_img_path, get_pt_name, set_card_skin } from "./jass.js";
 import { card_from_id, playtype_from_id } from "../pkg/jasshaus_game.js";
 
@@ -8,9 +8,9 @@ function updateCardskin(res: any) {
 	set_card_skin(res);
 
 	// Update card images
-	$('*[imgsrc^=card]').map((_, ele) => {
+	$("*[imgsrc^=card]").map((_, ele) => {
 		let att = ele.getAttribute("imgsrc");
-		if(att === null) return;
+		if (att === null) return;
 
 		let card_id = Number(att.substring(4));
 		let card = card_from_id(card_id);
@@ -19,26 +19,26 @@ function updateCardskin(res: any) {
 	});
 
 	// Update playtype images
-	$('*[imgsrc^=pt]').map((_, ele) => {
+	$("*[imgsrc^=pt]").map((_, ele) => {
 		let att = ele.getAttribute("imgsrc");
-		if(att === null) return;
+		if (att === null) return;
 
 		let pt_id = Number(att.substring(2));
 		let pt = playtype_from_id(pt_id);
-		if(pt === undefined) return;
+		if (pt === undefined) return;
 
 		let path = get_pt_img_path(pt) || "";
-		$(ele).attr("src", path)
+		$(ele).attr("src", path);
 	});
 
 	// Update playtype names
-	$('*[text^=pt]').map((_, ele) => {
+	$("*[text^=pt]").map((_, ele) => {
 		let att = ele.getAttribute("text");
-		if(att === null) return;
+		if (att === null) return;
 
 		let pt_id = Number(att.substring(2));
 		let pt = playtype_from_id(pt_id);
-		if(pt === undefined) return;
+		if (pt === undefined) return;
 
 		let text = get_pt_name(pt) || "";
 		$(ele).text(text);
@@ -46,26 +46,26 @@ function updateCardskin(res: any) {
 }
 
 export var jass_settings: any = {
-	"card_skin": {
+	card_skin: {
 		"#name": "Kartentyp",
 		"#option": true,
 		"#default": "de",
 		"#onchange": updateCardskin,
 
-		"de": { "#name": "Deutsch", "#type": "none" },
-		"fr": { "#name": "Französisch", "#type": "none" },
+		de: { "#name": "Deutsch", "#type": "none" },
+		fr: { "#name": "Französisch", "#type": "none" },
 	},
-	"cardclicks": {
+	cardclicks: {
 		"#name": "Kartenklick",
 		"#desc": "Entscheiden, ob das Klicken einer Karte sie spielen soll.",
 		"#type": "bool",
 		"#default": true,
-	}
+	},
 };
 
 function get_stored_jass_settings(): any {
 	let item = localStorage.getItem(LOCALSTORAGE_KEY);
-	if(item) return JSON.parse(item);
+	if (item) return JSON.parse(item);
 	return undefined;
 }
 

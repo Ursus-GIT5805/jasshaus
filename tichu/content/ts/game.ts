@@ -1,7 +1,7 @@
 import { Cardset, Event, Game, setting_classic, Trick } from "../pkg/tichu_game.js";
 import { CommHandler, MessageType } from "./chat.js";
 import { ClientSetting } from "./clientsetting.js";
-import { UI } from "./interface.js"
+import { UI } from "./interface.js";
 import { get_card_ele, number_name } from "./tichu.js";
 import { VoteHandler } from "./voting.js";
 import { ClientData, ClientID, PlayerID, Wshandler } from "./wshandler.js";
@@ -10,7 +10,7 @@ export class Main {
 	client_id: ClientID = 0;
 	player_id: PlayerID = 0;
 
-	game = Game.new( setting_classic() );
+	game = Game.new(setting_classic());
 	setting: ClientSetting;
 
 	comm: CommHandler;
@@ -24,10 +24,7 @@ export class Main {
 		this.setting = setting;
 		this.ui = new UI(this.game);
 		this.comm = new CommHandler(setting);
-		this.vote = new VoteHandler(
-			$("body"),
-			(idx) => this.wshandler.vote(idx),
-		);
+		this.vote = new VoteHandler($("body"), (idx) => this.wshandler.vote(idx));
 
 		this.wshandler.oninit = (c, p, n) => this.oninit(c, p, n);
 
@@ -74,7 +71,7 @@ export class Main {
 	}
 
 	onchatmessage(msg: string, client_id: ClientID) {
-		if(this.comm.get(client_id)?.muted) return; // Ignore on mute
+		if (this.comm.get(client_id)?.muted) return; // Ignore on mute
 
 		this.ui.onchatmessage(msg, client_id);
 		this.comm.onchatmessage(msg, client_id);
@@ -84,28 +81,26 @@ export class Main {
 
 	setupUI() {
 		this.ui.setupInformation();
-		this.ui.setupExchangeWindow(
-			(cards) => this.ev_send({ "ExchangeCards": cards }),
-		);
+		this.ui.setupExchangeWindow((cards) => this.ev_send({ ExchangeCards: cards }));
 		this.ui.setupPlayPass(
 			(trick, wish) => {
-				if(wish) {
-					this.ev_send({ "WishPlay": [ trick, wish, this.player_id ] });
+				if (wish) {
+					this.ev_send({ WishPlay: [trick, wish, this.player_id] });
 				} else {
-					this.ev_send({ "Play": [trick, this.player_id] })
+					this.ev_send({ Play: [trick, this.player_id] });
 				}
 			},
-			() => this.ev_send({ "Pass": this.player_id }),
+			() => this.ev_send({ Pass: this.player_id }),
 		);
 		this.ui.setupTichuAnnounce(
-			() => this.ev_send({ "Announce": ["Tichu", this.player_id] }),
-			(gt) => this.ev_send({ "DecideGrandTichu": [gt, this.player_id] }),
+			() => this.ev_send({ Announce: ["Tichu", this.player_id] }),
+			(gt) => this.ev_send({ DecideGrandTichu: [gt, this.player_id] }),
 		);
 
 		this.ui.setupButtons();
 		this.ui.players.click_callback = (plr: number) => {
-			if(this.game.phase !== "GiveAway") return;
-			this.ev_send({ "GiveAway": plr });
+			if (this.game.phase !== "GiveAway") return;
+			this.ev_send({ GiveAway: plr });
 		};
 
 		this.comm.displayClientNames();
@@ -114,18 +109,18 @@ export class Main {
 	// ---
 
 	ev_send(data: any) {
-		this.wshandler.send({ "Event": data });
+		this.wshandler.send({ Event: data });
 	}
 
 	play_trick(trick: Trick, plr_id: PlayerID, wish?: number) {
 		this.ui.players.toggleClass("Best", this.game.last_player, false);
 		this.game.play_trick(trick, plr_id);
 
-		if(trick !== 'Dog') {
+		if (trick !== "Dog") {
 			this.ui.players.toggleClass("Best", plr_id, true);
 		}
 
-		if(wish !== undefined) {
+		if (wish !== undefined) {
 			this.game.wish(wish);
 
 			let name = number_name(wish);
@@ -133,16 +128,16 @@ export class Main {
 		}
 		this.ui.indicateWish(wish);
 
-		if(plr_id == this.player_id) {
+		if (plr_id == this.player_id) {
 			let cardset = Cardset.from_trick(trick);
 			let cards = cardset.as_vec();
 
 			this.ui.updateTichubutton(false);
-			for(let card of cards) this.ui.hand.erase(card);
+			for (let card of cards) this.ui.hand.erase(card);
 		}
 
 		let finished = this.game.players[plr_id].finished;
-		if(finished) {
+		if (finished) {
 			this.ui.updatePoints();
 
 			this.ui.indicateFinished(plr_id);
@@ -155,20 +150,20 @@ export class Main {
 		this.ui.updateHandsize(plr_id);
 		this.ui.clearPassInfo();
 
-		if(this.game.should_round_end()) this.end_round();
+		if (this.game.should_round_end()) this.end_round();
 	}
 
 	end_round() {
 		this.game.end_round();
 
-		for(let i = 0 ; i < this.game.players.length ; ++i) {
+		for (let i = 0; i < this.game.players.length; ++i) {
 			this.ui.indicateFinished(i, false);
 			this.ui.indicateTichu(i, false);
 			this.ui.indicateGrandTichu(i, false);
 		}
 
 		setTimeout(() => {
-			if(this.game.should_game_end()) {
+			if (this.game.should_game_end()) {
 				this.ui.hideButtons();
 				this.ui.openEndwindow();
 			}
@@ -188,19 +183,19 @@ export class Main {
 	// ---
 
 	onevent(data: Event) {
-		if(typeof data === 'string') {
-			if(data === 'StartExchange') {
+		if (typeof data === "string") {
+			if (data === "StartExchange") {
 				this.game.start_exchange();
 
-				for(let i = 0 ; i < this.game.players.length ; ++i) {
+				for (let i = 0; i < this.game.players.length; ++i) {
 					this.ui.indicateActive(i, false);
 					this.ui.indicateFinished(i, false);
 				}
 
 				this.ui.updatePhase("Exchange");
 				this.ui.startExchange();
-			} else if(data === 'NewGame') {
-				this.game = Game.new( this.game.setting );
+			} else if (data === "NewGame") {
+				this.game = Game.new(this.game.setting);
 				this.ui.game = this.game;
 				$(".Window").display(false);
 			}
@@ -208,13 +203,13 @@ export class Main {
 			return;
 		}
 
-		if("Play" in data) {
+		if ("Play" in data) {
 			let [trick, plr_id] = data.Play;
 			this.play_trick(trick, plr_id);
-		} else if("WishPlay" in data) {
+		} else if ("WishPlay" in data) {
 			let [trick, wish, plr_id] = data.WishPlay;
 			this.play_trick(trick, plr_id, wish);
-		} else if("Pass" in data) {
+		} else if ("Pass" in data) {
 			let plr = data.Pass;
 
 			this.game.pass();
@@ -223,65 +218,65 @@ export class Main {
 			this.ui.updateOnTurn();
 
 			// Best trick got taken away
-			if(this.game.get_best_trick() === undefined) {
+			if (this.game.get_best_trick() === undefined) {
 				this.ui.clearPassInfo();
 				this.ui.players.toggleClass("Best", this.game.last_player, false);
 			}
 
-			if(this.game.phase === 'GiveAway') this.ui.indicateGiveAwayPhase();
-			if(this.game.should_round_end()) this.end_round();
-		} else if("Announce" in data) {
+			if (this.game.phase === "GiveAway") this.ui.indicateGiveAwayPhase();
+			if (this.game.should_round_end()) this.end_round();
+		} else if ("Announce" in data) {
 			let [ann, plr_id] = data.Announce;
 			this.game.announce(ann, plr_id);
 
 			let text = "";
-			if(ann === "Tichu") {
+			if (ann === "Tichu") {
 				this.ui.indicateTichu(plr_id);
 				text = "Tichu";
 			}
-			if(ann === "GrandTichu") {
+			if (ann === "GrandTichu") {
 				this.ui.indicateGrandTichu(plr_id);
 				text = "Grand Tichu";
 			}
 
-			if(text) this.gameMessage(text, plr_id);
+			if (text) this.gameMessage(text, plr_id);
 
-			if(plr_id == this.player_id) this.ui.updateTichubutton(false);
+			if (plr_id == this.player_id) this.ui.updateTichubutton(false);
 			this.ui.updatePoints();
-		} else if("ExchangeCards" in data) {
+		} else if ("ExchangeCards" in data) {
 			let cards = data.ExchangeCards;
 
 			let num_players = this.game.players.length;
-			for(let i = 0 ; i < cards.length ; ++i) {
+			for (let i = 0; i < cards.length; ++i) {
 				let id = (this.player_id + i + 1) % num_players;
 
-				let ele = get_card_ele( cards[i] );
+				let ele = get_card_ele(cards[i]);
 				this.ui.players.setMessage(ele, id, 20000);
 			}
 
-			this.ui.add_cards( cards );
+			this.ui.add_cards(cards);
 			this.ui.stopExchange();
-		} else if("DidExchange" in data) {
+		} else if ("DidExchange" in data) {
 			let plr = data.DidExchange;
 
 			this.ui.indicateActive(plr, false);
-		} else if("GiveAway" in data){
+		} else if ("GiveAway" in data) {
 			let target = data.GiveAway;
 			this.game.give_away(target);
 
 			this.gameMessage("I received the dragon!", target);
 			this.ui.indicateGiveAwayPhase(false);
-		} else if("AddCards" in data) {
+		} else if ("AddCards" in data) {
 			let obj = data.AddCards as any;
-			let cardset = Cardset.from_object( obj );
-			if(cardset === undefined) return;
+			let cardset = Cardset.from_object(obj);
+			if (cardset === undefined) return;
 
 			this.ui.add_cards(cardset);
-		} else if("StartPlaying" in data) {
+		} else if ("StartPlaying" in data) {
 			this.game.start_playing();
 			this.game.current_player = data.StartPlaying;
 
-			for(let i = 0 ; i < this.game.players.length ; ++i) {
+			for (let i = 0; i < this.game.players.length; ++i) {
 				this.ui.indicateFinished(i, false);
 			}
 
@@ -291,22 +286,22 @@ export class Main {
 			this.ui.updateOnTurn();
 			this.ui.updateTichubutton(true);
 			this.ui.updateHandsize();
-		} else if("StartDistribution" in data) {
+		} else if ("StartDistribution" in data) {
 			let obj = data.StartDistribution as any;
-			let cardset = Cardset.from_object( obj );
-			if(cardset === undefined) return;
+			let cardset = Cardset.from_object(obj);
+			if (cardset === undefined) return;
 
 			this.game.start_new_round();
 
 			let num_players = this.game.players.length;
 			let num_cards = this.game.setting.num_cards_gt;
-			for(let i = 0 ; i < num_players ; ++i) {
+			for (let i = 0; i < num_players; ++i) {
 				this.game.set_num_cards(num_cards, i);
 				this.ui.indicateActive(i);
 			}
 
 			let delay = 0;
-			if(this.game.should_round_end()) delay = 2000;
+			if (this.game.should_round_end()) delay = 2000;
 
 			this.ui.hideButtons();
 			setTimeout(() => {
@@ -317,11 +312,11 @@ export class Main {
 				this.ui.clean_carpet();
 				this.ui.update_gt_buttons();
 			}, delay);
-		} else if("DecideGrandTichu" in data) {
+		} else if ("DecideGrandTichu" in data) {
 			let [announce, plr] = data.DecideGrandTichu;
 
-			if(announce) {
-				this.game.announce( "GrandTichu", plr );
+			if (announce) {
+				this.game.announce("GrandTichu", plr);
 				this.gameMessage("Grand Tichu", plr);
 				this.ui.indicateGrandTichu(plr);
 			}
@@ -329,26 +324,26 @@ export class Main {
 			let num_cards = this.game.cards_per_player();
 			this.game.set_num_cards(num_cards, plr);
 
-			if(this.player_id == plr) this.ui.update_gt_buttons();
+			if (this.player_id == plr) this.ui.update_gt_buttons();
 
 			this.ui.indicateFinished(plr);
 			this.ui.indicateActive(plr, false);
 			this.ui.updateHandsize(plr);
-		} else if("State" in data) {
+		} else if ("State" in data) {
 			// TODO retrieve cards from exchange
 			// TODO handle end window
 			let [state, obj] = data.State;
 
-			let parsed = Game.from_object( state );
-			if(parsed) this.game = parsed;
+			let parsed = Game.from_object(state);
+			if (parsed) this.game = parsed;
 			else alert("Could not load game state!");
 			this.ui.game = this.game;
 
 			let cardset = Cardset.from_object(obj);
-			if(cardset !== undefined) this.ui.add_cards(cardset);
+			if (cardset !== undefined) this.ui.add_cards(cardset);
 
 			let best_trick = this.game.get_best_trick();
-			if(best_trick !== undefined) this.ui.play_trick(best_trick);
+			if (best_trick !== undefined) this.ui.play_trick(best_trick);
 
 			this.setupUI();
 
@@ -358,17 +353,17 @@ export class Main {
 			this.ui.updateTichubutton();
 			this.ui.updateHandsize();
 
-			if(this.game.phase === "Exchange") {
+			if (this.game.phase === "Exchange") {
 				this.ui.updatePhase("Exchange");
 				this.ui.hand.selectMode(false);
 				this.ui.startExchange();
-			} else if(this.game.phase === "Distributing") {
+			} else if (this.game.phase === "Distributing") {
 				this.ui.updatePhase("Distributing");
 				this.ui.hand.selectMode(false);
 				this.ui.update_gt_buttons();
-			} else if(this.game.phase === "GiveAway") {
+			} else if (this.game.phase === "GiveAway") {
 				this.ui.indicateGiveAwayPhase();
-			} else if(this.game.should_game_end()){
+			} else if (this.game.should_game_end()) {
 				this.ui.openEndwindow();
 			} else {
 				this.ui.showInfos();
@@ -377,8 +372,8 @@ export class Main {
 			}
 
 			// TODO open windows depending on state
-		} else if("Setting" in data) {
-			this.game = Game.new( data.Setting );
+		} else if ("Setting" in data) {
+			this.game = Game.new(data.Setting);
 			this.ui.game = this.game;
 
 			this.setupUI();

@@ -1,4 +1,4 @@
-import { createForm, extractDefault } from "./formcreator.js"
+import { createForm, extractDefault } from "./formcreator.js";
 
 const LOCALSTORAGE_KEY = "GAME_CLIENTSETTINGS";
 
@@ -8,7 +8,7 @@ export function promptSettings(): ClientSetting {
 	let name = "";
 
 	let res = prompt("Gib einen Spitznamen ein! (Max. 16 Buchstaben)", "");
-    if(!res) name = `unn${Math.random() % 10000}`;
+	if (!res) name = `unn${Math.random() % 10000}`;
 	name = name.substring(0, 16);
 
 	return new ClientSetting(name);
@@ -25,18 +25,18 @@ export class ClientSetting {
 }
 
 export var ClientSettingForm_DE = {
-	"name": {
+	name: {
 		"#name": "Spitzname",
 		"#type": "string",
 		"#default": "unnamed",
 	},
-	"mute_players": {
+	mute_players: {
 		"#name": "Spieler stummschalten",
 		"#desc": "Ob alle Spieler standardmässig stummgeschalten werden.",
 		"#type": "bool",
 		"#default": false,
 	},
-	"allow_rtc": {
+	allow_rtc: {
 		"#name": "WebRTC aktivieren",
 		"#desc": "WebRTC wird benötigt, um den VoiceChat zu benutzen.",
 		"#type": "bool",
@@ -45,18 +45,18 @@ export var ClientSettingForm_DE = {
 };
 
 export var ClientSettingForm_EN = {
-	"name": {
+	name: {
 		"#name": "Nickname",
 		"#type": "string",
 		"#default": "unnamed",
 	},
-	"mute_players": {
+	mute_players: {
 		"#name": "Mute players",
 		"#desc": "Decide whether all players are muted by default.",
 		"#type": "bool",
 		"#default": false,
 	},
-	"allow_rtc": {
+	allow_rtc: {
 		"#name": "Activate WebRTC",
 		"#desc": "WebRTC is necessary for the voice chat.",
 		"#type": "bool",
@@ -66,17 +66,17 @@ export var ClientSettingForm_EN = {
 
 function get_stored_client_settings(): any {
 	let item = localStorage.getItem(LOCALSTORAGE_KEY);
-	if(item) return JSON.parse(item);
+	if (item) return JSON.parse(item);
 	return undefined;
 }
 
 function client_settings_formdata(lang: Lang = "en"): any {
-	if(lang === "en") return ClientSettingForm_EN;
-	if(lang === "de") return ClientSettingForm_DE;
+	if (lang === "en") return ClientSettingForm_EN;
+	if (lang === "de") return ClientSettingForm_DE;
 }
 
 export function get_client_settings(lang: Lang = "en"): any {
-	return get_stored_client_settings() || extractDefault( client_settings_formdata(lang) );
+	return get_stored_client_settings() || extractDefault(client_settings_formdata(lang));
 }
 
 export function save_client_setting(data: any) {

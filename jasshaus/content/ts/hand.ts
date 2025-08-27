@@ -23,25 +23,24 @@ export class Hand<Card extends object> {
 
 		// ---
 
-		this.container.on('dragenter', (e) => {
+		this.container.on("dragenter", (e) => {
 			e.preventDefault();
 			this.container.addClass("DragOver");
 		});
 		this.container[0].ondragleave = (e: MouseEvent) => {
 			let rt = e.relatedTarget as HTMLElement;
-			if( this.container[0].contains( rt ) ) return;
+			if (this.container[0].contains(rt)) return;
 
 			this.container.removeClass("DragOver");
 		};
 
-		this.container.on('dragover', (e) => e.preventDefault());
-		this.container.on('drop', () => this.container.removeClass("DragOver"));
+		this.container.on("dragover", (e) => e.preventDefault());
+		this.container.on("drop", () => this.container.removeClass("DragOver"));
 	}
 
 	/// Get all cards in the current hand
 	getCards(): Card[] {
-		let iter = this.container.children()
-			.map((_, child) => $(child).data(DATA) as Card);
+		let iter = this.container.children().map((_, child) => $(child).data(DATA) as Card);
 
 		return Array.from(iter);
 	}
@@ -54,37 +53,36 @@ export class Hand<Card extends object> {
 		let ele = this.content_handler(card);
 
 		ele.data(DATA, card);
-		ele.attr('id',  id);
-		ele.attr('draggable', 'true');
+		ele.attr("id", id);
+		ele.attr("draggable", "true");
 
 		let on_play = () => {
-			let can_play = !ele.hasClass("Illegal") &&
-				!this.selecting;
+			let can_play = !ele.hasClass("Illegal") && !this.selecting;
 
-			if(can_play && this.play_handler(card)) ele.remove();
+			if (can_play && this.play_handler(card)) ele.remove();
 		};
 
 		ele.click(() => {
-			if(this.selecting) {
+			if (this.selecting) {
 				ele.toggleClass("Selected");
 			} else {
-				if(ele.hasClass("Illegal")) return;
-				if(!this.allow_clicks) return;
+				if (ele.hasClass("Illegal")) return;
+				if (!this.allow_clicks) return;
 				on_play();
 			}
 		});
 
 		ele[0].onmouseenter = (e) => {
-			if(this.selecting) {
+			if (this.selecting) {
 				// If left button is down
-				if(e.buttons == 1) ele.toggleClass("Selected");
+				if (e.buttons == 1) ele.toggleClass("Selected");
 			}
-		}
+		};
 
 		const card_string = JSON.stringify(card);
 		ele[0].ondragstart = (e) => {
 			let can_drag = !ele.hasClass("Illegal");
-			if(!can_drag) {
+			if (!can_drag) {
 				e.preventDefault();
 				return;
 			}
@@ -92,10 +90,10 @@ export class Hand<Card extends object> {
 			e.dataTransfer?.setData("card", card_string);
 
 			const parent_id = ele.parent().attr("id");
-			if(parent_id) e.dataTransfer?.setData("parent", parent_id);
+			if (parent_id) e.dataTransfer?.setData("parent", parent_id);
 			e.dataTransfer?.setData("id", id);
 
-			if(e.dataTransfer) {
+			if (e.dataTransfer) {
 				let node = ele;
 
 				e.dataTransfer.effectAllowed = "move";
@@ -104,46 +102,44 @@ export class Hand<Card extends object> {
 		};
 
 		ele[0].ondragover = (e) => {
-			if(!this.allow_reshuffling) return;
+			if (!this.allow_reshuffling) return;
 			e.preventDefault();
 
 			let box = ele[0].getBoundingClientRect();
 			let on_left = e.offsetX < box.width / 2;
 
-			ele.toggleClass("InsertLeft", on_left)
-				.toggleClass("InsertRight", !on_left);
-		}
+			ele.toggleClass("InsertLeft", on_left).toggleClass("InsertRight", !on_left);
+		};
 
 		ele[0].ondragleave = (e) => {
 			ele.removeClass("InsertLeft").removeClass("InsertRight");
 		};
 
 		ele[0].ondrop = (e) => {
-			if(!this.allow_reshuffling) return;
+			if (!this.allow_reshuffling) return;
 
 			let id = e.dataTransfer?.getData("id");
 			let card = e.dataTransfer?.getData("card");
 
-			if(id === undefined || card === undefined) return;
+			if (id === undefined || card === undefined) return;
 
 			let dragged = $(`#${id}`);
 
 			let box = ele[0].getBoundingClientRect();
 			let on_left = e.offsetX < box.width / 2;
 
-			if(on_left) dragged.insertBefore(ele);
+			if (on_left) dragged.insertBefore(ele);
 			else dragged.insertAfter(ele);
 
 			dragged.removeClass("InsertLeft").removeClass("InsertRight");
 			ele.removeClass("InsertLeft").removeClass("InsertRight");
-		}
+		};
 
-
-		if(this.indicate_new) {
+		if (this.indicate_new) {
 			ele.addClass("NewCard");
-			ele.on('mouseleave', () => {
+			ele.on("mouseleave", () => {
 				ele.removeClass("NewCard");
-				ele.on('mouseleave', () => {});
+				ele.on("mouseleave", () => {});
 			});
 		}
 
@@ -153,17 +149,16 @@ export class Hand<Card extends object> {
 	/// Sort the card according to the given function
 	sort(fn: (card: Card) => number) {
 		let arr: [number, HTMLElement][] = [];
-		this.container.children()
-			.each((_, child) => {
-				let card = $(child).data(DATA) as Card;
-				let num = fn(card);
-				$(child).detach();
-				arr.push( [num, child] );
-			});
+		this.container.children().each((_, child) => {
+			let card = $(child).data(DATA) as Card;
+			let num = fn(card);
+			$(child).detach();
+			arr.push([num, child]);
+		});
 
 		arr.sort((a, b) => a[0] - b[0]);
 
-		for(let data of arr) {
+		for (let data of arr) {
 			let [_, ele] = data;
 			this.container.append(ele);
 		}
@@ -173,7 +168,8 @@ export class Hand<Card extends object> {
 	erase(card: Card) {
 		let card_string = JSON.stringify(card);
 
-		this.container.children()
+		this.container
+			.children()
 			.filter((_, child) => {
 				let cc = $(child).data(DATA) as Card;
 				return JSON.stringify(cc) == card_string;
@@ -186,37 +182,37 @@ export class Hand<Card extends object> {
 	}
 
 	/// Clear the hand
-	clear() { this.container.html(""); }
+	clear() {
+		this.container.html("");
+	}
 
 	/// Set the cards according to list
 	setCards(cards: Card[]) {
 		this.clear();
-		for(let card of cards) this.appendCard(card);
+		for (let card of cards) this.appendCard(card);
 	}
 
 	/// Determine for each card if it's legal
 	setLegality(handler: (card: Card) => boolean) {
-		this.container.children()
-			.each((_, child) => {
-				let cc = $(child).data(DATA) as Card;
-				if(handler(cc)) $(child).removeClass("Illegal");
-				else $(child).addClass("Illegal");
-			});
+		this.container.children().each((_, child) => {
+			let cc = $(child).data(DATA) as Card;
+			if (handler(cc)) $(child).removeClass("Illegal");
+			else $(child).addClass("Illegal");
+		});
 	}
 
 	/// Determine for each card if it should appear selected
 	setSelected(handler: (card: Card) => boolean) {
-		this.container.children()
-			.each((_, child) => {
-				let cc = $(child).data(DATA) as Card;
-				if(handler(cc)) $(child).addClass("Selected");
-				else $(child).removeClass("Selected");
-			});
+		this.container.children().each((_, child) => {
+			let cc = $(child).data(DATA) as Card;
+			if (handler(cc)) $(child).addClass("Selected");
+			else $(child).removeClass("Selected");
+		});
 	}
 
 	/// Toggle select mode. If a boolean is provided, set the mode instead.
 	selectMode(select?: boolean): boolean {
-		if(select !== undefined) this.selecting = select;
+		if (select !== undefined) this.selecting = select;
 		else this.selecting = !this.selecting;
 
 		this.setSelected(() => false);
@@ -225,7 +221,8 @@ export class Hand<Card extends object> {
 
 	/// Return the currently selected cards
 	get_selected(): Card[] {
-		let iter = this.container.children()
+		let iter = this.container
+			.children()
 			.filter((_, child) => $(child).hasClass("Selected"))
 			.map((_, child) => {
 				let cc = $(child).data(DATA) as Card;

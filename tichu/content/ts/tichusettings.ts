@@ -3,17 +3,17 @@ import { createForm, extractDefault } from "./formcreator.js";
 const LOCALSTORAGE_KEY = "TichuData";
 
 export var tichu_settings: any = {
-	"choose_best": {
+	choose_best: {
 		"#name": "Autoplay best trick",
 		"#desc": "Play always the strongest trick, if there are more options",
 		"#type": "bool",
 		"#default": true,
-	}
+	},
 };
 
 function get_stored_settings(): any {
 	let item = localStorage.getItem(LOCALSTORAGE_KEY);
-	if(item) return JSON.parse(item);
+	if (item) return JSON.parse(item);
 	return undefined;
 }
 

@@ -10,3 +10,4 @@ htmlform/**Cargo.lock
 **/content/js
 **/*.tsbuildinfo
 **/turn_credentials.json
+.#*

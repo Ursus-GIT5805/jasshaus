@@ -1,25 +1,35 @@
-import { Card, Cardset, Game, Event as GameEvent, Playtype, Show, setting_molotow } from "../pkg/jasshaus_game.js"
+import {
+	Card,
+	Cardset,
+	Game,
+	Event as GameEvent,
+	Playtype,
+	Show,
+	setting_molotow,
+} from "../pkg/jasshaus_game.js";
 import { ClientData, ClientID, PlayerID, Wshandler } from "./wshandler.js";
-import { UI } from "./interface.js"
+import { UI } from "./interface.js";
 import { get_pt_name } from "./jass.js";
 import { ClientSetting } from "./clientsetting.js";
 import { CommHandler } from "./chat.js";
 import { VoteHandler } from "./voting.js";
 
 declare global {
-	interface JQuery { vis(v: boolean): JQuery; }
+	interface JQuery {
+		vis(v: boolean): JQuery;
+	}
 }
 
-$.fn.vis = function(v: boolean) {
+$.fn.vis = function (v: boolean) {
 	return this.css("visibility", ["hidden", "visible"][+v]);
-}
+};
 
 // TODO Extract ALL shows of a list of cards
 
 export class Main {
 	wshandler: Wshandler;
 
-	game: Game = new Game( setting_molotow() );
+	game: Game = new Game(setting_molotow());
 
 	comm: CommHandler;
 	vote: VoteHandler;
@@ -36,7 +46,7 @@ export class Main {
 
 		this.wshandler = new Wshandler(addr, setting);
 		this.comm = new CommHandler(setting);
-		this.vote = new VoteHandler( $("body"), (idx) => this.wshandler.vote(idx) );
+		this.vote = new VoteHandler($("body"), (idx) => this.wshandler.vote(idx));
 
 		// Join Events
 		this.wshandler.oninit = (c, p, n) => this.oninit(c, p, n);
@@ -57,35 +67,32 @@ export class Main {
 
 		this.wshandler.onchatmessage = (msg, client_id) => {
 			let client = this.comm.get(client_id);
-			if(client?.muted) return;
+			if (client?.muted) return;
 
 			this.onchatmessage(msg, client_id);
 		};
 
-		this.ui = new UI(
-			(card: Card) => {
-				if(this.ui.is_window_open()) return false;
-				this.ev_send({"PlayCard": card});
-				return true;
-			},
-			this.game
-		);
+		this.ui = new UI((card: Card) => {
+			if (this.ui.is_window_open()) return false;
+			this.ev_send({ PlayCard: card });
+			return true;
+		}, this.game);
 	}
 
 	setupUI() {
 		this.ui.setupInterface(this.player_id, this.game);
 		this.ui.setupAnnounce(
-			(pt: Playtype, misere: boolean) => this.ev_send({ "Announce": [pt, misere] }),
+			(pt: Playtype, misere: boolean) => this.ev_send({ Announce: [pt, misere] }),
 			() => this.ev_send("Pass"),
 		);
-		this.ui.setupBiding((bid) => this.ev_send({ "Bid": bid }));
-		this.ui.setupShowButton((show) => this.ev_send({ "PlayShow" : show }));
+		this.ui.setupBiding((bid) => this.ev_send({ Bid: bid }));
+		this.ui.setupShowButton((show) => this.ev_send({ PlayShow: show }));
 		this.comm.displayClientNames();
 	}
 
 	ev_send(data: any) {
 		this.wshandler.send({
-			"Event": data,
+			Event: data,
 		});
 	}
 
@@ -113,7 +120,7 @@ export class Main {
 		this.vote.onclientleave(client_id);
 		this.comm.onclientleave(client_id);
 		this.ui.players.onclientleave(client_id);
-		if(player_id !== undefined) this.ui.updateName(player_id, "");
+		if (player_id !== undefined) this.ui.updateName(player_id, "");
 	}
 
 	onchatmessage(msg: string, client_id: ClientID) {
@@ -126,8 +133,8 @@ export class Main {
 	onevent(event: any) {
 		let data = event as GameEvent;
 
-		if(typeof(data) === 'string') {
-			if(data === 'Pass') {
+		if (typeof data === "string") {
+			if (data === "Pass") {
 				this.ui.closeAnnounceWindow();
 				this.ui.gameMessage("Ich schiebe!", this.game.current_player);
 				this.game.pass();
@@ -140,13 +147,13 @@ export class Main {
 			return;
 		}
 
-		if("PlayCard" in data) {
+		if ("PlayCard" in data) {
 			let card = data.PlayCard;
 
 			let curplr = this.game.current_player;
 			let is_best = this.game.would_card_beat(card);
 
-			let playedcards =  Cardset.from_list( this.game.get_playedcards() );
+			let playedcards = Cardset.from_list(this.game.get_playedcards());
 			playedcards.insert(card);
 
 			this.game.play_card(card);
@@ -154,24 +161,24 @@ export class Main {
 			this.ui.carpet.playCard(card, curplr, is_best);
 			this.ui.updateRoundDetails();
 
-			if( this.game.fresh_turn() ) {
-				if(this.game.setting.allow_table_shows) {
+			if (this.game.fresh_turn()) {
+				if (this.game.setting.allow_table_shows) {
 					let shows = playedcards.get_shows();
 					let sum = 0;
-					for(let show of shows) sum += this.game.ruleset.get_show_value(show);
-					if(sum != 0) this.ui.gameMessage(`Tischweis: ${sum}`, this.game.current_player);
+					for (let show of shows) sum += this.game.ruleset.get_show_value(show);
+					if (sum != 0) this.ui.gameMessage(`Tischweis: ${sum}`, this.game.current_player);
 				}
 			}
 
 			// Handle Marriage
 			let plr = this.game.player_with_played_marriage();
-			if(plr !== undefined && !this.said_marriage) {
+			if (plr !== undefined && !this.said_marriage) {
 				this.ui.gameMessage("Stöck", plr);
 				this.said_marriage = true;
 			}
 
 			// Check if round ended
-			if(this.game.should_end() || this.game.round_ended()) {
+			if (this.game.should_end() || this.game.round_ended()) {
 				this.ui.updateSummary();
 				this.ui.updatePoints();
 				this.ui.updateOnturn(false);
@@ -184,7 +191,7 @@ export class Main {
 
 				setTimeout(() => {
 					this.ui.lock_updates = false;
-					this.ui.carpet.clean()
+					this.ui.carpet.clean();
 					this.ui.openSummary();
 				}, 2000);
 			} else {
@@ -192,7 +199,7 @@ export class Main {
 				this.ui.updatePoints();
 				this.ui.updateOnturn();
 			}
-		} else if("Announce" in data) {
+		} else if ("Announce" in data) {
 			let [pt, misere] = data.Announce;
 
 			this.ui.gameMessage(get_pt_name(pt, misere), this.game.get_announcing_player());
@@ -206,35 +213,35 @@ export class Main {
 			this.ui.updateRoundDetails();
 			this.ui.updateCurrent(this.game.current_player);
 			this.ui.updateOnturn();
-		} else if("ShowPoints" in data) {
+		} else if ("ShowPoints" in data) {
 			let [points, plr_id] = data.ShowPoints;
 			this.ui.players.setMessage(`${points}`, plr_id);
-		} else if("ShowList" in data) {
+		} else if ("ShowList" in data) {
 			let showlist = data.ShowList;
 
-			for(let pid = 0 ; pid < this.game.players.length ; ++pid) {
+			for (let pid = 0; pid < this.game.players.length; ++pid) {
 				let shows = showlist[pid];
-				if(shows.length == 0) continue;
+				if (shows.length == 0) continue;
 
-				for(let show of shows) this.game.play_show(show, pid);
+				for (let show of shows) this.game.play_show(show, pid);
 				this.ui.setShowMessage(shows, pid);
 			}
 
 			this.ui.updatePoints();
-		} else if("HasMarriage" in data) {
+		} else if ("HasMarriage" in data) {
 			let plr_id = data.HasMarriage;
 			this.game.set_marriage(plr_id);
-		} else if("GameState" in data) {
+		} else if ("GameState" in data) {
 			let [state, handobj, shows]: [Game, object, Show[]] = data.GameState;
 			let hand = Cardset.from_object(handobj);
 
 			let game = Game.from_object(state);
-			if(game) this.game = game;
+			if (game) this.game = game;
 			else alert("Could not recover game!");
 			this.ui.game = this.game;
 
 			this.setupUI();
-			if(hand) this.ui.hand.setCards( hand.as_vec() );
+			if (hand) this.ui.hand.setCards(hand.as_vec());
 
 			this.ui.updateHand(hand);
 			this.ui.hand.setIllegal();
@@ -244,20 +251,24 @@ export class Main {
 			this.ui.updateOnturn();
 			this.ui.updateRoundDetails();
 
-			if(hand) this.game.players[ this.player_id ].hand = hand;
-			this.ui.carpet.set_cards( this.game.get_playedcards(), this.game.get_beginplayer(), this.game.bestcard );
+			if (hand) this.game.players[this.player_id].hand = hand;
+			this.ui.carpet.set_cards(
+				this.game.get_playedcards(),
+				this.game.get_beginplayer(),
+				this.game.bestcard,
+			);
 
-			if(this.game.get_turn() == 0) {
-				for(let show of shows) this.ui.indicateShow(show);
+			if (this.game.get_turn() == 0) {
+				for (let show of shows) this.ui.indicateShow(show);
 			}
-		} else if("GameSetting" in data) {
+		} else if ("GameSetting" in data) {
 			let setting = data.GameSetting;
 			this.game = new Game(setting);
 			this.ui.game = this.game;
 
 			this.setupUI();
 			this.ui.updateNames();
-		} else if("EverythingPlaytype" in data) {
+		} else if ("EverythingPlaytype" in data) {
 			let pt = data.EverythingPlaytype;
 
 			let rs = this.game.ruleset;
@@ -269,15 +280,15 @@ export class Main {
 
 			let msg = get_pt_name(pt, this.game.ruleset.misere);
 			this.ui.gameMessage(msg, this.game.current_player);
-		} else if("NewCards" in data) {
-			let cards = Cardset.from_object( data.NewCards );
+		} else if ("NewCards" in data) {
+			let cards = Cardset.from_object(data.NewCards);
 
 			this.ui.updateHand(cards);
 			this.ui.updateOnturn();
-		} else if("StartGame" in data) {
+		} else if ("StartGame" in data) {
 			let plr_id = data.StartGame as PlayerID;
 
-			this.game = new Game( this.game.setting );
+			this.game = new Game(this.game.setting);
 			this.ui.game = this.game;
 
 			this.game.announce_player = plr_id;
@@ -292,7 +303,7 @@ export class Main {
 			this.ui.updatePoints();
 			this.ui.updateRoundDetails();
 			this.ui.updateOnturn();
-		} else if("Bid" in data) {
+		} else if ("Bid" in data) {
 			this.game.bid(data.Bid);
 
 			this.ui.updatePoints();
