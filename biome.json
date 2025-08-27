@@ -1,0 +1,13 @@
+{
+	"files": {
+		"includes": ["**/*.ts"]
+	},
+	"javascript": {
+		"formatter": {
+			"enabled": true,
+			"indentStyle": "tab",
+			"lineWidth": 100,
+			"quoteStyle": "double"
+		}
+	}
+}

@@ -47,8 +47,17 @@ release:
 	# find ./build/content/js/ -maxdepth 1 -type f -exec uglifyjs {} -m -c -o {} \;
 
 fmt:
+	@biome format --fix
 	@find . -name Cargo.toml -not -path "*/target/*" | while read cargo_file; do \
 		project_dir=$$(dirname $$cargo_file); \
 		echo "Formatting in $$project_dir"; \
 		(cd $$project_dir && cargo fmt --all -- --config-path $(rustfmt)); \
+	done
+
+fmt-check:
+	@biome check
+	@find . -name Cargo.toml -not -path "*/target/*" | while read cargo_file; do \
+		project_dir=$$(dirname $$cargo_file); \
+		echo "Check formatting in $$project_dir"; \
+		(cd $$project_dir && cargo fmt --all --check -- --config-path $(rustfmt)); \
 	done
