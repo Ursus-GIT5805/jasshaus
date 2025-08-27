@@ -16,6 +16,7 @@ pub enum StartingCondition {
 	#[Form("#name": "Zufällig")]
 	Random,
 	#[Form("#name": "Karte")]
+    #[Form("#type": "Card")]
 	Card(Card),
 }
 

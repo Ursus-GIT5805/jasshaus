@@ -1,12 +1,13 @@
 import init, {
+    Card,
 	get_gamesettingform,
 	get_num_playtypes,
 	playtype_from_id,
 	setting_molotow,
 	setting_schieber,
 } from "../pkg/jasshaus_game.js";
-import { get_pt_name } from "./jass.js";
-import { createForm } from "./formcreator.js";
+import { get_card_ele, get_pt_name } from "./jass.js";
+import { add_custom_type, createForm } from "./formcreator.js";
 import { get_setting_form, save_jass_setting } from "./jasssettings.js";
 import { get_client_settings, getClientSettingForm, save_client_setting } from "./clientsetting.js";
 import { construct_fetch_url, enter_room, get_rooms, request_room } from "./roomfinder.js";
@@ -48,8 +49,50 @@ async function update_rooms() {
 	}
 }
 
+// Returns a Form where you can choose a card
+function card_form() {
+	let cur_col: number = 0;
+	let cur_num: number = 0;
+
+	let grid: any = [];
+
+	let set = (col: number, num: number) => {
+		grid[cur_col][cur_num].removeClass("Selected");
+		grid[col][num].addClass("Selected");
+		cur_col = col;
+		cur_num = num;
+	}
+
+	let ele = $("<div>").addClass("CardGrid");
+	for (let color = 0; color < 4; color++) {
+		let div = $("<div>");
+		grid.push([]);
+
+		for (let num = 0; num < 9; num++) {
+			let card = { color: color, number: num } as Card;
+			let ele = get_card_ele(card);
+
+			ele.click(() => set(color, num));
+
+			div.append(ele);
+			grid[color].push(ele);
+		}
+		ele.append(div);
+	}
+
+	return {
+		ele: ele,
+		get: () => {
+			return { color: cur_col, number: cur_num };
+		},
+		set: (val: any) => set(val.color, val.number),
+	};
+}
+
 export function createGameSettingForm(): object {
 	let formdata = JSON.parse(get_gamesettingform());
+
+	add_custom_type("Card", card_form);
 
 	formdata["#title"] = "Spieleinstellungen";
 	formdata["playtype"]["#type"]["#movable"] = false;

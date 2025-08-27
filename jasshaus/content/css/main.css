@@ -78,3 +78,26 @@ a { color: inherit; }
 .Button:hover {
     background-color: #3D3D3D;
 }
+
+
+.CardGrid {
+	display: flex;
+	flex-direction: column;
+
+	align-items: center;
+
+	padding: 1em;
+
+	div { display: flex; }
+
+	img {
+		filter: brightness(0.6);
+		height: 3em;
+	}
+	img.Selected {
+		filter: brightness(1.0);
+	}
+	img:hover {
+		filter: brightness(1.0);
+	}
+}
