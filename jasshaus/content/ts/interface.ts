@@ -62,6 +62,7 @@ export class UI {
 
 
 		this.carpet.setDropAction((card) => {
+			if(this.hand.selecting) return;
 			if(onplay(card)) this.hand.erase(card);
 		});
 	}
@@ -528,6 +529,8 @@ export class UI {
 				this.openBidWindow(target);
 				return;
 			}
+
+			this.hand.selectMode(false);
 
 			let cardset = Cardset.from_list( this.hand.getCards() );
 			this.hand.setLegality((card: Card) => this.game.is_legal_card(cardset, card));
