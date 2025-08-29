@@ -33,11 +33,12 @@ function playtype_button(pt: Playtype, mult: number): JQuery<HTMLElement> {
 
 	let text = "";
 	if (name) text = name;
-	if (mult != 1) text += ` (${mult})`;
+	if (mult != 1) text += ` (${mult}x)`;
 
 	let imgsrc = `pt${id}`;
 
 	let ele = $("<div>")
+		.attr("id", `pt${id}`)
 		.append($("<img>").attr("src", src).attr("imgsrc", imgsrc))
 		.append($("<a>").text(text).attr("text", imgsrc));
 
@@ -136,6 +137,18 @@ export class UI {
 		}
 	}
 
+	updateAnnounce() {
+		for(let id = 0 ; id < get_num_playtypes() ; ++id) {
+			let vis = "flex";
+			let pt = playtype_from_id(id);
+
+			if(pt === undefined) continue;
+			if(!this.game.legal_announcement(pt, false)) vis = "none";
+
+			announceWindow.find(`#pt${id}`).css("display", vis);
+		}
+	}
+
 	setupSummary() {
 		$("#closeSummary").click(() => {
 			$("#roundWindow").css("display", "none");
@@ -229,12 +242,16 @@ export class UI {
 		let setting = this.game.setting;
 
 		let end = setting.end_condition;
-		if ("Points" in end) $("#gameTitle").text("Punkte " + end.Points);
-		if ("Rounds" in end) {
-			$("#gameTitle")
-				.append($("<span>").text("Runde "))
-				.append($("<span>").attr("text", "game_rounds"))
-				.append($("<span>").text("/" + end.Rounds));
+		if(end === "None") {
+			$("#gameTitle").text("Jass");
+		} else {
+			if ("Points" in end) $("#gameTitle").text("Punkte " + end.Points);
+			if ("Rounds" in end) {
+				$("#gameTitle")
+					.append($("<span>").text("Runde "))
+					.append($("<span>").attr("text", "game_rounds"))
+					.append($("<span>").text("/" + end.Rounds));
+			}
 		}
 
 		// Create an entry for each team
@@ -293,6 +310,8 @@ export class UI {
 	}
 
 	startAnnounce(can_pass: boolean) {
+		this.updateAnnounce();
+
 		announceWindow.removeClass("Misere");
 		announceWindow.find("#passButton").vis(can_pass);
 		announceWindow.css("display", "block");

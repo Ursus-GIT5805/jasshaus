@@ -62,6 +62,8 @@ pub enum EndCondition {
 	Points(i32),
 	#[Form("#name": "Auf Runden")]
 	Rounds(i32),
+    #[Form("#name": "Kein")]
+    None,
 }
 
 #[derive(Tsify)]
@@ -97,6 +99,17 @@ pub enum AnnounceRule {
 	Choose,
 	#[Form("#name": "Zufällig")]
 	Random,
+    #[Form("#name": "Einmal Trumpf")]
+	#[Form("#desc": "Jeder Trumpf kann nur einmal angesagt werden. Kann nichts mehr angesagt werden, endet das Spiel.")]
+    Onetime {
+        #[Form("#name": "Einmal Slalom")]
+	    #[Form("#desc": "Entweder Slalom Obenabe oder Undeufe.")]
+        link_slalom: bool,
+        #[Form("#name": "Einmal Riesenslalom")]
+        link_big_slalom: bool,
+        #[Form("#name": "Einmal Guschti/Mary")]
+        link_guschtimary: bool,
+    },
 }
 
 #[derive(Tsify)]
@@ -128,6 +141,10 @@ pub struct Setting {
 	#[Form("#name": "Punkteauswertung")]
 	#[Form("#desc": "Wie werden die Punkte ausgewertet?")]
 	pub point_eval: PointEval,
+
+    #[Form("#name": "Punkte nur für Ansager")]
+	#[Form("#desc": "Werden die Punkte nur für die ansagende Partei ausgewertet?")]
+    pub points_only_announcer: bool,
 
 	#[Form("#name": "Wenig Punkte")]
 	#[Form("#desc": "Entscheiden, ob das Ziel ist, möglichst wenig Punkte zu erzielen.")]
@@ -193,6 +210,7 @@ pub fn setting_schieber() -> Setting {
 		end_condition: EndCondition::Points(1000),
 
 		point_eval: PointEval::Add,
+        points_only_announcer: false,
 
 		less_points_win: false,
 		point_recv_order: vec![
@@ -263,6 +281,7 @@ pub fn setting_molotow() -> Setting {
 		team_choosing: TeamChoosing::None,
 		end_condition: EndCondition::Rounds(12),
 		point_eval: PointEval::Add,
+        points_only_announcer: false,
 
 		less_points_win: true,
 		point_recv_order: vec![
@@ -310,6 +329,88 @@ pub fn setting_molotow() -> Setting {
 		pass_to_same_team: true,
 
 		strict_undertrumpf: false,
+
+		startcondition: StartingCondition::Random,
+		apply_startcondition_on_revanche: false,
+	}
+}
+
+#[wasm_bindgen]
+pub fn setting_coiffeur() -> Setting {
+	Setting {
+		num_players: 4,
+		team_choosing: TeamChoosing::Periodic(2),
+		end_condition: EndCondition::None,
+		point_eval: PointEval::Add,
+        points_only_announcer: true,
+
+		less_points_win: false,
+		point_recv_order: vec![
+			PointRule::Marriage,
+			PointRule::TableShow,
+			PointRule::Show,
+			PointRule::Play,
+		],
+
+		allow_shows: true,
+		allow_table_shows: false,
+		show_gives_negative: false,
+		table_show_gives_negative: false,
+
+		allow_misere: false,
+
+		announce: AnnounceRule::Onetime {
+            link_slalom: false,
+            link_big_slalom: false,
+            link_guschtimary: false,
+        },
+		playtype: {
+            // TODO Remove magic numbers
+            let pts = vec![
+                (Playtype::Updown, 5),
+                (Playtype::Downup, 6),
+                (Playtype::Color(0), 3),
+                (Playtype::Color(1), 1),
+                (Playtype::Color(2), 2),
+                (Playtype::Color(3), 4),
+            ];
+
+            let mut v = vec![
+				PlaytypeSetting {
+					allow: false,
+					multiplier: 1,
+					passed_player_begins: false,
+				};
+				NUM_PLAYTYPES
+			];
+
+            for (pt, mult) in pts {
+                let pt_id = pt.get_id().unwrap_or(0);
+
+			    match v.get_mut(pt_id) {
+				    Some(c) => {
+                        c.allow = true;
+                        c.multiplier = mult;
+                    },
+				    None => {}
+			    }
+            }
+
+			v
+		},
+
+		allow_marriage: true,
+
+		match_points: 100,
+		last_points: 5,
+		marriage_points: 20,
+		show_points_maximum: 300,
+
+		allow_pass: true,
+		allow_back_pass: false,
+		pass_to_same_team: false,
+
+		strict_undertrumpf: true,
 
 		startcondition: StartingCondition::Random,
 		apply_startcondition_on_revanche: false,

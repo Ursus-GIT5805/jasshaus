@@ -1,0 +1,8 @@
++ *
+- node_modules
+- ts
+- package.json
+- package-lock.json
+- tsconfig.json
+- tsdebug.json
+- tsdebug.tsbuildinfo

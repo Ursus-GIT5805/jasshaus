@@ -193,7 +193,9 @@ impl JassRoom {
 			}
 		}
 
-		if !self.game.should_end() && self.game.round_ended() {
+        let start_new_round = !self.game.should_end() && self.game.round_ended();
+
+		if start_new_round {
 			self.game.update_round_results();
 			self.start_round(clients).await;
 		}

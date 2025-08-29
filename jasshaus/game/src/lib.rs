@@ -58,6 +58,7 @@ pub struct Player {
 	pub shows: Vec<Show>,
 }
 
+
 impl Player {
 	pub fn get_best_show(&self, ruleset: &RuleSet) -> Option<&Show> {
 		let mut show = match self.shows.first() {
@@ -75,6 +76,41 @@ impl Player {
 	}
 }
 
+/// A simple bitset containing playtypes
+#[derive(Clone, Copy, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[wasm_bindgen]
+pub struct PlaytypeSet {
+    list: u32,
+}
+
+impl PlaytypeSet {
+    pub fn insert(&mut self, pt: Playtype) {
+        self.list |= (1 << pt.get_id().unwrap()) as u32;
+    }
+
+    pub fn has(&self, pt: Playtype) -> bool {
+        self.has_id(pt.get_id().unwrap())
+    }
+
+    pub fn has_id(&self, id: usize) -> bool {
+        (self.list >> id as u32) & 1 == 1
+    }
+
+    /// If one of pt1 or pt2 is in the set, insert both
+    pub fn link(&mut self, pt1: Playtype, pt2: Playtype) {
+        let has = self.has(pt1) || self.has(pt2);
+
+        if has {
+            self.insert(pt1);
+            self.insert(pt2);
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.list = 0;
+    }
+}
+
 pub type TeamID = usize;
 
 // #[tsify(into_wasm_abi, from_wasm_abi)]
@@ -87,6 +123,7 @@ pub struct Team {
 	pub marriage_points: i32,
 	pub target: i32, // Used for Difference
 	pub won: Cardset,
+    pub announced: PlaytypeSet,
 }
 
 #[wasm_bindgen]
@@ -238,7 +275,7 @@ impl Game {
 
 		// Rotate to the next player who must announce
 		self.round += 1;
-		self.announce_player = (self.announce_player + 1) % self.players.len();
+        self.update_announce_player();
 		self.current_player = self.announce_player;
 	}
 
@@ -296,6 +333,18 @@ impl Game {
 		hand.insert(queen);
 		hand.insert(king);
 	}
+
+    /// Determine and set the next announce_player
+    pub fn update_announce_player(&mut self) {
+        for i in 1..self.players.len() {
+            let nplr = (self.announce_player+i) % self.players.len();
+            let team = self.players[nplr].team_id;
+
+            if self.can_team_announce(team) {
+                break;
+            }
+        }
+    }
 
 	/// Returns the player who can still play the marriage
 	pub fn player_with_marriage(&self) -> Option<usize> {
@@ -653,19 +702,44 @@ impl Game {
 	}
 
 	pub fn pass(&mut self) {
-		self.passed += 1;
-		self.current_player = self.get_announcing_player();
+        loop {
+            self.passed += 1;
+		    self.current_player = self.get_announcing_player();
+
+            if self.can_team_announce(self.current_team()) {
+                break;
+            }
+        }
 	}
 
 	pub fn announce(&mut self, pt: Playtype, misere: bool) {
 		self.ruleset = RuleSet::new(pt, misere);
 		self.current_player = self.get_startplayer();
 
+        // Update which playtypes were announced
+        let team = self.current_team();
+        let set = &mut self.teams[team].announced;
+        set.insert(pt);
+
+        if let AnnounceRule::Onetime { link_slalom, link_big_slalom, link_guschtimary } = self.setting.announce {
+            if link_slalom {
+                set.link(Playtype::SlalomUpdown, Playtype::SlalomDownup);
+            }
+            if link_big_slalom {
+                set.link(Playtype::BigSlalomUpdown, Playtype::BigSlalomDownup);
+            }
+            if link_guschtimary {
+                set.link(Playtype::Guschti, Playtype::Mary);
+            }
+        }
+
+        // Update active playtype
 		if let Playtype::Molotow = pt {
 			self.ruleset.active = Playtype::Updown;
 		}
 		self.update_ruletype();
 
+        // Start biding if necessary
 		if self.setting.must_bid() {
 			let plr = self.get_startplayer();
 			self.last_bid_player = Some(plr);
@@ -742,15 +816,15 @@ impl Game {
 
 	/// Returns whether the given announcement is legal
 	pub fn legal_announcement(&self, pt: Playtype, misere: bool) -> bool {
-		if pt == Playtype::None {
+        if !self.setting.allow_misere && misere {
+			return false;
+        }
+        if pt == Playtype::None {
 			return false;
 		}
 
 		match self.setting.announce {
 			AnnounceRule::Choose => {
-				if !self.setting.allow_misere && misere {
-					return false;
-				}
 				if let Some(id) = pt.get_id() {
 					if !self.setting.playtype[id].allow {
 						return false;
@@ -758,6 +832,10 @@ impl Game {
 				}
 				true
 			}
+            AnnounceRule::Onetime { .. } => {
+                let team = self.players[self.current_player].team_id;
+                !self.teams[team].announced.has(pt)
+            },
 			_ => false,
 		}
 	}
@@ -796,11 +874,19 @@ impl Game {
 
 	/// Add points to a given team, automatically handling misere
 	fn add_points(&mut self, team_id: usize, points: i32) {
-		let real_team_id = if self.ruleset.misere {
+        let real_team_id = if self.ruleset.misere {
 			(team_id + 1) % self.teams.len()
 		} else {
 			team_id
 		};
+
+        if self.setting.points_only_announcer {
+            let announce_team = self.players[self.announce_player].team_id;
+
+            if announce_team != real_team_id {
+                return;
+            }
+        }
 
 		let team = &mut self.teams[real_team_id];
 
@@ -829,21 +915,56 @@ impl Game {
 
 	/// Returns true if the round should end now
 	pub fn should_end(&self) -> bool {
-		match self.setting.end_condition {
+		let end_condition = match self.setting.end_condition {
 			EndCondition::Points(maxp) => match self.setting.point_eval {
 				PointEval::Add => self.teams.iter().any(|team| maxp <= team.cur_points()),
 				_ => self.teams.iter().any(|team| maxp <= team.points),
 			},
 			EndCondition::Rounds(r) => r as usize <= self.round,
-		}
+            EndCondition::None => false,
+		};
+
+        if end_condition {
+            return true;
+        }
+
+        if self.round_ended() {
+            if !self.can_someone_announce() {
+                return true;
+            }
+        }
+
+        false
 	}
+
+    pub fn can_someone_announce(&self) -> bool {
+        let has_team = (0..self.teams.len()).into_iter()
+            .filter(|&id| self.can_team_announce(id))
+            .any(|_| true);
+
+        has_team
+    }
+
+    /// Return whether the given team can announce if it were on turn
+    pub fn can_team_announce(&self, team: TeamID) -> bool {
+        let mut iter = (0..NUM_PLAYTYPES).into_iter()
+            .filter(|&id| self.setting.playtype[id].allow);
+
+        let next = if let AnnounceRule::Onetime { .. } = self.setting.announce {
+            iter.filter(|&id| !self.teams[team].announced.has_id(id)).next()
+        } else {
+            iter.next()
+        };
+
+        next.is_some()
+    }
 
 	/// The beginplayer is the player who began the current turn
 	pub fn get_beginplayer(&self) -> usize {
 		(self.current_player + self.players.len() - self.num_played_cards()) % self.players.len()
 	}
 
-	// The startplayer is the player who started the turn the first turn
+	/// The startplayer is the player who started the turn the first turn
 	pub fn get_startplayer(&self) -> usize {
 		if let Some(id) = self.ruleset.playtype.get_id() {
 			if self.setting.playtype[id].passed_player_begins {
@@ -999,8 +1120,13 @@ impl Game {
 		self.played_cards.clone()
 	}
 
+    /// Returns the team of the currently active player
+    pub fn current_team(&self) -> TeamID {
+        self.players[ self.current_player ].team_id
+    }
+
 	/// Returns the currently best team
-	pub fn get_winner_team(&self) -> usize {
+	pub fn get_winner_team(&self) -> TeamID {
 		self.teams
 			.iter()
 			.enumerate()
