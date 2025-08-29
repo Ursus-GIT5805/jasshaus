@@ -239,18 +239,17 @@ pub fn setting_schieber() -> Setting {
 			];
 
 			for c in 0..NUM_COLORS {
-				if let Some(id) = Playtype::Color(c as u8).get_id() {
-					match v.get_mut(id) {
-						Some(c) => c.passed_player_begins = false,
-						None => {}
-					}
+				let id1 = Playtype::Color(c as u8).get_id();
+				let id2 = Playtype::ColorDownup(c as u8).get_id();
+
+				match v.get_mut(id1) {
+					Some(c) => c.passed_player_begins = false,
+					None => {}
 				}
 
-				if let Some(id) = Playtype::ColorDownup(c as u8).get_id() {
-					match v.get_mut(id) {
-						Some(c) => c.passed_player_begins = false,
-						None => {}
-					}
+				match v.get_mut(id2) {
+					Some(c) => c.passed_player_begins = false,
+					None => {}
 				}
 			}
 			v
@@ -309,7 +308,7 @@ pub fn setting_molotow() -> Setting {
 				NUM_PLAYTYPES
 			];
 
-			let pt_id = Playtype::Molotow.get_id().unwrap_or(0);
+			let pt_id = Playtype::Molotow.get_id();
 			match v.get_mut(pt_id) {
 				Some(c) => c.allow = true,
 				None => {}
@@ -385,7 +384,7 @@ pub fn setting_coiffeur() -> Setting {
 			];
 
             for (pt, mult) in pts {
-                let pt_id = pt.get_id().unwrap_or(0);
+                let pt_id = pt.get_id();
 
 			    match v.get_mut(pt_id) {
 				    Some(c) => {

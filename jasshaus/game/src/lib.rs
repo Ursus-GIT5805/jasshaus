@@ -85,11 +85,11 @@ pub struct PlaytypeSet {
 
 impl PlaytypeSet {
     pub fn insert(&mut self, pt: Playtype) {
-        self.list |= (1 << pt.get_id().unwrap()) as u32;
+        self.list |= (1 << pt.get_id()) as u32;
     }
 
     pub fn has(&self, pt: Playtype) -> bool {
-        self.has_id(pt.get_id().unwrap())
+        self.has_id(pt.get_id())
     }
 
     pub fn has_id(&self, id: usize) -> bool {
@@ -825,12 +825,8 @@ impl Game {
 
 		match self.setting.announce {
 			AnnounceRule::Choose => {
-				if let Some(id) = pt.get_id() {
-					if !self.setting.playtype[id].allow {
-						return false;
-					}
-				}
-				true
+				let id = pt.get_id();
+                self.setting.playtype[id].allow
 			}
             AnnounceRule::Onetime { .. } => {
                 let team = self.players[self.current_player].team_id;
@@ -890,11 +886,11 @@ impl Game {
 
 		let team = &mut self.teams[real_team_id];
 
-		let p = if let Some(id) = self.ruleset.playtype.get_id() {
-			points * self.setting.playtype[id].multiplier
-		} else {
-			points
-		};
+		let p = {
+            let id = self.ruleset.playtype.get_id();
+            points * self.setting.playtype[id].multiplier
+        };
+
 		team.won_points += p;
 	}
 
@@ -966,11 +962,11 @@ impl Game {
 
 	/// The startplayer is the player who started the turn the first turn
 	pub fn get_startplayer(&self) -> usize {
-		if let Some(id) = self.ruleset.playtype.get_id() {
-			if self.setting.playtype[id].passed_player_begins {
-				return self.get_announcing_player();
-			}
+		let id = self.ruleset.playtype.get_id();
+		if self.setting.playtype[id].passed_player_begins {
+			return self.get_announcing_player();
 		}
+
 		self.announce_player
 	}
 

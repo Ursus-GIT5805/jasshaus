@@ -25,7 +25,7 @@ pub enum Playtype {
 	ColorDownup(u8),
 
 	#[default]
-	None = 255,
+    None = 255
 }
 
 const fn determine_num_playtypes() -> usize {
@@ -70,17 +70,14 @@ impl Playtype {
 
 	/// Returns the ID of the current playtype.
 	/// They have to map from a number between 0..NUM_PLAYTYPES
-	pub const fn get_id(&self) -> Option<usize> {
-		let res = match self {
+	pub const fn get_id(&self) -> usize {
+		match self {
 			Playtype::Updown => 0,
 			Playtype::Downup => 1,
-			Playtype::Color(x) => match *x {
-				0 => 2,
-				1 => 3,
-				2 => 4,
-				3 => 5,
-				_ => return None,
-			},
+			Playtype::Color(0) => 2,
+			Playtype::Color(1) => 3,
+			Playtype::Color(2) => 4,
+			Playtype::Color(3) => 5,
 			Playtype::SlalomUpdown => 6,
 			Playtype::SlalomDownup => 7,
 			Playtype::Guschti => 8,
@@ -94,15 +91,14 @@ impl Playtype {
 			Playtype::ColorDownup(1) => 16,
 			Playtype::ColorDownup(2) => 17,
 			Playtype::ColorDownup(3) => 18,
-			_ => return None,
-		};
-		Some(res)
+            _ => panic!("Illegal playtype"),
+		}
 	}
 }
 
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-pub fn get_playtype_id(item: Playtype) -> Option<usize> {
+pub fn get_playtype_id(item: Playtype) -> usize {
 	item.get_id()
 }
 
@@ -243,7 +239,7 @@ impl RuleSet {
 				let values: [i32; 9] = [0, 0, 0, 14 * trumpf, 10, 2 + 18 * trumpf, 3, 4, 11];
 				values[card.number as usize]
 			}
-			_ => 0,
+            _ => 0,
 		}
 	}
 
