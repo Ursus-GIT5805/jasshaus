@@ -3,6 +3,7 @@ use crate::{card::*, ruleset::*};
 use serde::{Deserialize, Serialize};
 use tsify_next::Tsify;
 use wasm_bindgen::prelude::*;
+use mem_dbg::MemSize;
 
 use htmlform::*;
 use htmlform_macros::*;
@@ -12,6 +13,7 @@ use htmlform_macros::*;
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum StartingCondition {
 	#[Form("#name": "Zufällig")]
 	Random,
@@ -24,6 +26,7 @@ pub enum StartingCondition {
 #[wasm_bindgen]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum PointRule {
 	#[Form("#name": "Stich")]
 	Play,
@@ -35,12 +38,15 @@ pub enum PointRule {
 	TableShow,
 }
 
+pub const NUM_POINT_SOURCES: usize = 4;
+
 /// Rules of how teams are chosen
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum TeamChoosing {
 	#[Form("#name": "Keine Teams")]
 	None, // There are no teams, everyone vs everyone
@@ -57,6 +63,7 @@ pub enum TeamChoosing {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum EndCondition {
 	#[Form("#name": "Auf Punkte")]
 	Points(i32),
@@ -71,6 +78,7 @@ pub enum EndCondition {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum PointEval {
 	#[Form("#name": "Punkte Addieren")]
 	Add,
@@ -94,6 +102,18 @@ pub enum PointEval {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
+pub struct JokerRule {
+	#[Form("#name": "Mulitplikator")]
+    pub multiplier: i32,
+}
+
+#[derive(Tsify)]
+#[tsify(into_wasm_abi, from_wasm_abi)]
+#[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
+#[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub enum AnnounceRule {
 	#[Form("#name": "Manuelle Ansage")]
 	Choose,
@@ -103,12 +123,18 @@ pub enum AnnounceRule {
 	#[Form("#desc": "Jeder Trumpf kann nur einmal angesagt werden. Kann nichts mehr angesagt werden, endet das Spiel.")]
     Onetime {
         #[Form("#name": "Einmal Slalom")]
-	    #[Form("#desc": "Entweder Slalom Obenabe oder Undeufe.")]
+	    #[Form("#desc": "Entweder Slalom Obenabe oder Slalom Undeufe")]
         link_slalom: bool,
         #[Form("#name": "Einmal Riesenslalom")]
         link_big_slalom: bool,
         #[Form("#name": "Einmal Guschti/Mary")]
         link_guschtimary: bool,
+        #[Form("#name": "Misere berücksichtigen")]
+	    #[Form("#desc": "Soll eine Ansage auch den Misère davon verbieten?")]
+        link_misere: bool,
+
+        #[Form("#name": "Jokers")]
+        jokers: Vec<JokerRule>,
     },
 }
 
@@ -117,6 +143,7 @@ pub enum AnnounceRule {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub struct PlaytypeSetting {
 	#[Form("#name": "Erlauben")]
 	pub allow: bool,
@@ -131,6 +158,7 @@ pub struct PlaytypeSetting {
 #[derive(PartialEq, Eq, std::fmt::Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 #[derive(HtmlForm)]
+#[cfg_attr(debug_assertions, derive(MemSize))]
 pub struct Setting {
 	#[Form("#name": "Anzahl Spieler")]
 	pub num_players: usize,
@@ -362,6 +390,15 @@ pub fn setting_coiffeur() -> Setting {
             link_slalom: false,
             link_big_slalom: false,
             link_guschtimary: false,
+            link_misere: false,
+            jokers: vec![
+                JokerRule {
+                    multiplier: 7,
+                },
+                JokerRule {
+                    multiplier: 8,
+                },
+            ]
         },
 		playtype: {
             // TODO Remove magic numbers
@@ -436,21 +473,35 @@ impl Default for Setting {
 }
 
 #[wasm_bindgen]
-/// Return true if it's a legal setting else, not
+/// Return whether the given setting is legal
 pub fn legal_setting(setting: &Setting) -> bool {
 	// Some conditions which are illegal
-	let donts = vec![setting.num_allowed() == 0, setting.num_players > NUM_CARDS];
+	let donts = vec![
+        setting.num_allowed() == 0,
+        setting.num_players > NUM_CARDS,
+        setting.playtype.len() != NUM_PLAYTYPES,
+        setting.point_recv_order.len() != NUM_POINT_SOURCES,
+    ];
 
 	match setting.startcondition {
 		StartingCondition::Card(c) => {
-			if c.color as usize >= NUM_COLORS || c.number as usize >= NUM_NUMBERS {
+			if !c.is_legal() {
 				return false;
 			}
 		}
 		_ => {}
 	}
 
-	!donts.into_iter().any(|x| x)
+    match setting.announce {
+        AnnounceRule::Onetime { ref jokers, .. } => {
+            if 8 < jokers.len() {
+                return false;
+            }
+        },
+        _ => {},
+    }
+
+    !donts.into_iter().any(|x| x)
 }
 
 #[cfg(target_family = "wasm")]

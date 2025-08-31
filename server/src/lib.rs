@@ -267,8 +267,6 @@ impl<'a> Server<'a> {
 		let mut tasks: Vec<Pin<Box<dyn Future<Output = ()> + Send>>> =
 			vec![Box::pin(maintenance), Box::pin(server)];
 
-		// = futures::future::join(maintenance, server);
-
 		if let Some(path) = self.socket_file {
 			let rooms = roomsref.clone();
 			let unix_socket = async move {

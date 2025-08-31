@@ -453,7 +453,10 @@ export class UI {
 					p += team.marriage_points;
 				}
 
-				let diff = Math.abs(p - team.target);
+				let target = team.target;
+				if(target === undefined) target = 0;
+
+				let diff = Math.abs(p - target);
 				after += diff;
 
 				let text = "|" + p + "-" + team.target + "|";

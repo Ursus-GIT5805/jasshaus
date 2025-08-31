@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::*;
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Default)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[repr(u8)]
 #[non_exhaustive]
 pub enum Playtype {
@@ -111,6 +112,7 @@ pub fn playtype_from_id(item: usize) -> Option<Playtype> {
 // #[derive(Tsify)]
 // #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Default)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[wasm_bindgen]
 pub struct RuleSet {
 	pub playtype: Playtype,

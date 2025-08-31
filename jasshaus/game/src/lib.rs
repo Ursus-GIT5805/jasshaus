@@ -4,7 +4,9 @@ pub mod ruleset;
 pub mod server;
 pub mod setting;
 
+use bitvec::vec::BitVec;
 use card::*;
+use mem_dbg::SizeFlags;
 use ruleset::*;
 use setting::*;
 
@@ -21,6 +23,7 @@ pub enum Event {
 	PlayShow(Show),
 
 	Announce(Playtype, bool),
+    JokerAnnounce(Playtype, bool, usize),
 	Pass,
 
 	ShowPoints(i32, usize),
@@ -40,6 +43,7 @@ pub enum Event {
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 pub enum MarriageState {
 	#[default]
 	None,
@@ -50,6 +54,7 @@ pub enum MarriageState {
 pub type PlayerID = usize;
 
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[wasm_bindgen]
 pub struct Player {
 	pub team_id: TeamID,
@@ -77,37 +82,107 @@ impl Player {
 }
 
 /// A simple bitset containing playtypes
-#[derive(Clone, Copy, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+// #[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[wasm_bindgen]
 pub struct PlaytypeSet {
-    list: u32,
+    list: BitVec<u8>,
+    list_misere: BitVec<u8>,
+    list_jokers: BitVec<u8>,
 }
 
 impl PlaytypeSet {
-    pub fn insert(&mut self, pt: Playtype) {
-        self.list |= (1 << pt.get_id()) as u32;
+    pub fn new(num_jokers: usize) -> Self {
+        Self {
+            list: BitVec::with_capacity(NUM_PLAYTYPES),
+            list_misere: BitVec::with_capacity(NUM_PLAYTYPES),
+            list_jokers: BitVec::with_capacity(num_jokers),
+        }
     }
 
-    pub fn has(&self, pt: Playtype) -> bool {
-        self.has_id(pt.get_id())
+    pub fn set(&mut self, index: usize, val: bool) {
+        match self.list.get_mut(index) {
+            Some(mut bit) => *bit = val,
+            None => panic!("Index {} is out of range", index),
+        }
     }
 
-    pub fn has_id(&self, id: usize) -> bool {
-        (self.list >> id as u32) & 1 == 1
+    pub fn insert(&mut self, pt: Playtype, misere: bool) {
+        let index = pt.get_id();
+
+        if misere {
+            match self.list_misere.get_mut(index) {
+                Some(mut bit) => *bit = true,
+                None => panic!("Index {} is out of range", index),
+            }
+        } else {
+            match self.list.get_mut(index) {
+                Some(mut bit) => *bit = true,
+                None => panic!("Index {} is out of range", index),
+            }
+        }
+    }
+
+    pub fn insert_joker(&mut self, index: usize) {
+        match self.list_jokers.get_mut(index) {
+            Some(mut bit) => *bit = true,
+            None => panic!("Index {} is out of range", index),
+        }
+    }
+
+    pub fn has_joker(&self, index: usize) -> bool {
+        self.list_jokers[index]
+    }
+
+    pub fn has(&self, pt: Playtype, misere: bool) -> bool {
+        self.has_id(pt.get_id(), misere)
+    }
+
+    pub fn has_id(&self, id: usize, misere: bool) -> bool {
+        if misere {
+            self.list_misere[id]
+        } else {
+            self.list[id]
+        }
     }
 
     /// If one of pt1 or pt2 is in the set, insert both
-    pub fn link(&mut self, pt1: Playtype, pt2: Playtype) {
-        let has = self.has(pt1) || self.has(pt2);
+    pub fn link(&mut self, pt1: Playtype, pt2: Playtype, misere: bool) {
+        let has = self.has(pt1, misere) || self.has(pt2, misere);
 
         if has {
-            self.insert(pt1);
-            self.insert(pt2);
+            self.insert(pt1, misere);
+            self.insert(pt2, misere);
+        }
+    }
+
+    pub fn link_misere(&mut self, pt: Playtype) {
+        let has = self.has(pt, false) || self.has(pt, true);
+
+        if has {
+            self.insert(pt, false);
+            self.insert(pt, true);
         }
     }
 
     pub fn clear(&mut self) {
-        self.list = 0;
+        self.list.clear();
+        self.list_misere.clear();
+        self.list_jokers.clear();
+    }
+}
+
+impl mem_dbg::MemSize for PlaytypeSet {
+    fn mem_size(&self, _flags: SizeFlags) -> usize {
+        let mut total = 0;
+        total += self.list.capacity();
+        total += self.list_misere.capacity();
+        total += self.list_jokers.capacity();
+        total /= 8;
+
+        total += 3 * std::mem::size_of::<BitVec>();
+
+        total
     }
 }
 
@@ -115,15 +190,16 @@ pub type TeamID = usize;
 
 // #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Default, Serialize, Deserialize)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[wasm_bindgen]
 pub struct Team {
 	pub points: i32,
 	pub won_points: i32,
 	pub show_points: i32,
 	pub marriage_points: i32,
-	pub target: i32, // Used for Difference
+	pub target: Option<i32>, // Used for Difference
 	pub won: Cardset,
-    pub announced: PlaytypeSet,
+    announced: Option< Box<PlaytypeSet> >,
 }
 
 #[wasm_bindgen]
@@ -142,13 +218,14 @@ impl Team {
 		self.won_points = 0;
 		self.show_points = 0;
 		self.marriage_points = 0;
-		self.target = i32::MIN;
+		self.target = None;
 		self.won.clear();
 	}
 }
 
 #[derive(Clone, PartialEq, Eq, std::fmt::Debug, Serialize, Deserialize)]
 #[wasm_bindgen(getter_with_clone)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 pub struct Game {
 	// History
 	pub passed: usize,
@@ -165,6 +242,7 @@ pub struct Game {
 	pub players: Vec<Player>,
 	pub teams: Vec<Team>,
 
+    pub joker: Option<usize>,
 	pub ruleset: RuleSet,
 	pub announce_player: usize,
 	pub current_player: usize,
@@ -200,6 +278,24 @@ impl Game {
 			  // }
 		};
 
+        let teams = {
+            let mut teams = vec![Team::default(); num_teams];
+
+            match setting.announce {
+                AnnounceRule::Onetime { ref jokers, .. } => {
+                    let num_jokers = jokers.len();
+
+                    for team in teams.iter_mut() {
+                        let pset = PlaytypeSet::new(num_jokers);
+                        team.announced = Some(Box::from(pset));
+                    }
+                },
+                _ => {},
+            }
+
+            teams
+        };
+
 		Game {
 			round: 0,
 			cards_played: 0,
@@ -211,9 +307,11 @@ impl Game {
 			last_bid_player: None,
 
 			players: plrs,
-			teams: vec![Team::default(); num_teams],
+			teams: teams,
 
+            joker: None,
 			ruleset: RuleSet::default(),
+
 			announce_player: 0,
 			current_player: 0,
 
@@ -258,7 +356,8 @@ impl Game {
 						p
 					};
 
-					let diff = (points - team.target).abs();
+                    let target = team.target.unwrap();
+					let diff = (points - target).abs();
 
 					let has_win = team.won.len() > 0 || !needs_win;
 
@@ -712,26 +811,37 @@ impl Game {
         }
 	}
 
-	pub fn announce(&mut self, pt: Playtype, misere: bool) {
+    fn internal_announce(&mut self, pt: Playtype, misere: bool, joker: Option<usize>) {
 		self.ruleset = RuleSet::new(pt, misere);
 		self.current_player = self.get_startplayer();
 
         // Update which playtypes were announced
         let team = self.current_team();
-        let set = &mut self.teams[team].announced;
-        set.insert(pt);
 
-        if let AnnounceRule::Onetime { link_slalom, link_big_slalom, link_guschtimary } = self.setting.announce {
-            if link_slalom {
-                set.link(Playtype::SlalomUpdown, Playtype::SlalomDownup);
+        if let Some(set) = self.teams[team].announced.as_mut() {
+            match joker {
+                Some(index) => set.insert_joker(index),
+                None => set.insert(pt, misere),
             }
-            if link_big_slalom {
-                set.link(Playtype::BigSlalomUpdown, Playtype::BigSlalomDownup);
-            }
-            if link_guschtimary {
-                set.link(Playtype::Guschti, Playtype::Mary);
+
+            if let AnnounceRule::Onetime { link_slalom, link_big_slalom, link_guschtimary, link_misere, .. } = self.setting.announce {
+                if link_slalom {
+                    set.link(Playtype::SlalomUpdown, Playtype::SlalomDownup, misere);
+                }
+                if link_big_slalom {
+                    set.link(Playtype::BigSlalomUpdown, Playtype::BigSlalomDownup, misere);
+                }
+                if link_guschtimary {
+                    set.link(Playtype::Guschti, Playtype::Mary, misere);
+                }
+
+                if link_misere {
+                    set.link_misere(pt);
+                }
             }
         }
+
+        self.joker = joker;
 
         // Update active playtype
 		if let Playtype::Molotow = pt {
@@ -744,7 +854,15 @@ impl Game {
 			let plr = self.get_startplayer();
 			self.last_bid_player = Some(plr);
 		}
-	}
+    }
+
+	pub fn announce(&mut self, pt: Playtype, misere: bool) {
+        self.internal_announce(pt, misere, None);
+    }
+
+    pub fn joker_announce(&mut self, pt: Playtype, misere: bool, joker: usize) {
+        self.internal_announce(pt, misere, Some(joker));
+    }
 
 	fn get_next_bid_player(&self) -> usize {
 		let team = self.players[self.current_player].team_id;
@@ -796,12 +914,12 @@ impl Game {
 		}
 
 		let team = self.players[self.current_player].team_id;
-		let is_same = self.teams[team].target == bid;
+		let is_same = self.teams[team].target == Some(bid);
 		let next = self.get_next_bid_player();
 
 		if !is_same {
 			self.last_bid_player = Some(self.current_player);
-			self.teams[team].target = bid;
+			self.teams[team].target = Some(bid);
 			self.current_player = next;
 		}
 
@@ -815,7 +933,7 @@ impl Game {
 	}
 
 	/// Returns whether the given announcement is legal
-	pub fn legal_announcement(&self, pt: Playtype, misere: bool) -> bool {
+	pub fn legal_announcement(&self, pt: Playtype, misere: bool, joker: Option<usize>) -> bool {
         if !self.setting.allow_misere && misere {
 			return false;
         }
@@ -826,11 +944,28 @@ impl Game {
 		match self.setting.announce {
 			AnnounceRule::Choose => {
 				let id = pt.get_id();
-                self.setting.playtype[id].allow
+                self.setting.playtype[id].allow && joker.is_none()
 			}
             AnnounceRule::Onetime { .. } => {
+				let id = pt.get_id();
+                if !self.setting.playtype[id].allow {
+                    return false;
+                }
+
                 let team = self.players[self.current_player].team_id;
-                !self.teams[team].announced.has(pt)
+                if let Some(index) = joker {
+                    let has_joker = self.teams[team].announced.as_ref()
+                        .map(|set| set.has_joker(index))
+                        .expect("Unreachable statement");
+
+                    !has_joker
+                } else {
+                    let announced_before = self.teams[team].announced.as_ref()
+                        .map(|set| set.has(pt, misere))
+                        .expect("Unreachable statement");
+
+                    !announced_before
+                }
             },
 			_ => false,
 		}
@@ -888,7 +1023,18 @@ impl Game {
 
 		let p = {
             let id = self.ruleset.playtype.get_id();
-            points * self.setting.playtype[id].multiplier
+            let mult = match self.joker {
+                Some(joker) => {
+                    if let AnnounceRule::Onetime { ref jokers, .. } = self.setting.announce {
+                        jokers[joker].multiplier
+                    } else {
+                        unreachable!()
+                    }
+                },
+                None => self.setting.playtype[id].multiplier,
+            };
+
+            points * mult
         };
 
 		team.won_points += p;
@@ -947,7 +1093,17 @@ impl Game {
             .filter(|&id| self.setting.playtype[id].allow);
 
         let next = if let AnnounceRule::Onetime { .. } = self.setting.announce {
-            iter.filter(|&id| !self.teams[team].announced.has_id(id)).next()
+            iter.filter(|&id| {
+                let can_normal = !self.teams[team].announced
+                    .as_ref()
+                    .map(|set| set.has_id(id, false))
+                    .expect("Unreachable statement.");
+                let can_misere = self.setting.allow_misere && !self.teams[team].announced.as_ref()
+                    .map(|set| set.has_id(id, true))
+                    .expect("Unreachable statement.");
+
+                can_normal || can_misere
+            }).next()
         } else {
             iter.next()
         };

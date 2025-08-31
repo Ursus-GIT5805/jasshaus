@@ -62,7 +62,7 @@ impl JassRoom {
 	}
 
 	async fn start_round(&mut self, clients: &mut ClientHandler) {
-		let cards = {
+        let cards = {
 			let mut cards = all_cards();
 			let mut rng = rand::thread_rng();
 			cards.shuffle(&mut rng);
@@ -221,8 +221,9 @@ impl JassRoom {
 		pt: Playtype,
 		misere: bool,
 		plr_id: usize,
+        joker: Option<usize>
 	) {
-		if self.game.can_announce(plr_id) && self.game.legal_announcement(pt, misere) {
+		if self.game.can_announce(plr_id) && self.game.legal_announcement(pt, misere, joker) {
 			self.handle_announce(clients, pt, misere).await;
 		}
 	}
@@ -316,8 +317,9 @@ impl ServerRoom<Event> for JassRoom {
 
 		match event {
 			PlayCard(card) => self.play_card(clients, card, plr_id).await,
-			Announce(pt, misere) => self.announce(clients, pt, misere, plr_id).await,
-			Pass => self.pass(clients, plr_id).await,
+			Announce(pt, misere) => self.announce(clients, pt, misere, plr_id, None).await,
+            JokerAnnounce(pt, misere, joker) => self.announce(clients, pt, misere, plr_id, Some(joker)).await,
+	        Pass => self.pass(clients, plr_id).await,
 			PlayShow(show) => self.play_show(clients, show, plr_id).await,
 			Bid(bid) => self.bid(clients, bid, plr_id).await,
 			_ => {}

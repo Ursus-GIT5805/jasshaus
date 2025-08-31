@@ -10,6 +10,14 @@ pub const NUM_NUMBERS: usize = 9;
 pub const NUM_CARDS: usize = NUM_COLORS * NUM_NUMBERS;
 
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
+pub enum Color {
+    Shield,
+    Acorn,
+    Rose,
+    Bell,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug, Hash)]
 #[repr(u8)]
 pub enum CardNumber {
 	Six,
@@ -40,6 +48,7 @@ pub enum CardNumber {
 	Ord,
 	HtmlForm,
 )]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 pub struct Card {
 	pub color: u8,
 	pub number: u8,
@@ -60,6 +69,12 @@ impl Card {
 	pub fn get_id(&self) -> u8 {
 		self.color * NUM_NUMBERS as u8 + self.number
 	}
+
+    pub fn is_legal(&self) -> bool {
+        let col = (0..NUM_COLORS as u8).contains(&self.color);
+        let num = (0..NUM_NUMBERS as u8).contains(&self.number);
+        col && num
+    }
 }
 
 impl Default for Card {
@@ -93,6 +108,7 @@ pub fn get_card_id(card: Card) -> u8 {
 #[derive(Tsify)]
 #[tsify(into_wasm_abi, from_wasm_abi)]
 #[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize, std::fmt::Debug)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 pub struct Show {
 	pub color: u8,
 	pub number: u8,
@@ -230,6 +246,7 @@ pub fn extract_shows(cards: Vec<Card>) -> Vec<Show> {
 /// A bitset containing cards info
 /// There are no duplicates.
 #[derive(Default, PartialEq, Eq, std::fmt::Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(debug_assertions, derive(mem_dbg::MemSize))]
 #[wasm_bindgen]
 pub struct Cardset {
 	list: u64,
